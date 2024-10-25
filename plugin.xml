@@ -1,0 +1,23 @@
+<plugin
+	id="plugins.plantUML"
+	name="PlantUML Support"
+	description="Import from / Export to PlantUML"
+	provider="Natalia Bourdi"
+	class="plugins.plantUML.PlantUML">
+        
+	<actionSets>
+		<actionSet id="plugins.plantUML.actionset">
+			<action 
+				id="plugins.plantUML.actions.PlantUMLActionController"
+				actionType="generalAction"
+				label="TODO"
+				tooltip="TODO"
+				style="normal"
+				menuPath="Tools/Report">
+				<actionController 
+					class="plugins.plantUML.actions.PlantUMLActionController"/>
+			</action>
+		</actionSet>
+	</actionSets>
+</plugin>
+
