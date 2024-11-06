@@ -8,16 +8,27 @@
 	<actionSets>
 		<actionSet id="plugins.plantUML.actionset">
 			<action 
-				id="plugins.plantUML.actions.PlantUMLActionController"
+				id="ImportAction"
 				actionType="generalAction"
-				label="TODO"
-				tooltip="TODO"
+				label="PlantUML..."
+				tooltip="PlantUML..."
 				style="normal"
-				menuPath="Tools/Report">
+				icon="icons/puml-icon.png"
+				ribbonPath="Project/Import/Visio">
 				<actionController 
-					class="plugins.plantUML.actions.PlantUMLActionController"/>
+					class="plugins.plantUML.actions.PlantUMLImportController"/>
 			</action>
+			<action
+                    id="ExportAction"
+                    actionType="generalAction"
+                    label="PlantUML..."
+					tooltip="PlantUML..."
+					style="normal"
+					icon="icons/puml-icon.png"
+                    ribbonPath="Project/Export/XML">
+                <actionController
+                        class="plugins.plantUML.actions.PlantUMLExportController"/>
+            </action>
 		</actionSet>
 	</actionSets>
 </plugin>
-
