@@ -10,94 +10,141 @@ import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.IOperation;
+import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IRelationship;
+import com.vp.plugin.model.IStereotype;
+
+import plugins.plantUML.export.models.AttributeData;
+import plugins.plantUML.export.models.ClassData;
+import plugins.plantUML.export.models.OperationData;
+import plugins.plantUML.export.models.OperationData.Parameter;
+import plugins.plantUML.export.models.RelationshipData;
+
 import com.vp.plugin.model.IParameter;
 import com.vp.plugin.model.IReference;
 
+import java.io.File;
+import java.io.IOException;
+import java.sql.ParameterMetaData;
+import java.util.ArrayList;
+import java.util.List;
+
 public class ClassDiagramExporter extends DiagramExporter {
-	
-	public void extract(IDiagramUIModel diagram) {
-		
-		IDiagramElement[] allElements = diagram.toDiagramElementArray(); 
-		
-		for (IDiagramElement diagramElement : allElements){
-			
 
-			IModelElement connectorModel = diagramElement.getModelElement();
-			if (connectorModel instanceof IRelationship) {
-		    	
-		    	IRelationship relationship = (IRelationship) connectorModel;
-		    	String id = relationship.getId();
-		    	IModelElement source = relationship.getFrom();
-                IModelElement target = relationship.getTo();
+    private File file;
 
-                String sourceAlias = source.getName();
-                String targetAlias = target.getName();
-		    	
-		        ApplicationManager.instance().getViewManager().showMessage("connector of type " + diagramElement.getModelElement().getModelType() + " from: " + sourceAlias + " to " + targetAlias);
-				ApplicationManager.instance().getViewManager().showMessage(diagramElement.getModelElement().getModelType());
-		        
-		    }
-			ApplicationManager.instance().getViewManager().showMessage("NAME:");
-			ApplicationManager.instance().getViewManager().showMessage(diagramElement.getModelElement().getName());
-//			ApplicationManager.instance().getViewManager().showMessage("DESCRIPTION:");
-//			ApplicationManager.instance().getViewManager().showMessage(diagramElement.getModelElement().getDescription()); // getDocumentation is deprecated
-			ApplicationManager.instance().getViewManager().showMessage("TYPE:");
-			ApplicationManager.instance().getViewManager().showMessage(diagramElement.getModelElement().getModelType());
-			
-			if (diagramElement.getModelElement() instanceof IClass) {
-				
-				IClass classModel = (IClass) diagramElement.getModelElement();
-				extractAttributes(classModel);
-				extractOperations(classModel);
-				extractReferences(classModel); // TODO : this can be for all diagrams, superclass of exporters
-				
-				
-			}
-			
-		}
-	}
+    public ClassDiagramExporter(File file) {
+        this.file = file;
+    }
 
-	
+    public void extract(IDiagramUIModel diagram) {
+        List<ClassData> exportedClasses = new ArrayList<>();
+        List<RelationshipData> relationshipDatas = new ArrayList<>();
 
-	private void extractOperations(IClass classModel) {
-		/* 
-		 * Given an IClass class element,
-		 * extracts the operations defined
-		 */
-		ApplicationManager.instance().getViewManager().showMessage("Operations::");
-		Iterator operationIter = classModel.operationIterator();
-		while (operationIter.hasNext()) {
+        IDiagramElement[] allElements = diagram.toDiagramElementArray();
+
+        for (IDiagramElement diagramElement : allElements) {
+            IModelElement modelElement = diagramElement.getModelElement();
+
+            if (modelElement != null) {
+                ApplicationManager.instance().getViewManager().showMessage("NAME: " + modelElement.getName());
+                ApplicationManager.instance().getViewManager().showMessage("type: " + modelElement.getModelType());
+
+                if (modelElement instanceof IClass) {
+                    extractClass((IClass) modelElement, exportedClasses);
+                } else if (modelElement instanceof IRelationship) {
+                    extractRelationship((IRelationship) modelElement, relationshipDatas);
+                } else if (modelElement instanceof IPackage) {
+                    extractPackage((IPackage) modelElement, exportedClasses, relationshipDatas);
+                }
+            } else {
+                ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
+            }
+        }
+
+        PlantUMLWriter writer = new PlantUMLWriter(exportedClasses, relationshipDatas);
+        try {
+            writer.writeToFile(file);
+        } catch (IOException e) {
+            ApplicationManager.instance().getViewManager().showMessage("Failed to write PlantUML file: " + e.getMessage());
+        }
+    }
+
+    private void extractClass(IClass classModel, List<ClassData> exportedClasses) {
+        ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract());
+        extractStereotypes(classModel, classData);
+        extractAttributes(classModel, classData);
+        extractOperations(classModel, classData);
+        exportedClasses.add(classData);
+    }
+
+    private void extractRelationship(IRelationship relationship, List<RelationshipData> relationshipDatas) {
+        String sourceName = relationship.getFrom().getName();
+        String targetName = relationship.getTo().getName();
+
+        ApplicationManager.instance().getViewManager().showMessage("Relationship from: " + sourceName + " to: " + targetName);
+        ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
+
+        RelationshipData relationshipData = new RelationshipData(
+                sourceName,
+                targetName,
+                relationship.getModelType()
+        );
+        relationshipDatas.add(relationshipData);
+    }
+
+    private void extractPackage(IPackage packageModel, List<ClassData> exportedClasses, List<RelationshipData> relationshipDatas) {
+        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
+
+        IModelElement[] childElements = packageModel.toChildArray();
+        for (IModelElement childElement : childElements) {
+            if (childElement instanceof IClass) {
+                extractClass((IClass) childElement, exportedClasses);
+            } else if (childElement instanceof IRelationship) {
+                extractRelationship((IRelationship) childElement, relationshipDatas);
+            } else if (childElement instanceof IPackage) {
+                extractPackage((IPackage) childElement, exportedClasses, relationshipDatas);
+            }
+        }
+    }
+
+    private void extractStereotypes(IClass classModel, ClassData classData) {
+        Iterator stereoIter = classModel.stereotypeIterator();
+        while (stereoIter.hasNext()) {
+            String stereotype = (String) stereoIter.next();
+            ApplicationManager.instance().getViewManager().showMessage("Stereotype: " + stereotype);
+            classData.addStereotype(stereotype);
+        }
+    }
+
+    private void extractAttributes(IClass classModel, ClassData classData) {
+        Iterator attributeIter = classModel.attributeIterator();
+        while (attributeIter.hasNext()) {
+            IAttribute attribute = (IAttribute) attributeIter.next();
+            AttributeData attr = new AttributeData(attribute.getVisibility(), attribute.getName(), attribute.getTypeAsString(), attribute.getInitialValueAsString(), attribute.getScope());
+
+            ApplicationManager.instance().getViewManager().showMessage("Attribute: " + attribute.getName() + attribute.getTypeAsString());
+
+            classData.addAttribute(attr);
+        }
+    }
+
+    private void extractOperations(IClass classModel, ClassData classData) {
+        Iterator operationIter = classModel.operationIterator();
+        while (operationIter.hasNext()) {
             IOperation operation = (IOperation) operationIter.next();
-            ApplicationManager.instance().getViewManager().showMessage(operation.getName());
-            ApplicationManager.instance().getViewManager().showMessage(" == Parameters::");
-    		Iterator paramIter = operation.parameterIterator();
-    		while (paramIter.hasNext()) {
-    			IParameter param = (IParameter) paramIter.next();
-    			ApplicationManager.instance().getViewManager().showMessage(param.getName());
-    		}
-		}
-	}
+            OperationData op = new OperationData(operation.getVisibility(), operation.getName(), 
+                    operation.getReturnTypeAsString(), operation.isAbstract(), null, operation.getScope());
 
-	private void extractAttributes(IClass classModel) {
-		/* 
-		 * Given an IClass class element,
-		 * extracts the attribute names in it along 
-		 * with their visibility (private, public), if they're abstract,
-		 * their type and initial value if one is defined
-		 */
-		ApplicationManager.instance().getViewManager().showMessage("Attributes::");
-		Iterator attributeIter = classModel.attributeIterator();
-		while (attributeIter.hasNext()) {
-	            IAttribute attribute = (IAttribute) attributeIter.next();
-				ApplicationManager.instance().getViewManager().showMessage(attribute.getName() + " " + attribute.getVisibility() + " abstract?: " +
-	                    attribute.isAbstract()+ " "+ attribute.getTypeAsString() +" " + attribute.getInitialValue());
-	           
-	    }
-		
-	}
-		
+            Iterator paramIterator = operation.parameterIterator();
+            while (paramIterator.hasNext()) {
+                IParameter parameter = (IParameter) paramIterator.next();
+                Parameter paramData = new Parameter(parameter.getName(), parameter.getTypeAsString(), parameter.getDefaultValueAsString());
+                op.addParameter(paramData);
+            }
+
+            ApplicationManager.instance().getViewManager().showMessage("Operation: " + op);
+            classData.addOperation(op);
+        }
+    }
 }
-
-	
-
