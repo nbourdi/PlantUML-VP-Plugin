@@ -1,13 +1,18 @@
 @startuml
-class Class3 <<metaclass>> {
+package Package {
+class Class {
 }
-class Class2 <<enum>> {
+class Class4 {
+  -attribute
+}
+package Package2 {
+metaclass Class3 {
+}
+}
+}
+enum Class2 {
   -{static} attribute: boolean
   +{abstract} operation(parameter1: boolean): double
   #{static} operation2(parameter: int = 0): char
-}
-class Class {
-}
-class Class {
 }
 @enduml

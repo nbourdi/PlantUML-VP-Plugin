@@ -3,37 +3,43 @@ package plugins.plantUML.export;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.jar.Attributes.Name;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder.Case;
+import com.vp.plugin.ApplicationManager;
 
 import plugins.plantUML.export.models.AttributeData;
 import plugins.plantUML.export.models.ClassData;
 import plugins.plantUML.export.models.OperationData;
+import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
 
 public class PlantUMLWriter {
     
+	private List<PackageData> packages;
     private List<ClassData> classes;
     private List<RelationshipData> relationships;
 
-    public PlantUMLWriter(List<ClassData> classes, List<RelationshipData> relationships) {
+    public PlantUMLWriter(List<ClassData> classes, List<RelationshipData> relationships, List<PackageData> packages) {
+    	this.packages = packages;
         this.classes = classes;
         this.relationships = relationships;
     }
 
     public void writeToFile(File file) throws IOException {
         StringBuilder plantUMLContent = new StringBuilder("@startuml\n");
+        
+        for (PackageData packageData : packages) {
+        	if(!packageData.isSubpackage())
+        		plantUMLContent.append(writePackage(packageData));
+        }
 
         for (ClassData classData : classes) {
-            plantUMLContent.append(writeClass(classData));
+        	if(!classData.isInPackage())  
+        		plantUMLContent.append(writeClass(classData));
         }
 
         for (RelationshipData relationship : relationships) {
@@ -44,6 +50,28 @@ public class PlantUMLWriter {
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(plantUMLContent.toString());
         }
+    }
+    
+    private String writePackage(PackageData packageData) {
+    	StringBuilder packageString = new StringBuilder();
+    	String name = formatName(packageData.getPackageName());
+    	
+    	packageString.append("package " ).append(name).append(" {\n");
+    	
+    	for (ClassData classData : packageData.getClasses()) {
+    		packageString.append(writeClass(classData));
+    		
+    	}
+    	
+    	for (PackageData subPackage : packageData.getSubPackages()) {
+    		ApplicationManager.instance().getViewManager().showMessage("subpackages..." );
+    		packageString.append(writePackage(subPackage));
+    		
+    	}
+    	
+    	packageString.append("}\n");
+		return packageString.toString();
+    	
     }
 
     private String writeClass(ClassData classData) {

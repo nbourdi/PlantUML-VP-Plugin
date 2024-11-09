@@ -1,16 +1,19 @@
 package plugins.plantUML.export.models;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PackageData {
     private String packageName;
     private List<ClassData> classes; 
     private List<PackageData> subPackages; // Nested packages if any
+    private boolean isSubpackage;
 
-    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages) {
+    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, boolean isSubpackage) {
         this.packageName = packageName;
-        this.classes = classes;
-        this.subPackages = subPackages;
+        this.classes = classes != null ? classes : new ArrayList<>();
+        this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
+        this.setSubpackage(isSubpackage);
     }
 
     public String getPackageName() {
@@ -24,4 +27,12 @@ public class PackageData {
     public List<PackageData> getSubPackages() {
         return subPackages;
     }
+
+	public boolean isSubpackage() {
+		return isSubpackage;
+	}
+
+	public void setSubpackage(boolean isSubpackage) {
+		this.isSubpackage = isSubpackage;
+	}
 }

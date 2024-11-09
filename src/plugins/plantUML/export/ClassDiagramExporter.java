@@ -18,6 +18,7 @@ import plugins.plantUML.export.models.AttributeData;
 import plugins.plantUML.export.models.ClassData;
 import plugins.plantUML.export.models.OperationData;
 import plugins.plantUML.export.models.OperationData.Parameter;
+import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
 
 import com.vp.plugin.model.IParameter;
@@ -28,6 +29,8 @@ import java.io.IOException;
 import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
 
 public class ClassDiagramExporter extends DiagramExporter {
 
@@ -40,6 +43,7 @@ public class ClassDiagramExporter extends DiagramExporter {
     public void extract(IDiagramUIModel diagram) {
         List<ClassData> exportedClasses = new ArrayList<>();
         List<RelationshipData> relationshipDatas = new ArrayList<>();
+        List<PackageData> exportedPackages = new ArrayList<>();
 
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
@@ -55,14 +59,14 @@ public class ClassDiagramExporter extends DiagramExporter {
                 } else if (modelElement instanceof IRelationship) {
                     extractRelationship((IRelationship) modelElement, relationshipDatas);
                 } else if (modelElement instanceof IPackage) {
-                    extractPackage((IPackage) modelElement, exportedClasses, relationshipDatas);
+                    extractPackage((IPackage) modelElement, exportedClasses, relationshipDatas, exportedPackages);
                 }
             } else {
                 ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
             }
         }
 
-        PlantUMLWriter writer = new PlantUMLWriter(exportedClasses, relationshipDatas);
+        PlantUMLWriter writer = new PlantUMLWriter(exportedClasses, relationshipDatas, exportedPackages);
         try {
             writer.writeToFile(file);
         } catch (IOException e) {
@@ -71,12 +75,32 @@ public class ClassDiagramExporter extends DiagramExporter {
     }
 
     private void extractClass(IClass classModel, List<ClassData> exportedClasses) {
-        ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract());
+    	boolean isInPackage = false;
+    	if  (classModel.getParent() instanceof IPackage) {
+    		isInPackage = true;// we want it to be extracted in its package to avoid double extraction
+    	} else {
+	    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
+	        extractStereotypes(classModel, classData);
+	        extractAttributes(classModel, classData);
+	        extractOperations(classModel, classData);
+	        exportedClasses.add(classData);
+    	}
+    	
+    }
+    
+    private void extractPackagedClass(IClass classModel, List<ClassData> exportedClasses, PackageData packageData) {
+    	boolean isInPackage = true;
+
+    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
         extractStereotypes(classModel, classData);
         extractAttributes(classModel, classData);
         extractOperations(classModel, classData);
+        packageData.getClasses().add(classData);
         exportedClasses.add(classData);
+    	
+    	
     }
+
 
     private void extractRelationship(IRelationship relationship, List<RelationshipData> relationshipDatas) {
         String sourceName = relationship.getFrom().getName();
@@ -93,22 +117,46 @@ public class ClassDiagramExporter extends DiagramExporter {
         relationshipDatas.add(relationshipData);
     }
 
-    private void extractPackage(IPackage packageModel, List<ClassData> exportedClasses, List<RelationshipData> relationshipDatas) {
-        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
-
-        IModelElement[] childElements = packageModel.toChildArray();
-        for (IModelElement childElement : childElements) {
-            if (childElement instanceof IClass) {
-                extractClass((IClass) childElement, exportedClasses);
-            } else if (childElement instanceof IRelationship) {
-                extractRelationship((IRelationship) childElement, relationshipDatas);
-            } else if (childElement instanceof IPackage) {
-                extractPackage((IPackage) childElement, exportedClasses, relationshipDatas);
-            }
+    private void extractPackage(IPackage packageModel, List<ClassData> exportedClasses, List<RelationshipData> relationshipDatas, List<PackageData> exportedPackages) {
+        
+        if (!(packageModel.getParent() instanceof IPackage)) {
+	        PackageData packageData = new PackageData(packageModel.getName(), null, null, false);
+	        IModelElement[] childElements = packageModel.toChildArray();
+	        for (IModelElement childElement : childElements) {
+	            if (childElement instanceof IClass) {
+	                extractPackagedClass((IClass) childElement, exportedClasses, packageData);
+	          
+	            } else if (childElement instanceof IPackage) {
+	            	PackageData parent = packageData;
+	                extractPackagedPackage((IPackage) childElement, exportedClasses, relationshipDatas, exportedPackages, parent);
+	                
+	            }
+	        }
+	        exportedPackages.add(packageData);
         }
     }
 
-    private void extractStereotypes(IClass classModel, ClassData classData) {
+    private void extractPackagedPackage(IPackage packageModel, List<ClassData> exportedClasses,
+			List<RelationshipData> relationshipDatas, List<PackageData> exportedPackages, PackageData parent) {
+        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
+        
+        PackageData packageData = new PackageData(packageModel.getName(), null, null, true);
+        IModelElement[] childElements = packageModel.toChildArray();
+        for (IModelElement childElement : childElements) {
+            if (childElement instanceof IClass) {
+                extractPackagedClass((IClass) childElement, exportedClasses, packageData);
+          
+            } else if (childElement instanceof IPackage) {
+                extractPackagedPackage((IPackage) childElement, exportedClasses, relationshipDatas, exportedPackages, packageData);
+
+            }
+        }
+        parent.getSubPackages().add(packageData);
+        exportedPackages.add(packageData);
+    }
+	
+
+	private void extractStereotypes(IClass classModel, ClassData classData) {
         Iterator stereoIter = classModel.stereotypeIterator();
         while (stereoIter.hasNext()) {
             String stereotype = (String) stereoIter.next();

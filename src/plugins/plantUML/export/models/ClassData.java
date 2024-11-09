@@ -12,14 +12,16 @@ public class ClassData {
     private List<AttributeData> attributes;
     private List<OperationData> operations;
     private List<String> stereotypes;
+    private boolean isInPackage;
 
-    public ClassData(String name, boolean isAbstract) {
+    public ClassData(String name, boolean isAbstract, boolean isInPackage) {
         this.setName(name);
         this.setAbstract(isAbstract);
         // this.visibility = "public"; // TODO : is there a way to represent private/protected in puml? NO
         this.setAttributes(new ArrayList<>());
         this.setOperations(new ArrayList<>());
         this.stereotypes = new ArrayList<>();
+        this.setInPackage(isInPackage);
     }
 
     public void addAttribute(AttributeData attribute) {
@@ -72,6 +74,14 @@ public class ClassData {
 
 	public void setAbstract(boolean isAbstract) {
 		this.isAbstract = isAbstract;
+	}
+
+	public boolean isInPackage() {
+		return isInPackage;
+	}
+
+	public void setInPackage(boolean isInPackage) {
+		this.isInPackage = isInPackage;
 	}
 
 
