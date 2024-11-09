@@ -1,0 +1,13 @@
+@startuml
+class Class3 <<metaclass>> {
+}
+class Class2 <<enum>> {
+  -{static} attribute: boolean
+  +{abstract} operation(parameter1: boolean): double
+  #{static} operation2(parameter: int = 0): char
+}
+class Class {
+}
+class Class {
+}
+@enduml
