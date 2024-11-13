@@ -4,15 +4,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes.Name;
 import java.util.stream.Collectors;
 
 import com.vp.plugin.ApplicationManager;
 
 import plugins.plantUML.export.models.AttributeData;
 import plugins.plantUML.export.models.ClassData;
+import plugins.plantUML.export.models.NaryData;
 import plugins.plantUML.export.models.OperationData;
 import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
@@ -22,11 +23,13 @@ public class PlantUMLWriter {
 	private List<PackageData> packages;
     private List<ClassData> classes;
     private List<RelationshipData> relationships;
+    private List<NaryData> naries;
 
-    public PlantUMLWriter(List<ClassData> classes, List<RelationshipData> relationships, List<PackageData> packages) {
+    public PlantUMLWriter(List<ClassData> classes, List<RelationshipData> relationships, List<PackageData> packages, List<NaryData> naries) {
     	this.packages = packages;
         this.classes = classes;
         this.relationships = relationships;
+        this.setNaries(naries);
     }
 
     public void writeToFile(File file) throws IOException {
@@ -34,50 +37,71 @@ public class PlantUMLWriter {
         
         for (PackageData packageData : packages) {
         	if(!packageData.isSubpackage())
-        		plantUMLContent.append(writePackage(packageData));
+        		plantUMLContent.append(writePackage(packageData, ""));
         }
 
         for (ClassData classData : classes) {
         	if(!classData.isInPackage())  
-        		plantUMLContent.append(writeClass(classData));
+        		plantUMLContent.append(writeClass(classData, ""));
+        }
+        
+        for (NaryData naryData : naries) {
+        	if (!naryData.isInPackage())
+        		plantUMLContent.append(writeNary(naryData, ""));
         }
 
         for (RelationshipData relationship : relationships) {
             plantUMLContent.append(writeRelationship(relationship));
         }
 
+        
         plantUMLContent.append("@enduml");
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(plantUMLContent.toString());
         }
     }
     
-    private String writePackage(PackageData packageData) {
+    private String writeNary(NaryData naryData, String indent) {
+		
+	    StringBuilder naryString = new StringBuilder();
+	    String alias = naryData.getAlias();
+	    String id = naryData.getId();
+
+	    naryString.append(indent).append("diamond ")
+	              .append("\"").append(id).append("\"")
+	    		  .append(" as " + alias + "\n");
+	    
+	    
+	    return naryString.toString();
+	}
+	
+
+	private String writePackage(PackageData packageData, String indent) {
     	StringBuilder packageString = new StringBuilder();
     	String name = formatName(packageData.getPackageName());
     	
-    	packageString.append("package " ).append(name).append(" {\n");
+    	packageString.append(indent).append("package " ).append(name).append(" {\n");
     	
     	for (ClassData classData : packageData.getClasses()) {
-    		packageString.append(writeClass(classData));
+    		packageString.append(writeClass(classData, indent + "\t"));
     		
     	}
     	
     	for (PackageData subPackage : packageData.getSubPackages()) {
     		ApplicationManager.instance().getViewManager().showMessage("subpackages..." );
-    		packageString.append(writePackage(subPackage));
+    		packageString.append(writePackage(subPackage, indent + "\t"));
     		
     	}
     	
-    	packageString.append("}\n");
+    	packageString.append(indent + "}\n");
 		return packageString.toString();
     	
     }
 
-    private String writeClass(ClassData classData) {
+    private String writeClass(ClassData classData, String indent) {
     	StringBuilder classString = new StringBuilder();
     	String name = formatName(classData.getName());
-
+    	
     	// class declarations
     	
     	// equivalents
@@ -88,8 +112,10 @@ public class PlantUMLWriter {
     	keywordStereotypes.put("metaclass", "metaclass");
     	keywordStereotypes.put("struct", "struct");
     	keywordStereotypes.put("entity", "entity");
-
+    	
+    	classString.append(indent);
     	// Check if there's exactly one stereotype and if it matches a keyword
+    	if (classData.isAbstract()) classString.append("abstract ");
     	if (classData.getStereotypes().size() == 1) {
     	    String stereotype = classData.getStereotypes().get(0).toLowerCase();  
     	    if (keywordStereotypes.containsKey(stereotype)) {
@@ -117,14 +143,16 @@ public class PlantUMLWriter {
         for (AttributeData attribute : classData.getAttributes()) {
         	String visibilityChar = writeVisibility(attribute.getVisibility());
         	
-        	classString.append("  ").append(visibilityChar);
+        	classString.append(indent + "\t").append(visibilityChar);
         	if (attribute.isStatic()) classString.append("{static} ");
         	classString.append(attribute.getName());
         	
         	if (attribute.getType() != null) {
         		classString.append(": ").append(attribute.getType());
         	}
-        	
+        	if (attribute.getInitialValue() != null) {
+        		classString.append(" = ").append(attribute.getInitialValue());
+        	}
             classString.append("\n");
         }
 
@@ -132,7 +160,7 @@ public class PlantUMLWriter {
         for (OperationData operation : classData.getOperations()) {
             String visibilityChar = writeVisibility(operation.getVisibility());
 
-            classString.append("  ").append(visibilityChar);
+            classString.append(indent + "\t").append(visibilityChar);
             
             if (operation.isAbstract()) classString.append("{abstract} ");
             
@@ -145,20 +173,16 @@ public class PlantUMLWriter {
             for (int i = 0; i < parameters.size(); i++) {
                 OperationData.Parameter param = parameters.get(i);
 
-                // Append name
                 classString.append(param.getName());
 
-                // Append type if available
                 if (param.getType() != null && !param.getType().isEmpty()) {
                     classString.append(": ").append(param.getType());
                 }
 
-                // Append default value if available
                 if (param.getDefaultValue() != null && !param.getDefaultValue().isEmpty()) {
                     classString.append(" = ").append(param.getDefaultValue());
                 }
 
-                // Add comma between parameters, but not after the last one
                 if (i < parameters.size() - 1) {
                     classString.append(", ");
                 }
@@ -166,7 +190,6 @@ public class PlantUMLWriter {
             
             classString.append(")");
 
-            // Append return type if available
             if (operation.getReturnType() != null && !operation.getReturnType().isEmpty()) {
                 classString.append(": ").append(operation.getReturnType());
             }
@@ -174,7 +197,7 @@ public class PlantUMLWriter {
             classString.append("\n");
         }
 
-        classString.append("}\n");
+        classString.append(indent + "}\n");
         return classString.toString();
     }
     
@@ -182,16 +205,16 @@ public class PlantUMLWriter {
     	String visibilityCharacter = "";
     	switch (visibility) {
     		case "private": 
-    			visibilityCharacter = "-";
+    			visibilityCharacter = "- ";
     			break;
     		case "protected": 
-    			visibilityCharacter = "#";
+    			visibilityCharacter = "# ";
     			break;
     		case 
-	    		"package": visibilityCharacter = "~";
+	    		"package": visibilityCharacter = "~ ";
 	    		break;
     		case "public": 
-    			visibilityCharacter = "+";
+    			visibilityCharacter = "+ ";
     			break;    	
     	}
     	return visibilityCharacter;
@@ -205,16 +228,6 @@ public class PlantUMLWriter {
 		 * e.g. class "name with space" as nameWithSpace {}
 		 */
 	    if (!name.matches("[a-zA-Z0-9]+")) {
-//	        // Remove non-letter characters and capitalize each word to form an identifier
-//	        String formattedName = name.replaceAll("[^a-zA-Z0-9]+", " "); // Replace non-letters with space
-//	        StringBuilder camelCaseName = new StringBuilder();
-//	        for (String word : formattedName.split(" ")) {
-//	            if (!word.isEmpty()) {
-//	                camelCaseName.append(Character.toUpperCase(word.charAt(0)))
-//	                             .append(word.substring(1).toLowerCase());
-//	            }
-//	        }
-//	        return "\"" + name + "\" as " + camelCaseName.toString();
 	        return "\"" + name + "\"";
 	    }
 	    return name;
@@ -222,16 +235,41 @@ public class PlantUMLWriter {
 
 
 	private String writeRelationship(RelationshipData relationship) {
-        // Map relationship types to PlantUML syntax (e.g., association, inheritance)
-        String symbol = "--";  // Default association
-        if (relationship.getType().equals("generalization")) {
-            symbol = "<|--";
-        } else if (relationship.getType().equals("aggregation")) {
-            symbol = "o--";
-        } else if (relationship.getType().equals("composition")) {
-            symbol = "*--";
-        }
-
-        return relationship.getSource() + " " + symbol + " " + relationship.getTarget() + "\n";
+//        String symbol = "--";  // Default association
+//        String label = "";
+//        String prefix = "";
+//        String name = relationship.getName();
+//
+//        if (relationship.getType() == "Generalization") {
+//            symbol = "<|--";
+//        } else if (relationship.getType() == "Aggregation") {
+//            symbol = "o--";
+//        } else if (relationship.getType() == "Composition") {
+//            symbol = "*--";
+//        } else if (relationship.getType() == "Realization") {
+//        	symbol = "<|..";
+//        } else if (relationship.getType() == "Abstraction") {
+//        	symbol = "<..";
+//        	label = "<<abstraction>> \\n ";
+//        } else if (relationship.getType() == "Usage") {
+//        	symbol = "<..";
+//        	label = "<<use>> \\n ";
+//        }
+//        
+//        if (!label.isEmpty() || !relationship.getName().isEmpty()) {
+//        	prefix = " : ";
+//        }
+//        
+//
+//        return relationship.getSource() + " " + symbol + " " + relationship.getTarget() + prefix + label + name + "\n";
+		return relationship.toExportFormat();
     }
+
+	public List<NaryData> getNaries() {
+		return naries;
+	}
+
+	public void setNaries(List<NaryData> naries) {
+		this.naries = naries;
+	}
 }

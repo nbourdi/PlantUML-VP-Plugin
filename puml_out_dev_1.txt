@@ -1,18 +1,51 @@
 @startuml
-package Package {
-class Class {
+class Class72 {
 }
-class Class4 {
-  -attribute
+class Class82 {
 }
-package Package2 {
-metaclass Class3 {
+class Class92 {
 }
+class Class102 {
 }
+class Class112 {
 }
-enum Class2 {
-  -{static} attribute: boolean
-  +{abstract} operation(parameter1: boolean): double
-  #{static} operation2(parameter: int = 0): char
+class Class122 {
 }
+class Class132 {
+}
+class Class142 {
+}
+class Class152 {
+}
+class Class162 {
+}
+class Class172 {
+}
+class Class182 {
+}
+class Class192 {
+}
+class Class202 {
+}
+class Class212 {
+}
+class Class222 {
+}
+class Class252 {
+}
+class Class262 {
+}
+Class72 <|-- Class82 : generalization
+Class122 <.. Class112 : <<use>> \n usage
+Class102 <|.. Class92 : realization
+Class142 -- Class132 : simple association
+Class152 -- Class82 : aggregation
+Class162 -- Class102 : composition
+Class122 -- Class172 : dependency
+Class182 -- Class142 : instantiation and other stereotyped dependencies
+Class192 <.. Class152 : <<abstraction>> \n abstraction
+Class202 <.. Class162 : <<abstraction>> \n abstraction of type derive
+Class212 <.. Class172 : <<abstraction>> \n abstraction refine
+Class222 <.. Class182 : <<abstraction>> \n abstraction trace
+Class262 -- Class252 : withMultiplicity
 @enduml
