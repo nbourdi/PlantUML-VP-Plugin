@@ -3,38 +3,36 @@ package plugins.plantUML.export;
 import java.util.Iterator;
 
 import com.vp.plugin.ApplicationManager;
-import com.vp.plugin.diagram.IConnectorUIModel;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IAssociation;
+import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INARY;
+import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IOperation;
 import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IRelationship;
-import com.vp.plugin.model.IStereotype;
-import com.vp.vpuml.plugin.umlpluginmodel.ModelElement;
 
+import plugins.plantUML.export.models.AssociationData;
 import plugins.plantUML.export.models.AttributeData;
 import plugins.plantUML.export.models.ClassData;
 import plugins.plantUML.export.models.NaryData;
+import plugins.plantUML.export.models.NoteData;
 import plugins.plantUML.export.models.OperationData;
-import plugins.plantUML.export.models.OperationData.Parameter;
 import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
+import plugins.plantUML.export.models.OperationData.Parameter;
 
 import com.vp.plugin.model.IParameter;
-import com.vp.plugin.model.IReference;
-
 import java.io.File;
 import java.io.IOException;
-import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
+import org.apache.poi.openxml4j.opc.Package;
 
 public class ClassDiagramExporter extends DiagramExporter {
 
@@ -43,12 +41,14 @@ public class ClassDiagramExporter extends DiagramExporter {
     public ClassDiagramExporter(File file) {
         this.file = file;
     }
+    List<ClassData> exportedClasses = new ArrayList<>();
+    List<RelationshipData> relationshipDatas = new ArrayList<>();
+    List<PackageData> exportedPackages = new ArrayList<>();
+    List<NaryData> exportedNary = new ArrayList<>();
+    List<NoteData> exportedNotes = new ArrayList<>(); 
 
     public void extract(IDiagramUIModel diagram) {
-        List<ClassData> exportedClasses = new ArrayList<>();
-        List<RelationshipData> relationshipDatas = new ArrayList<>();
-        List<PackageData> exportedPackages = new ArrayList<>();
-        List<NaryData> exportedNary = new ArrayList<>();
+
 
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
@@ -60,21 +60,27 @@ public class ClassDiagramExporter extends DiagramExporter {
 //                ApplicationManager.instance().getViewManager().showMessage("type: " + modelElement.getModelType());
 
                 if (modelElement instanceof IClass) {
-                    extractClass((IClass) modelElement, exportedClasses);
+                	if (!(modelElement.getParent() instanceof IPackage)) extractClass((IClass) modelElement, null);
                 } else if (modelElement instanceof IRelationship) {
-                    extractRelationship((IRelationship) modelElement, relationshipDatas, exportedNary);
+                    extractRelationship((IRelationship) modelElement);
                 } else if (modelElement instanceof IPackage) {
-                    extractPackage((IPackage) modelElement, exportedClasses, relationshipDatas, exportedPackages, exportedNary);
+                    extractPackage((IPackage) modelElement);
                 } else if (modelElement instanceof INARY) {
-                	extractNary((INARY) modelElement, exportedNary);
+                	if (!(modelElement.getParent() instanceof IPackage)) extractNary((INARY) modelElement, null);
+                } else if (modelElement instanceof INOTE) {
+                	this.extractNote((INOTE) modelElement);
+                } else {
+                	ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element " + modelElement.getName() + 
+                			" is UNSUPPORTED and will not be processed ... .");
                 }
                 
             } else {
                 ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
             }
         }
+        List<NoteData> exportedNotes = getNotes(); // from base diagram exporter
 
-        PlantUMLWriter writer = new PlantUMLWriter(exportedClasses, relationshipDatas, exportedPackages, exportedNary);
+        ClassUMLWriter writer = new ClassUMLWriter(exportedClasses, relationshipDatas, exportedPackages, exportedNary, exportedNotes);
         try {
             writer.writeToFile(file);
         } catch (IOException e) {
@@ -84,47 +90,53 @@ public class ClassDiagramExporter extends DiagramExporter {
     
      
 
-    private void extractNary(INARY naryModel, List<NaryData> exportedNary) {
+    private void extractNary(INARY naryModel, PackageData packageData) {
         boolean isInPackage = (naryModel.getParent() instanceof IPackage);
-        if (!isInPackage) { 
-            String name = naryModel.getName();
-            String id = naryModel.getId();
-            NaryData naryData = new NaryData(name, id, isInPackage);
-            exportedNary.add(naryData);
-            
-            ApplicationManager.instance().getViewManager().showMessage(
-                "Extracted n-ary relationship: " + naryData.getAlias());
-        }
-    }
-
-
-	private void extractClass(IClass classModel, List<ClassData> exportedClasses) {
-    	boolean isInPackage = false;
-    	if  (classModel.getParent() instanceof IPackage) {
-    		ApplicationManager.instance().getViewManager().showMessage("in package detected..");
-    		isInPackage = true;// we want it to be extracted in its package to avoid double extraction
-    	} else {
-	    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
-	        extractStereotypes(classModel, classData);
-	        extractAttributes(classModel, classData);
-	        extractOperations(classModel, classData);
-	        exportedClasses.add(classData);
-    	}
-    	
+        String name = naryModel.getName();
+        String id = naryModel.getId();
+        NaryData naryData = new NaryData(name, id, isInPackage);
+        exportedNary.add(naryData);
+        if (packageData != null) packageData.getNaries().add(naryData);
+        ApplicationManager.instance().getViewManager().showMessage(
+            "Extracted n-ary relationship: " + naryData.getAlias());
+        
     }
     
-    private void extractPackagedClass(IClass classModel, List<ClassData> exportedClasses, PackageData packageData) {
-    	boolean isInPackage = true;
+//    private void extractPackagedNary(INARY naryModel, PackageData packageData) {
+//        String name = naryModel.getName();
+//        String id = naryModel.getId();
+//        boolean isInPackage = true;
+//		NaryData naryData = new NaryData(name, id, isInPackage);
+//        exportedNary.add(naryData);
+//        packageData.getNaries().add(naryData);
+//        
+//        ApplicationManager.instance().getViewManager().showMessage(
+//            "Extracted n-ary relationship: " + naryData.getAlias());
+//	}
 
+
+	private void extractClass(IClass classModel, PackageData packageData) {
+		boolean isInPackage = (classModel.getParent() instanceof IPackage);
     	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
         extractStereotypes(classModel, classData);
         extractAttributes(classModel, classData);
         extractOperations(classModel, classData);
-        packageData.getClasses().add(classData);
         exportedClasses.add(classData);
+        if (packageData != null) packageData.getClasses().add(classData);
     }
+    
+//    private void extractPackagedClass(IClass classModel, PackageData packageData) {
+//    	boolean isInPackage = true;
+//
+//    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
+//        extractStereotypes(classModel, classData);
+//        extractAttributes(classModel, classData);
+//        extractOperations(classModel, classData);
+//        packageData.getClasses().add(classData);
+//        exportedClasses.add(classData);
+//    }
 
-    private String getNaryAliasById(String naryId, List<NaryData> exportedNary) {
+    private String getNaryAliasById(String naryId) {
         for (NaryData naryData : exportedNary) {
             if (naryData.getId().equals(naryId)) {
                 return naryData.getAlias();
@@ -134,7 +146,7 @@ public class ClassDiagramExporter extends DiagramExporter {
     }
 
 
-    private void extractRelationship(IRelationship relationship, List<RelationshipData> relationshipDatas, List<NaryData> exportedNary) {
+    private void extractRelationship(IRelationship relationship) {
         IModelElement source = (IModelElement) relationship.getFrom();
         IModelElement target = (IModelElement) relationship.getTo();
 
@@ -144,17 +156,41 @@ public class ClassDiagramExporter extends DiagramExporter {
 
         
         if (source instanceof INARY) {
-            sourceName = getNaryAliasById(((INARY) source).getId(), exportedNary);
+            sourceName = getNaryAliasById(((INARY) source).getId());
         }
         if (target instanceof INARY) {
-            targetName = getNaryAliasById(((INARY) target).getId(), exportedNary);
+            targetName = getNaryAliasById(((INARY) target).getId());
+        }
+        if (source instanceof INOTE) {
+            sourceName = getNoteAliasById(((INOTE) source).getId());
+        }
+        if (target instanceof INOTE) {
+            targetName = getNoteAliasById(((INOTE) target).getId());
         }
         
-        ApplicationManager.instance().getViewManager().showMessage( " TOCLASS ================================"+ relationship.getClass().getSimpleName());
         if (relationship instanceof IAssociation) {
         	IAssociation association = (IAssociation) relationship;
         	
-        	extractAssociation(association);
+        	IAssociationEnd fromEnd = (IAssociationEnd) association.getFromEnd();
+            IAssociationEnd toEnd = (IAssociationEnd) association.getToEnd();
+
+            String fromEndMultiplicity = fromEnd.getMultiplicity().equals("Unspecified") ? "" : fromEnd.getMultiplicity();
+            String toEndMultiplicity = toEnd.getMultiplicity().equals("Unspecified") ? "" : toEnd.getMultiplicity();
+            
+            AssociationData associationData = new AssociationData(
+            		sourceName,
+                    targetName,
+                    relationship.getModelType(),
+                    relationship.getName(),
+                    fromEndMultiplicity,
+                    toEndMultiplicity,
+                    fromEnd.getNavigable() == 0, 
+                    toEnd.getNavigable() == 0, 
+                    fromEnd.getAggregationKind(),
+                    toEnd.getAggregationKind()
+            );
+
+            relationshipDatas.add(associationData);
         	return;
         }
 
@@ -172,26 +208,20 @@ public class ClassDiagramExporter extends DiagramExporter {
     }
 
 
-    private void extractAssociation(IAssociation association) {
-		// should create relationship
-    	// should add to extracted relationships. or associations??
-    	
-	}
 
-	private void extractPackage(IPackage packageModel, List<ClassData> exportedClasses, List<RelationshipData> relationshipDatas, List<PackageData> exportedPackages, List<NaryData> exportedNaries) {
+	private void extractPackage(IPackage packageModel) {
         
         if (!(packageModel.getParent() instanceof IPackage)) {
 	        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false);
 	        IModelElement[] childElements = packageModel.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IClass) {
-	                extractPackagedClass((IClass) childElement, exportedClasses, packageData);
-	          
+	                extractClass((IClass) childElement, packageData);
 	            } else if (childElement instanceof INARY) {
-	            	extractPackagedNary((INARY) childElement, exportedNaries);
+	            	extractNary((INARY) childElement, packageData);
 	            } else if (childElement instanceof IPackage) {
 	            	PackageData parent = packageData;
-	                extractPackagedPackage((IPackage) childElement, exportedClasses, relationshipDatas, exportedPackages, parent);
+	                extractPackagedPackage((IPackage) childElement, parent);
 	                
 	            }
 	        }
@@ -199,24 +229,18 @@ public class ClassDiagramExporter extends DiagramExporter {
         }
     }
 
-    private void extractPackagedNary(INARY childElement, List<NaryData> exportedNaries) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void extractPackagedPackage(IPackage packageModel, List<ClassData> exportedClasses,
-			List<RelationshipData> relationshipDatas, List<PackageData> exportedPackages, PackageData parent) {
+	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
         ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
         
         PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true);
         IModelElement[] childElements = packageModel.toChildArray();
         for (IModelElement childElement : childElements) {
             if (childElement instanceof IClass) {
-                extractPackagedClass((IClass) childElement, exportedClasses, packageData);
-          
+                extractClass((IClass) childElement, packageData);
+            } else if (childElement instanceof INARY) {
+	            	extractNary((INARY) childElement, packageData);
             } else if (childElement instanceof IPackage) {
-                extractPackagedPackage((IPackage) childElement, exportedClasses, relationshipDatas, exportedPackages, packageData);
-
+                extractPackagedPackage((IPackage) childElement, packageData);
             }
         }
         parent.getSubPackages().add(packageData);
@@ -239,8 +263,6 @@ public class ClassDiagramExporter extends DiagramExporter {
             IAttribute attribute = (IAttribute) attributeIter.next();
             AttributeData attr = new AttributeData(attribute.getVisibility(), attribute.getName(), attribute.getTypeAsString(), attribute.getInitialValueAsString(), attribute.getScope());
 
-            ApplicationManager.instance().getViewManager().showMessage("Attribute: " + attribute.getName() + attribute.getTypeAsString());
-
             classData.addAttribute(attr);
         }
     }
@@ -259,7 +281,6 @@ public class ClassDiagramExporter extends DiagramExporter {
                 op.addParameter(paramData);
             }
 
-            // ApplicationManager.instance().getViewManager().showMessage("Operation: " + op);
             classData.addOperation(op);
         }
     }

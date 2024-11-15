@@ -24,6 +24,10 @@ public class RelationshipData {
     public String getType() {
         return type;
     }
+    
+    public void setType(String type) {
+    	this.type = type;
+    }
 
 	public String getName() {
 		return name;
@@ -32,7 +36,16 @@ public class RelationshipData {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+	protected String formatName(String name) { // TODO: duplicate code..
+		/*
+		 * Spaces and other non-letter characters are not 
+		 * supported as names for plantUML
+		 */
+	    if (!name.matches("[a-zA-Z0-9]+")) {
+	        return "\"" + name + "\"";
+	    }
+	    return name;
+    }
 	public String toExportFormat() {
 
 		String symbol = "--";
@@ -41,10 +54,6 @@ public class RelationshipData {
 		
         if (type == "Generalization") {
             symbol = "<|--";
-//        } else if (type == "Aggregation") {
-//            symbol = "o--";
-//        } else if (type == "Composition") {
-//            symbol = "*--";
         } else if (type == "Realization") {
         	symbol = "<|..";
         } else if (type == "Abstraction") {
@@ -53,13 +62,17 @@ public class RelationshipData {
         } else if (type == "Usage") {
         	symbol = "<..";
         	label = "<<use>> \\n ";
+        } else if (type == "Dependency") {
+        	symbol = "<..";
+        } else if (type == "Anchor") {
+        	symbol = "..";
         }
         
         if (!label.isEmpty() || !name.isEmpty()) {
         	prefix = " : ";
         }
         
-        return source + " " + symbol + " " + target + prefix + label + name + "\n";
+        return formatName(source) + " " + symbol + " " + formatName(target) + prefix + label + name + "\n";
 
 	}
 }

@@ -81,7 +81,7 @@ public class PlantUMLExportController implements VPActionController {
         		cde.extract(activeDiagram);
         		break;
         	case "UseCaseDiagram":
-        		UseCaseDiagramExporter ucde = new UseCaseDiagramExporter();
+        		UseCaseDiagramExporter ucde = new UseCaseDiagramExporter(file);
         		ucde.extract(activeDiagram);
         		break;
         	default:

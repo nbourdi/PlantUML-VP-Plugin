@@ -1,43 +1,62 @@
 package plugins.plantUML.export.models;
 
-import com.teamdev.jxbrowser.deps.org.checkerframework.common.returnsreceiver.qual.This;
 
 public class AssociationData extends RelationshipData {
 
 	private String fromEndMultiplicity;
 	private String toEndMultiplicity;
+	private boolean fromEndNavigable;
+	private boolean toEndNavigable;
 	
-	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, String toEndMultiplicity) {
+	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
+			String toEndMultiplicity, boolean fromEndNavigable, boolean toEndNavigable, String fromEndAggregation, String toEndAggregation) {
 		super(source, target, type, name);
 		this.fromEndMultiplicity = fromEndMultiplicity;
 		this.toEndMultiplicity = toEndMultiplicity;
+		this.fromEndNavigable = fromEndNavigable;
+		this.toEndNavigable = toEndNavigable;
+		if (fromEndAggregation == "shared") {
+			this.setType("Aggregation");
+		} else if (fromEndAggregation == "composite") {
+			this.setType("Composition");
+		}
 	}
 
 	@Override
 	public String toExportFormat() {
-		String symbol = "--";
-		String label = "";
-		String prefix = "";
-		String source = this.getSource();
-        String target = this.getTarget();
-        String name = this.getName();
-        String type = this.getType();
-        
-      // TODO multiplicities
-		
-        if (type == "Aggregation") {
-            symbol = "o--";
-        } else if (type == "Composition") {
-            symbol = "*--";
-        }
-        if (!label.isEmpty() || !name.isEmpty()) {
-        	prefix = " : ";
-        }
-        
-       
-        
-        return source + " " + symbol + " " + target + prefix + label + name + "\n";
-	
+	    StringBuilder output = new StringBuilder();
+
+	    // Define symbol and navigability markers
+	    String symbol = "--";
+	    String prefix = (!getName().isEmpty()) ? " : " : "";
+	    String fromMultiplicity = (fromEndMultiplicity != null && !fromEndMultiplicity.isEmpty()) ? "\"" + fromEndMultiplicity + "\" " : "";
+	    String toMultiplicity = (toEndMultiplicity != null && !toEndMultiplicity.isEmpty()) ? " \"" + toEndMultiplicity + "\"" : "";
+	    String toNavig = toEndNavigable ? "" : "x";
+	    
+	    // Determine the association type symbol
+	    String type = getType();
+	    if ("Aggregation".equals(type)) {
+	        symbol = "o--";
+	    } else if ("Composition".equals(type)) {
+	        symbol = "*--";
+	    }
+
+	    // Construct the export format string with multiplicities and navigability
+	    output.append(getSource())
+	          .append(" ")
+	          .append(fromMultiplicity)
+	          .append(symbol)
+	          .append(toNavig)
+	          .append(toMultiplicity)
+	          .append(" ")
+	          .append(getTarget())
+	          .append(prefix)
+	          .append(getName())
+	          .append("\n");
+
+	    return output.toString();
 	}
+
+
 }
 	

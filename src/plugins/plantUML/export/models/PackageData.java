@@ -8,20 +8,26 @@ public class PackageData {
     private List<ClassData> classes; 
     private List<PackageData> subPackages; // Nested packages if any
     private List<NaryData> naries;
+    private List<ActorData> actors;
+    private List<UseCaseData> usecases;
     private boolean isSubpackage;
 
     public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage) {
         this.packageName = packageName;
         this.classes = classes != null ? classes : new ArrayList<>();
         this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
-        this.naries = naries != null ? naries : new ArrayList<>();
+        this.setNaries(naries != null ? naries : new ArrayList<>());
         this.setSubpackage(isSubpackage);
+        this.usecases = usecases != null ? usecases : new ArrayList<>();
+        this.classes = classes != null ? classes : new ArrayList<>();
+        
     }
 
     public String getPackageName() {
         return packageName;
     }
 
+    
     public List<ClassData> getClasses() {
         return classes;
     }
@@ -37,4 +43,26 @@ public class PackageData {
 	public void setSubpackage(boolean isSubpackage) {
 		this.isSubpackage = isSubpackage;
 	}
+
+	public List<NaryData> getNaries() {
+		return naries;
+	}
+
+	public void setNaries(List<NaryData> naries) {
+		this.naries = naries;
+	}
+
+	public List<ActorData> getActors() {
+		return actors;
+	}
+
+	public void setActors(List<ActorData> actors) {
+		this.actors = actors;
+	}
+
+	public List<UseCaseData> getUseCases() {
+		return usecases;
+	}
+
+
 }

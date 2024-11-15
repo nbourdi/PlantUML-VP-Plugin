@@ -7,7 +7,6 @@ import com.teamdev.jxbrowser.deps.org.checkerframework.checker.units.qual.m;
 
 public class ClassData {
     private String name;
-    // private String visibility;
     private boolean isAbstract;
     private List<AttributeData> attributes;
     private List<OperationData> operations;
@@ -83,16 +82,6 @@ public class ClassData {
 	public void setInPackage(boolean isInPackage) {
 		this.isInPackage = isInPackage;
 	}
-
-
-//	public String getVisibility() {
-//		return visibility;
-//	}
-//
-//	public void setVisibility(String visibility) {
-//		this.visibility = visibility;
-//	}
-
 }
 
 
