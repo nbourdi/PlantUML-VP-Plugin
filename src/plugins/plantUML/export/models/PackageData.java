@@ -11,16 +11,18 @@ public class PackageData {
     private List<ActorData> actors;
     private List<UseCaseData> usecases;
     private boolean isSubpackage;
+    private boolean isRectangle; // is System in reality, but systems are not a different type in puml , just a rectangle shape
 
-    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage) {
+    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
         this.packageName = packageName;
         this.classes = classes != null ? classes : new ArrayList<>();
         this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
         this.setNaries(naries != null ? naries : new ArrayList<>());
         this.setSubpackage(isSubpackage);
         this.usecases = usecases != null ? usecases : new ArrayList<>();
+        this.actors = actors != null ? actors : new ArrayList<>();
         this.classes = classes != null ? classes : new ArrayList<>();
-        
+        this.isRectangle = isRectangle;
     }
 
     public String getPackageName() {
@@ -62,6 +64,10 @@ public class PackageData {
 
 	public List<UseCaseData> getUseCases() {
 		return usecases;
+	}
+
+	public boolean isRectangle() {
+		return this.isRectangle;
 	}
 
 

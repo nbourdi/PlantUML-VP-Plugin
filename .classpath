@@ -20,5 +20,10 @@
 	<classpathentry kind="lib" path="C:/Program Files/Visual Paradigm 17.2/lib/vpplatform.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/Visual Paradigm 17.2/lib/winpack.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/Visual Paradigm 17.2/ormlib/orm.jar"/>
+	<classpathentry kind="lib" path="C:/Users/30695/Downloads/plantuml.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/30695/Downloads/plantuml-mit-1.2024.7-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

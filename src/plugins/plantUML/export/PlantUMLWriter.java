@@ -28,15 +28,22 @@ public abstract class PlantUMLWriter {
     }
     
     protected String writeNote(NoteData noteData) {
-		
-	    StringBuilder noteString = new StringBuilder();
+        String content = noteData.getContent();
+        
+        // Return an empty string if content is null or empty
+        if (content == null || content.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder noteString = new StringBuilder();
+        noteString.append("note ")
+                  .append("\"").append(content).append("\" as ")
+                  .append(noteData.getName());
+        
+        return noteString.toString();
+    }
 
-	    noteString.append("note ")
-			    .append("\"" + noteData.getContent() + "\" as ")
-			    .append(noteData.getName());
-	    
-	    return noteString.toString();
-	}
+
     
     protected String formatName(String name) {
 		/*

@@ -2,9 +2,7 @@ package plugins.plantUML.actions;
 
 import java.awt.Component;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.BufferedReader;
 
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
@@ -14,17 +12,18 @@ import com.vp.plugin.ViewManager;
 import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
 
+import net.sourceforge.plantuml.syntax.SyntaxResult;
+import plugins.plantUML.parser.PlantUMLParser;
+
 public class PlantUMLImportController implements VPActionController {
 
     public void performAction(VPAction action) {
-        // Get the view manager and the parent component for the modal dialog
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
         Component parentFrame = viewManager.getRootFrame();
-        
-        // Popup a file chooser to select the .txt or .puml file to import
+
+        // Set up file chooser
         JFileChooser fileChooser = viewManager.createJFileChooser();
         fileChooser.setFileFilter(new FileFilter() {
-
             public String getDescription() {
                 return "*.txt, *.puml";
             }
@@ -34,34 +33,39 @@ public class PlantUMLImportController implements VPActionController {
                        file.getName().toLowerCase().endsWith(".txt") || 
                        file.getName().toLowerCase().endsWith(".puml");
             }
-
         });
-        
-        // Show open dialog and get the selected file
+
         int userSelection = fileChooser.showOpenDialog(parentFrame);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
-            StringBuilder fileContent = new StringBuilder();
+            PlantUMLParser parser = new PlantUMLParser(file);
 
-            // Read the file content
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    fileContent.append(line).append("\n");
+            try {
+                // Parse the file
+                SyntaxResult result = parser.parse();
+
+                if (result.isError()) {
+                    // If there are syntax errors, display them
+                    StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
+                    for (String error : result.getErrors()) {
+                        errorMessage.append(" - ").append(error).append("\n");
+                    }
+                    viewManager.showMessageDialog(parentFrame, errorMessage.toString());
+                } else {
+                    // If parsing is successful
+                    viewManager.showMessageDialog(parentFrame, 
+                        "Syntax is valid.\nDiagram Type: " + result.getUmlDiagramType() +
+                        "\nDescription: " + result.getDescription());
                 }
-                
-                // Display success message with file path
-                viewManager.showMessageDialog(parentFrame, "File imported from: " + file.getAbsolutePath());
-                
-                // Process or store fileContent.toString() as needed for the import functionality
-                
             } catch (IOException e) {
-                // Show error message if file reading fails
-                viewManager.showMessageDialog(parentFrame, "Error reading file: " + e.getMessage());
+                // Handle file reading exceptions
+                viewManager.showMessageDialog(parentFrame, 
+                    "Error reading file: " + e.getMessage());
             }
         }
     }
 
     public void update(VPAction action) {
+        // No additional logic needed for updating the action
     }
 }

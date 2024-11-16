@@ -72,12 +72,11 @@ public class UseCaseWriter extends PlantUMLWriter {
 	private String writePackage(PackageData packageData, String indent) {
     	StringBuilder packageString = new StringBuilder();
     	String name = formatName(packageData.getPackageName());
-    	
-    	packageString.append(indent).append("package " ).append(name).append(" {\n");
+    	String definition = packageData.isRectangle() ? "rectangle " : "package " ;
+    	packageString.append(indent).append(definition).append(name).append(" {\n");
     	
     	for (ActorData actorData : packageData.getActors()) {
     		packageString.append(writeActor(actorData, indent + "\t"));
-    		
     	}
     	for (UseCaseData useCaseData : packageData.getUseCases()) {
     		packageString.append(writeUseCase(useCaseData, indent + "\t"));
@@ -90,30 +89,37 @@ public class UseCaseWriter extends PlantUMLWriter {
     	
     	packageString.append(indent + "}\n");
 		return packageString.toString();
-    	
     }
 
 
 	private String writeUseCase(UseCaseData useCaseData, String indent) {
-		StringBuilder usecaseString = new StringBuilder();
-		String name = useCaseData.getName();
-		usecaseString.append(indent).append("usecase ")
-						.append("(" + name + ")");
-		if (!useCaseData.getStereotypes().isEmpty()) {
+	    StringBuilder usecaseString = new StringBuilder();
+	    String name = useCaseData.getName();
+	    String business = useCaseData.isBusiness() ? "/" : "";
+	    usecaseString.append(indent).append("usecase").append(business)
+	                 .append(" (").append(name).append(")");
+	    
+	    if (!useCaseData.getStereotypes().isEmpty()) {
 	        String stereotypesString = useCaseData.getStereotypes().stream()
+	            .filter(stereotype -> !"UseCase".equals(stereotype)) // Exclude "UseCase", VP auto applies it to every use case for some reason
 	            .map(stereotype -> "<<" + stereotype + ">>")
 	            .collect(Collectors.joining(", "));
-	        usecaseString.append(" ").append(stereotypesString);
+	        if (!stereotypesString.isEmpty()) { 
+	            usecaseString.append(" ").append(stereotypesString);
+	        }
 	    }
-		usecaseString.append("\n");
-		return usecaseString.toString();
+	    
+	    usecaseString.append("\n");
+	    return usecaseString.toString();
 	}
+
 
 	private String writeActor(ActorData actorData, String indent) {
 		StringBuilder actorString = new StringBuilder();
 		String name = actorData.getName();
-		actorString.append(indent).append("actor ")
-					.append(":" + name + ":");
+		String business = actorData.isBusiness() ? "/" : "";
+		actorString.append(indent).append("actor ").append(business)
+					.append(" :" + name + ":");
 		if (!actorData.getStereotypes().isEmpty()) {
 	        String stereotypesString = actorData.getStereotypes().stream()
 	            .map(stereotype -> "<<" + stereotype + ">>")

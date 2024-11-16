@@ -17,8 +17,10 @@ import com.vp.plugin.model.IOperation;
 import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IRelationship;
 import com.vp.plugin.model.IStereotype;
+import com.vp.plugin.model.ISystem;
 import com.vp.plugin.model.IUseCase;
 
+import javassist.expr.Instanceof;
 import plugins.plantUML.export.models.ActorData;
 import plugins.plantUML.export.models.AssociationData;
 import plugins.plantUML.export.models.AttributeData;
@@ -66,13 +68,13 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 //                ApplicationManager.instance().getViewManager().showMessage("type: " + modelElement.getModelType());
 
                 if (modelElement instanceof IActor) {
-                    extractActor((IActor) modelElement);
+                    extractActor((IActor) modelElement, null);
                 } else if (modelElement instanceof IUseCase) {
-                    extractUseCase((IUseCase) modelElement);
+                    extractUseCase((IUseCase) modelElement, null);
                 } else if (modelElement instanceof IRelationship) {
                     extractRelationship((IRelationship) modelElement);
-                } else if (modelElement instanceof IPackage) {
-                    extractPackage((IPackage) modelElement);
+                } else if (modelElement instanceof IPackage || modelElement instanceof ISystem) {
+                    extractPackage(modelElement);
                 } else if (modelElement instanceof INOTE) {
                 	this.extractNote((INOTE) modelElement);
                 } else {
@@ -93,21 +95,29 @@ public class UseCaseDiagramExporter extends DiagramExporter {
             ApplicationManager.instance().getViewManager().showMessage("Failed to write PlantUML file: " + e.getMessage());
         }
     }
-    
-     
 
-    private void extractUseCase(IUseCase modelElement) {
+
+	private void extractUseCase(IUseCase modelElement, PackageData packageData) {
+    	boolean isInPackage = (modelElement.getParent() instanceof IPackage);
     	String name = modelElement.getName();
+    	boolean isBusiness = modelElement.isBusinessModel();
 		UseCaseData useCaseData = new UseCaseData(name);
+		useCaseData.setInPackage(isInPackage);
+		useCaseData.setStereotypes(extractStereotypes(modelElement));
+		useCaseData.setBusiness(isBusiness);
+		exportedUseCases.add(useCaseData);
+		if (packageData != null) packageData.getUseCases().add(useCaseData);
 	}
 
 
-
-	private void extractActor(IActor modelElement) {
+	private void extractActor(IActor modelElement, PackageData packageData) {
+		boolean isInPackage = (modelElement.getParent() instanceof IPackage);
     	String name = modelElement.getName();
     	ActorData actorData = new ActorData(name, null);
+    	actorData.setInPackage(isInPackage);
     	actorData.setStereotypes(extractStereotypes(modelElement));
     	exportedActors.add(actorData);
+    	if (packageData != null) packageData.getActors().add(actorData);
 	}
 
 
@@ -166,21 +176,19 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 
 
-	private void extractPackage(IPackage packageModel) {
+	private void extractPackage(IModelElement modelElement) {
         
-		// TODO:: 
-        if (!(packageModel.getParent() instanceof IPackage)) {
-	        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false);
-	        IModelElement[] childElements = packageModel.toChildArray();
+        if (!(modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem)) {
+	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, false, modelElement instanceof ISystem);
+	        IModelElement[] childElements = modelElement.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IActor) {
-	               
-	          
+	               extractActor((IActor) childElement, packageData);
 	            } else if (childElement instanceof IUseCase) {
-	            	
-	            } else if (childElement instanceof IPackage) {
+	            	extractUseCase((IUseCase) childElement, packageData);
+	            } else if (childElement instanceof IPackage || childElement instanceof ISystem) {
 	            	PackageData parent = packageData;
-	                extractPackagedPackage((IPackage) childElement, parent);
+	                extractPackagedPackage(childElement, parent);
 	                
 	            }
 	        }
@@ -188,33 +196,22 @@ public class UseCaseDiagramExporter extends DiagramExporter {
         }
     }
 
-	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
-        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
+	private void extractPackagedPackage(IModelElement childElement, PackageData parent) {
+        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
         
-        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true);
-        IModelElement[] childElements = packageModel.toChildArray();
-        for (IModelElement childElement : childElements) {
-            if (childElement instanceof IActor) {
-                
-          
-            } else if (childElement instanceof IPackage) {
-                extractPackagedPackage((IPackage) childElement, packageData);
+        PackageData packageData = new PackageData(childElement.getName(), null, null, null, true, childElement instanceof ISystem);
+        IModelElement[] childElements = childElement.toChildArray();
+        for (IModelElement childElement1 : childElements) {
+        	if (childElement1 instanceof IActor) {
+	               extractActor((IActor) childElement1, packageData);
+	        } else if (childElement1 instanceof IUseCase) {
+	            	extractUseCase((IUseCase) childElement1, packageData);
+            } else if (childElement1 instanceof IPackage || childElement1 instanceof ISystem) {
+                extractPackagedPackage(childElement1, packageData);
             }
         }
         parent.getSubPackages().add(packageData);
         exportedPackages.add(packageData);
     }
 	
-
-//	private void extractStereotypes(IActor actorModel, ActorData actorData) {
-//        Iterator stereoIter = actorModel.stereotypeIterator();
-//        while (stereoIter.hasNext()) {
-//            String stereotype = (String) stereoIter.next();
-//            ApplicationManager.instance().getViewManager().showMessage("Stereotype: " + stereotype);
-//            actorData.addStereotype(stereotype);
-//        }
-//    }
-	
-	
-
 }

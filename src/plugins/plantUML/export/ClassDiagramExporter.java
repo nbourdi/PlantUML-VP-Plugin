@@ -56,8 +56,6 @@ public class ClassDiagramExporter extends DiagramExporter {
             IModelElement modelElement = diagramElement.getModelElement();
 
             if (modelElement != null) {
-//                ApplicationManager.instance().getViewManager().showMessage("NAME: " + modelElement.getName());
-//                ApplicationManager.instance().getViewManager().showMessage("type: " + modelElement.getModelType());
 
                 if (modelElement instanceof IClass) {
                 	if (!(modelElement.getParent() instanceof IPackage)) extractClass((IClass) modelElement, null);
@@ -101,40 +99,18 @@ public class ClassDiagramExporter extends DiagramExporter {
             "Extracted n-ary relationship: " + naryData.getAlias());
         
     }
-    
-//    private void extractPackagedNary(INARY naryModel, PackageData packageData) {
-//        String name = naryModel.getName();
-//        String id = naryModel.getId();
-//        boolean isInPackage = true;
-//		NaryData naryData = new NaryData(name, id, isInPackage);
-//        exportedNary.add(naryData);
-//        packageData.getNaries().add(naryData);
-//        
-//        ApplicationManager.instance().getViewManager().showMessage(
-//            "Extracted n-ary relationship: " + naryData.getAlias());
-//	}
 
 
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);
     	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
-        extractStereotypes(classModel, classData);
+        classData.setStereotypes(extractStereotypes(classModel)); 
         extractAttributes(classModel, classData);
         extractOperations(classModel, classData);
         exportedClasses.add(classData);
         if (packageData != null) packageData.getClasses().add(classData);
     }
     
-//    private void extractPackagedClass(IClass classModel, PackageData packageData) {
-//    	boolean isInPackage = true;
-//
-//    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
-//        extractStereotypes(classModel, classData);
-//        extractAttributes(classModel, classData);
-//        extractOperations(classModel, classData);
-//        packageData.getClasses().add(classData);
-//        exportedClasses.add(classData);
-//    }
 
     private String getNaryAliasById(String naryId) {
         for (NaryData naryData : exportedNary) {
@@ -212,7 +188,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackage(IPackage packageModel) {
         
         if (!(packageModel.getParent() instanceof IPackage)) {
-	        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false);
+	        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false, false);
 	        IModelElement[] childElements = packageModel.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IClass) {
@@ -232,7 +208,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
         ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
         
-        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true);
+        PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true, false);
         IModelElement[] childElements = packageModel.toChildArray();
         for (IModelElement childElement : childElements) {
             if (childElement instanceof IClass) {
@@ -247,15 +223,6 @@ public class ClassDiagramExporter extends DiagramExporter {
         exportedPackages.add(packageData);
     }
 	
-
-	private void extractStereotypes(IClass classModel, ClassData classData) {
-        Iterator stereoIter = classModel.stereotypeIterator();
-        while (stereoIter.hasNext()) {
-            String stereotype = (String) stereoIter.next();
-            ApplicationManager.instance().getViewManager().showMessage("Stereotype: " + stereotype);
-            classData.addStereotype(stereotype);
-        }
-    }
 
     private void extractAttributes(IClass classModel, ClassData classData) {
         Iterator attributeIter = classModel.attributeIterator();

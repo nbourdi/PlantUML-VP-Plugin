@@ -7,6 +7,7 @@ public class ActorData {
 	private String name;
 	private List<String> stereotypes = new ArrayList<String>();
 	private boolean isInPackage;
+	private boolean isBusiness;
 	
 	public ActorData(String name, List<String> stereotypes) {
 		this.setName(name);
@@ -39,6 +40,14 @@ public class ActorData {
 
 	public void setInPackage(boolean isInPackage) {
 		this.isInPackage = isInPackage;
+	}
+
+	public boolean isBusiness() {
+		return isBusiness;
+	}
+
+	public void setBusiness(boolean isBusiness) {
+		this.isBusiness = isBusiness;
 	}
 
 

@@ -42,14 +42,14 @@ public class AssociationData extends RelationshipData {
 	    }
 
 	    // Construct the export format string with multiplicities and navigability
-	    output.append(getSource())
+	    output.append(formatName(getSource()))
 	          .append(" ")
 	          .append(fromMultiplicity)
 	          .append(symbol)
 	          .append(toNavig)
 	          .append(toMultiplicity)
 	          .append(" ")
-	          .append(getTarget())
+	          .append(formatName(getTarget()))
 	          .append(prefix)
 	          .append(getName())
 	          .append("\n");

@@ -10,6 +10,7 @@ public class UseCaseData {
 	private String description;
 	private List<String> stereotypes;
 	private boolean isInPackage;
+	private boolean isBusiness;
 	
 	
 	public UseCaseData(String name) {
@@ -47,5 +48,11 @@ public class UseCaseData {
 
 	public void setInPackage(boolean isInPackage) {
 		this.isInPackage = isInPackage;
+	}
+	public boolean isBusiness() {
+		return isBusiness;
+	}
+	public void setBusiness(boolean isBusiness) {
+		this.isBusiness = isBusiness;
 	}
 }

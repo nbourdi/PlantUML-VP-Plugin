@@ -1,3 +1,60 @@
 @startuml
-actor :Actor: <<powertype>>
+rectangle System {
+}
+rectangle IntelliQ {
+	usecase (Associate with keywords)
+	usecase (Show preview of answers)
+	usecase/ (Profiling)
+	usecase (Show questionare history)
+	usecase (Show graph with answers)
+	usecase (Define flow)
+	usecase (Qs, As)
+	usecase (Export as csv)
+	usecase (Export as json)
+	usecase (Create form)
+	usecase (Export data)
+	usecase (Fill in form)
+}
+actor  :Form Creator:
+actor  :Respondee:
+usecase (Associate with keywords)
+usecase (Show preview of answers)
+usecase/ (Profiling)
+usecase (Show questionare history)
+usecase (Show graph with answers)
+usecase (Define flow)
+usecase (Qs, As)
+usecase (Export as csv)
+usecase (Export as json)
+usecase (Create form)
+usecase (Export data)
+usecase (Fill in form)
+usecase (Associate with keywords)
+usecase (Show preview of answers)
+usecase/ (Profiling)
+usecase (Show questionare history)
+usecase (Show graph with answers)
+usecase (Define flow)
+usecase (Qs, As)
+usecase (Export as csv)
+usecase (Export as json)
+usecase (Create form)
+usecase (Export data)
+usecase (Fill in form)
+
+
+Respondee -- "Fill in form"
+"Form Creator" -- "Export data"
+"Export data" <|-- "Export as json"
+"Export data" <|-- "Export as csv"
+"Form Creator" -- "Create form"
+"Create form" ..> "Qs, As" : <<Include>> \n 
+"Create form" ..> "Define flow" : <<Include>> \n 
+"Show graph with answers" -- "Form Creator"
+"Show questionare history" -- "Form Creator"
+"Fill in form" <.. Profiling : <<Extend>> \n 
+"Show preview of answers" <.. "Fill in form" : <<Extend>> \n 
+"Create form" ..> "Associate with keywords" : <<Include>> \n 
+System -- IntelliQ
+"Show preview of answers" <.. Profiling : <<Extend>> \n 
 @enduml

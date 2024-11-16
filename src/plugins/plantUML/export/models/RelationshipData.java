@@ -63,10 +63,18 @@ public class RelationshipData {
         	symbol = "<..";
         	label = "<<use>> \\n ";
         } else if (type == "Dependency") {
-        	symbol = "<..";
+        	symbol = "..>";
         } else if (type == "Anchor") {
         	symbol = "..";
+        } else if (type == "Extend") {
+        	symbol = "<..";
+        	label = "<<Extend>> \\n ";
         }
+        else if (type == "Include") {
+        	symbol = "..>";
+        	label = "<<Include>> \\n ";
+        }
+        	
         
         if (!label.isEmpty() || !name.isEmpty()) {
         	prefix = " : ";
