@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.vp.plugin.ApplicationManager;
+import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
@@ -13,6 +14,7 @@ import com.vp.plugin.model.IStereotype;
 
 import plugins.plantUML.export.models.NaryData;
 import plugins.plantUML.export.models.NoteData;
+import plugins.plantUML.export.models.SubdiagramData;
 
 public class DiagramExporter {
 	
@@ -59,6 +61,18 @@ public class DiagramExporter {
 		return stereotypes;
     }
 	
+	protected List<SubdiagramData> extractSubdiagrams(IModelElement modelElement) {
+		List<SubdiagramData> subdiagramDatas = new ArrayList<SubdiagramData>();
+		IDiagramUIModel[] subDiagrams = modelElement.toSubDiagramArray();
+		if (subDiagrams != null) {
+			for (IDiagramUIModel subDiagram : subDiagrams) {
+				subdiagramDatas.add(new SubdiagramData(subDiagram.getName(), subDiagram.getType()));
+				ApplicationManager.instance().getViewManager().showMessage("=====SUBDIAGRAM:: " + subDiagram.getName() + " " + subDiagram.getType());
+			}
+		}
+		return subdiagramDatas;
+    }
+
 	public List<NoteData> getNotes() {
         return noteDatas;
     }

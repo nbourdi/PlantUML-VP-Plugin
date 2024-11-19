@@ -32,6 +32,7 @@ import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
 import plugins.plantUML.export.models.UseCaseData;
 import plugins.plantUML.export.models.OperationData.Parameter;
+import plugins.plantUML.writer.UseCaseWriter;
 
 import com.vp.plugin.model.IParameter;
 import java.io.File;

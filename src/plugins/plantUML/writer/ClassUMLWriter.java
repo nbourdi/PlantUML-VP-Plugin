@@ -1,4 +1,4 @@
-package plugins.plantUML.export;
+package plugins.plantUML.writer;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -118,7 +118,8 @@ public class ClassUMLWriter extends PlantUMLWriter {
     	keywordStereotypes.put("entity", "entity");
     	
     	classString.append(indent);
-    	// Check if there's exactly one stereotype and if it matches a keyword
+    	classString.append(writeVisibility(classData.getVisibility()));
+    	
     	if (classData.isAbstract()) classString.append("abstract ");
     	if (classData.getStereotypes().size() == 1 && !classData.isAbstract()) {
     	    String stereotype = classData.getStereotypes().get(0).toLowerCase();  
@@ -147,7 +148,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
         for (AttributeData attribute : classData.getAttributes()) {
         	String visibilityChar = writeVisibility(attribute.getVisibility());
         	
-        	classString.append(indent + "\t").append(visibilityChar);
+        	classString.append(indent + "\t").append(visibilityChar + " ");
         	if (attribute.isStatic()) classString.append("{static} ");
         	classString.append(attribute.getName());
         	
@@ -209,16 +210,16 @@ public class ClassUMLWriter extends PlantUMLWriter {
     	String visibilityCharacter = "";
     	switch (visibility) {
     		case "private": 
-    			visibilityCharacter = "- ";
+    			visibilityCharacter = "-";
     			break;
     		case "protected": 
-    			visibilityCharacter = "# ";
+    			visibilityCharacter = "#";
     			break;
     		case 
-	    		"package": visibilityCharacter = "~ ";
+	    		"package": visibilityCharacter = "~";
 	    		break;
     		case "public": 
-    			visibilityCharacter = "+ ";
+    			visibilityCharacter = "+";
     			break;    	
     	}
     	return visibilityCharacter;

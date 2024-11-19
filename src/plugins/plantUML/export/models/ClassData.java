@@ -5,22 +5,24 @@ import java.util.List;
 
 import com.teamdev.jxbrowser.deps.org.checkerframework.checker.units.qual.m;
 
-public class ClassData {
-    private String name;
+public class ClassData extends BaseData {
     private boolean isAbstract;
     private List<AttributeData> attributes;
     private List<OperationData> operations;
     private List<String> stereotypes;
     private boolean isInPackage;
+    private String visibility;
+    private List<SubdiagramData> subDiagrams;
 
-    public ClassData(String name, boolean isAbstract, boolean isInPackage) {
-        this.setName(name);
+    public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage, String description) {
+    	super(name, description);
         this.setAbstract(isAbstract);
-        // this.visibility = "public"; // TODO : is there a way to represent private/protected in puml? NO
+        this.visibility = visibility; 
         this.setAttributes(new ArrayList<>());
         this.setOperations(new ArrayList<>());
         this.stereotypes = new ArrayList<>();
         this.setInPackage(isInPackage);
+        this.setSubDiagrams(new ArrayList<>());
     }
 
     public void addAttribute(AttributeData attribute) {
@@ -30,14 +32,6 @@ public class ClassData {
     public void addOperation(OperationData operation) {
         getOperations().add(operation);
     }
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
 
 	public List<AttributeData> getAttributes() {
 		return attributes;
@@ -81,6 +75,22 @@ public class ClassData {
 
 	public void setInPackage(boolean isInPackage) {
 		this.isInPackage = isInPackage;
+	}
+
+	public String getVisibility() {
+		return visibility;
+	}
+
+	public void setVisibility(String visibility) {
+		this.visibility = visibility;
+	}
+
+	public List<SubdiagramData> getSubDiagrams() {
+		return subDiagrams;
+	}
+
+	public void setSubDiagrams(List<SubdiagramData> subDiagrams) {
+		this.subDiagrams = subDiagrams;
 	}
 }
 

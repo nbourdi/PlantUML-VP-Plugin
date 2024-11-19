@@ -1,4 +1,4 @@
-package plugins.plantUML.export;
+package plugins.plantUML.writer;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,8 +42,6 @@ public abstract class PlantUMLWriter {
         
         return noteString.toString();
     }
-
-
     
     protected String formatName(String name) {
 		/*

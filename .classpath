@@ -25,5 +25,6 @@
 			<attribute name="javadoc_location" value="jar:file:/C:/Users/30695/Downloads/plantuml-mit-1.2024.7-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/antlr/antlr4-4.7.2-complete.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

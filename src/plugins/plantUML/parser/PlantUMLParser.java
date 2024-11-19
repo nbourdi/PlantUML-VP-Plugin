@@ -16,10 +16,8 @@ public class PlantUMLParser {
     }
 
     public SyntaxResult parse() throws IOException {
-        // Read all lines from the file
         List<String> lines = Files.readAllLines(file.toPath());
-
-        // Check syntax using PlantUML SyntaxChecker
+        // checks if valid syntax
         return SyntaxChecker.checkSyntax(lines);
     }
 }

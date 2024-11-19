@@ -1,4 +1,4 @@
-grammar PlantUMLGrammar;
+grammar PlantUMLDiagram;
 
 // Entry point
 diagram: '@startuml' element* '@enduml';
@@ -8,10 +8,8 @@ element: classDef
        | diamond
        | circle;
 
-classDef: visibility? classType nameOrAlias stereotypes? '{' classBody? '}' // Class with optional body
-        | visibility? classType nameOrAlias stereotypes?;                  // Class without body
-
-classBody: (field | method)*; // Allow zero or more fields/methods
+classDef: visibility? classType nameOrAlias stereotypes? '{' classBody? '}'   // Class with body
+        | visibility? classType nameOrAlias stereotypes?;                     // Class without body
 
 // Class types
 classType: 'abstract'
@@ -31,10 +29,9 @@ diamond: ('diamond' | '<>') nameOrAlias;
 
 circle: ('circle' | '()') nameOrAlias;
 		
+classBody: (field | method)*;
 
-
-field: (modifier* visibility? (typeFirstField | nameFirstField));
-
+field: (modifier | visibility | typeFirstField | nameFirstField)+;
 
 // Field with type first
 typeFirstField: type IDENTIFIER;
@@ -46,15 +43,10 @@ nameFirstField: IDENTIFIER optionalType;
 optionalType: (':' type)?;
 
 // Method definition
-method: visibility? modifier* IDENTIFIER '(' parameters? ')' optionalType?;
+method: (modifier | visibility | IDENTIFIER | '(' | parameters? | ')' | optionalType)+;
 
-// Method parameters
-parameters: parameter (',' parameter)*; // Matches one or more parameters
-
-parameter: IDENTIFIER optionalType;
 // Modifiers for fields and methods
 modifier: '{' ('abstract' | 'static') '}';
-
 
 
 nameOrAlias: (displayName 'as' aliasName)      // "name" as alias

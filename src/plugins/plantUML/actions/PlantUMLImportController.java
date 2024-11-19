@@ -21,7 +21,6 @@ public class PlantUMLImportController implements VPActionController {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
         Component parentFrame = viewManager.getRootFrame();
 
-        // Set up file chooser
         JFileChooser fileChooser = viewManager.createJFileChooser();
         fileChooser.setFileFilter(new FileFilter() {
             public String getDescription() {

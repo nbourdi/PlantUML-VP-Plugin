@@ -1,4 +1,4 @@
-package plugins.plantUML.export;
+package plugins.plantUML.writer;
 
 import java.io.File;
 import java.io.FileWriter;

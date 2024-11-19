@@ -24,7 +24,9 @@ import plugins.plantUML.export.models.NoteData;
 import plugins.plantUML.export.models.OperationData;
 import plugins.plantUML.export.models.PackageData;
 import plugins.plantUML.export.models.RelationshipData;
+import plugins.plantUML.export.models.SubdiagramData;
 import plugins.plantUML.export.models.OperationData.Parameter;
+import plugins.plantUML.writer.ClassUMLWriter;
 
 import com.vp.plugin.model.IParameter;
 import java.io.File;
@@ -71,7 +73,6 @@ public class ClassDiagramExporter extends DiagramExporter {
                 	ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element " + modelElement.getName() + 
                 			" is UNSUPPORTED and will not be processed ... .");
                 }
-                
             } else {
                 ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
             }
@@ -95,18 +96,20 @@ public class ClassDiagramExporter extends DiagramExporter {
         NaryData naryData = new NaryData(name, id, isInPackage);
         exportedNary.add(naryData);
         if (packageData != null) packageData.getNaries().add(naryData);
-        ApplicationManager.instance().getViewManager().showMessage(
-            "Extracted n-ary relationship: " + naryData.getAlias());
+//        ApplicationManager.instance().getViewManager().showMessage(
+//            "Extracted n-ary relationship: " + naryData.getAlias());
         
     }
 
 
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);
-    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), isInPackage);
-        classData.setStereotypes(extractStereotypes(classModel)); 
+    	ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), classModel.getVisibility(), isInPackage, classModel.getDescriptionWithReferenceModels());
+        classData.setStereotypes(extractStereotypes(classModel));        
         extractAttributes(classModel, classData);
         extractOperations(classModel, classData);
+        List<SubdiagramData> subdiagrams = extractSubdiagrams(classModel);
+        classData.setSubDiagrams(subdiagrams);
         exportedClasses.add(classData);
         if (packageData != null) packageData.getClasses().add(classData);
     }
@@ -121,26 +124,23 @@ public class ClassDiagramExporter extends DiagramExporter {
         return null;  
     }
 
+    
 
     private void extractRelationship(IRelationship relationship) {
         IModelElement source = (IModelElement) relationship.getFrom();
         IModelElement target = (IModelElement) relationship.getTo();
-
         
         String sourceName = source.getName();
         String targetName = target.getName();
 
-        
         if (source instanceof INARY) {
             sourceName = getNaryAliasById(((INARY) source).getId());
+        } else if (source instanceof INOTE) {
+            sourceName = getNoteAliasById(((INOTE) source).getId());
         }
         if (target instanceof INARY) {
             targetName = getNaryAliasById(((INARY) target).getId());
-        }
-        if (source instanceof INOTE) {
-            sourceName = getNoteAliasById(((INOTE) source).getId());
-        }
-        if (target instanceof INOTE) {
+        } else if (target instanceof INOTE) {
             targetName = getNoteAliasById(((INOTE) target).getId());
         }
         
