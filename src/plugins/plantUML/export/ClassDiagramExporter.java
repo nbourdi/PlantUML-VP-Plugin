@@ -38,19 +38,19 @@ import org.apache.poi.openxml4j.opc.Package;
 
 public class ClassDiagramExporter extends DiagramExporter {
 
-    private File file;
-
-    public ClassDiagramExporter(File file) {
-        this.file = file;
-    }
+    private IDiagramUIModel diagram;
+    
     List<ClassData> exportedClasses = new ArrayList<>();
     List<RelationshipData> relationshipDatas = new ArrayList<>();
     List<PackageData> exportedPackages = new ArrayList<>();
     List<NaryData> exportedNary = new ArrayList<>();
     List<NoteData> exportedNotes = new ArrayList<>(); 
-
-    public void extract(IDiagramUIModel diagram) {
-
+    
+    
+    public ClassDiagramExporter(IDiagramUIModel diagram) throws IOException {
+    	this.diagram = diagram;
+    }
+    public void extract() {
 
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
@@ -79,12 +79,6 @@ public class ClassDiagramExporter extends DiagramExporter {
         }
         List<NoteData> exportedNotes = getNotes(); // from base diagram exporter
 
-        ClassUMLWriter writer = new ClassUMLWriter(exportedClasses, relationshipDatas, exportedPackages, exportedNary, exportedNotes);
-        try {
-            writer.writeToFile(file);
-        } catch (IOException e) {
-            ApplicationManager.instance().getViewManager().showMessage("Failed to write PlantUML file: " + e.getMessage());
-        }
     }
     
      
@@ -251,4 +245,25 @@ public class ClassDiagramExporter extends DiagramExporter {
             classData.addOperation(op);
         }
     }
+    
+    
+	public List<ClassData> getExportedClasses() {
+		return exportedClasses;
+	}
+	
+	public List<RelationshipData> getRelationshipDatas() {
+		return relationshipDatas;
+	}
+	
+	public List<PackageData> getExportedPackages() {
+		return exportedPackages;
+	}
+	
+	public List<NaryData> getExportedNary() {
+		return exportedNary;
+	}
+	
+	public List<NoteData> getExportedNotes() {
+		return exportedNotes;
+	}
 }

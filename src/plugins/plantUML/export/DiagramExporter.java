@@ -1,5 +1,7 @@
 package plugins.plantUML.export;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -18,8 +20,8 @@ import plugins.plantUML.export.models.SubdiagramData;
 
 public class DiagramExporter {
 	
-	protected List<NoteData> noteDatas = new ArrayList<>();;
-	
+	protected List<NoteData> noteDatas = new ArrayList<>();
+    
 	protected void extractReferences(IClass classModel) {
 		// TODO: what is this does it work
 		ApplicationManager.instance().getViewManager().showMessage("=========References::");

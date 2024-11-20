@@ -44,9 +44,10 @@ import java.util.List;
 public class UseCaseDiagramExporter extends DiagramExporter {
 
     private File file;
+    private IDiagramUIModel diagram;
 
-    public UseCaseDiagramExporter(File file) {
-        this.file = file;
+    public UseCaseDiagramExporter(IDiagramUIModel diagram) {
+        this.diagram = diagram;
     }
     
     List<ActorData> exportedActors = new ArrayList<>();
@@ -56,7 +57,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     List<NoteData> exportedNotes = new ArrayList<>(); 
     List<UseCaseData> exportedUseCases = new ArrayList<>();
 
-    public void extract(IDiagramUIModel diagram) {
+    public void extract() {
 
 
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
@@ -214,5 +215,25 @@ public class UseCaseDiagramExporter extends DiagramExporter {
         parent.getSubPackages().add(packageData);
         exportedPackages.add(packageData);
     }
+
+
+	public List<UseCaseData> getExportedUseCases() {
+		return exportedUseCases;
+	}
+
+
+	public List<RelationshipData> getExportedRelationships() {
+		return relationshipDatas;
+	}
+
+
+	public List<PackageData> getExportedPackages() {
+		return exportedPackages;
+	}
+
+
+	public List<ActorData> getExportedActors() {
+		return exportedActors;
+	}
 	
 }
