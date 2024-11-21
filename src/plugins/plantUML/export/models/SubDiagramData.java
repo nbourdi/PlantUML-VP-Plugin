@@ -1,10 +1,10 @@
 package plugins.plantUML.export.models;
 
-public class SubdiagramData {
+public class SubDiagramData {
 	private String name;
 	private String type;
 	
-	public SubdiagramData(String name, String type) {
+	public SubDiagramData(String name, String type) {
 		this.name = name;
 		this.type = type;
 	}

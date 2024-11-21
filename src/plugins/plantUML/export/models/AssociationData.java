@@ -1,19 +1,18 @@
 package plugins.plantUML.export.models;
 
-
 public class AssociationData extends RelationshipData {
 
 	private String fromEndMultiplicity;
 	private String toEndMultiplicity;
-	private boolean fromEndNavigable;
+	// private boolean fromEndNavigable; // basically unsupported 
 	private boolean toEndNavigable;
 	
 	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
-			String toEndMultiplicity, boolean fromEndNavigable, boolean toEndNavigable, String fromEndAggregation, String toEndAggregation) {
+			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation, String toEndAggregation) {
 		super(source, target, type, name);
 		this.fromEndMultiplicity = fromEndMultiplicity;
 		this.toEndMultiplicity = toEndMultiplicity;
-		this.fromEndNavigable = fromEndNavigable;
+		// this.fromEndNavigable = fromEndNavigable;
 		this.toEndNavigable = toEndNavigable;
 		if (fromEndAggregation == "shared") {
 			this.setType("Aggregation");

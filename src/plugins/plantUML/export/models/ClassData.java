@@ -12,7 +12,8 @@ public class ClassData extends BaseData {
     private List<String> stereotypes;
     private boolean isInPackage;
     private String visibility;
-    private List<SubdiagramData> subDiagrams;
+    // private List<SubDiagramData> subDiagrams;
+    private SemanticsData semantics = new SemanticsData();
 
     public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage, String description) {
     	super(name, description);
@@ -22,7 +23,9 @@ public class ClassData extends BaseData {
         this.setOperations(new ArrayList<>());
         this.stereotypes = new ArrayList<>();
         this.setInPackage(isInPackage);
-        this.setSubDiagrams(new ArrayList<>());
+        // semantics.setOwnerName(name);
+        // prob need new semantics
+        // this.setSubDiagrams(new ArrayList<>());
     }
 
     public void addAttribute(AttributeData attribute) {
@@ -85,13 +88,16 @@ public class ClassData extends BaseData {
 		this.visibility = visibility;
 	}
 
-	public List<SubdiagramData> getSubDiagrams() {
-		return subDiagrams;
+	public SemanticsData getSemantics() {
+		return semantics;
 	}
 
-	public void setSubDiagrams(List<SubdiagramData> subDiagrams) {
-		this.subDiagrams = subDiagrams;
+	public void setSemantics(SemanticsData semantics) {
+		this.semantics = semantics;
 	}
+
+
+
 }
 
 

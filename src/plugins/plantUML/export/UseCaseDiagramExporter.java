@@ -153,7 +153,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                     relationship.getName(),
                     fromEndMultiplicity,
                     toEndMultiplicity,
-                    fromEnd.getNavigable() == 0, 
+                    // fromEnd.getNavigable() == 0, 
                     toEnd.getNavigable() == 0, 
                     fromEnd.getAggregationKind(),
                     toEnd.getAggregationKind()

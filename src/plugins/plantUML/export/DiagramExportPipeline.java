@@ -1,16 +1,14 @@
 package plugins.plantUML.export;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
-
 import plugins.plantUML.writer.ClassUMLWriter;
+import plugins.plantUML.writer.PlantJSONWriter;
 import plugins.plantUML.writer.UseCaseWriter;
-
 import java.io.File;
 import java.io.IOException;
 
 public class DiagramExportPipeline {
 		
-
 	private final File outputFolder;
 
     public DiagramExportPipeline(File outputFolder) {
@@ -34,9 +32,10 @@ public class DiagramExportPipeline {
                             cde.getRelationshipDatas(), 
                             cde.getExportedPackages(), 
                             cde.getExportedNary(), 
-                            cde.getExportedNotes()
+                            cde.getNotes()
                         );
                         classWriter.writeToFile(outputFile);
+                        PlantJSONWriter.writeToFile(outputFile, cde.exportedSemantics);
                         break;
 
                 case "UseCaseDiagram":
@@ -50,6 +49,7 @@ public class DiagramExportPipeline {
                     		ucde.getNotes()
                     );
                     useCaseWriter.writeToFile(outputFile);
+                    
                     break;
 
                 default:
@@ -57,7 +57,7 @@ public class DiagramExportPipeline {
                         .showMessage("TYPE " + diagramType + " not yet implemented");
                     break;
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             ApplicationManager.instance().getViewManager()
             .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error processing diagram: " + diagram.getName() + "\n" + ex.getMessage());
         }
@@ -65,7 +65,7 @@ public class DiagramExportPipeline {
     
     
     private File createOutputFile(IDiagramUIModel diagram) throws IOException {
-        String fileName = diagram.getName().replaceAll("[^a-zA-Z0-9._-]", "_") + ".puml";
+        String fileName = diagram.getName().replaceAll("[^a-zA-Z0-9._-]", "_") + ".txt";
         File outputFile = new File(outputFolder, fileName);
         if (!outputFile.exists() && !outputFile.createNewFile()) {
             throw new IOException("Failed to create file: " + outputFile.getAbsolutePath());

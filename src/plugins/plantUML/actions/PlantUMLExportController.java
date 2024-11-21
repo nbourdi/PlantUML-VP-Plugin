@@ -30,7 +30,6 @@ public class PlantUMLExportController implements VPActionController {
     public void performAction(VPAction action) {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
 
-        // Show the custom dialog using the ViewManager
         viewManager.showDialog(new ExportDialogHandler());
     }
 
@@ -194,9 +193,8 @@ public class PlantUMLExportController implements VPActionController {
                     }
                 }
 
-                // Notify the user that the export is complete
                 ApplicationManager.instance().getViewManager()
-                    .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete.");
+                    .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
                 dialog.close();
             });
 
@@ -208,13 +206,12 @@ public class PlantUMLExportController implements VPActionController {
             buttonPanel.add(exportButton);
             buttonPanel.add(closeButton);
 
-            mainPanel.add(buttonPanel, BorderLayout.SOUTH); // Add button panel at the bottom
+            mainPanel.add(buttonPanel, BorderLayout.SOUTH); 
         }
 
 
         @Override
         public boolean canClosed() {
-            // Allow the dialog to close
             return true;
         }
 
