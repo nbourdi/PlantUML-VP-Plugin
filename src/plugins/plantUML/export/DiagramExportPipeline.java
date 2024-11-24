@@ -1,9 +1,11 @@
 package plugins.plantUML.export;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
-import plugins.plantUML.writer.ClassUMLWriter;
-import plugins.plantUML.writer.PlantJSONWriter;
-import plugins.plantUML.writer.UseCaseWriter;
+
+import plugins.plantUML.export.writers.ClassUMLWriter;
+import plugins.plantUML.export.writers.PlantJSONWriter;
+import plugins.plantUML.export.writers.UseCaseWriter;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -20,7 +22,9 @@ public class DiagramExportPipeline {
      */
     public void export(IDiagramUIModel diagram) throws IOException {
         String diagramType = diagram.getType();
-        File outputFile = createOutputFile(diagram);
+        String diagramTitle = diagram.getName();
+        File outputFile = createOutputFile(diagramTitle, "uml");
+        // File jsonFile = createOutputFile(diagramTitle, "json");
 
         try {
             switch (diagramType) {
@@ -35,7 +39,13 @@ public class DiagramExportPipeline {
                             cde.getNotes()
                         );
                         classWriter.writeToFile(outputFile);
-                        PlantJSONWriter.writeToFile(outputFile, cde.exportedSemantics);
+                        
+                        
+                        if (cde.getExportedSemantics() != null && !cde.getExportedSemantics().isEmpty()) {
+                        	File jsonFile = createOutputFile(diagramTitle, "json");
+                        	PlantJSONWriter.writeToFile(jsonFile, cde.getExportedSemantics());
+                        }
+                        	
                         break;
 
                 case "UseCaseDiagram":
@@ -64,9 +74,12 @@ public class DiagramExportPipeline {
     }
     
     
-    private File createOutputFile(IDiagramUIModel diagram) throws IOException {
-        String fileName = diagram.getName().replaceAll("[^a-zA-Z0-9._-]", "_") + ".txt";
-        File outputFile = new File(outputFolder, fileName);
+    private File createOutputFile(String title, String contentType) throws IOException {
+        StringBuilder fileName = new StringBuilder();
+        fileName.append(title.replaceAll("[^a-zA-Z0-9._-]", "_"));
+        if (contentType.equals("json")) fileName.append("_semantics");
+        fileName.append(".txt");
+        File outputFile = new File(outputFolder, fileName.toString());
         if (!outputFile.exists() && !outputFile.createNewFile()) {
             throw new IOException("Failed to create file: " + outputFile.getAbsolutePath());
         }

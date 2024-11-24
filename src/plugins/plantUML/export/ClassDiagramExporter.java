@@ -9,6 +9,7 @@ import com.vp.plugin.model.IAssociation;
 import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
+import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INARY;
 import com.vp.plugin.model.INOTE;
@@ -16,18 +17,18 @@ import com.vp.plugin.model.IOperation;
 import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IRelationship;
 
-import plugins.plantUML.export.models.AssociationData;
-import plugins.plantUML.export.models.AttributeData;
-import plugins.plantUML.export.models.ClassData;
-import plugins.plantUML.export.models.NaryData;
-import plugins.plantUML.export.models.NoteData;
-import plugins.plantUML.export.models.OperationData;
-import plugins.plantUML.export.models.PackageData;
-import plugins.plantUML.export.models.RelationshipData;
-import plugins.plantUML.export.models.SemanticsData;
-import plugins.plantUML.export.models.SubDiagramData;
-import plugins.plantUML.export.models.OperationData.Parameter;
-import plugins.plantUML.writer.ClassUMLWriter;
+import plugins.plantUML.export.writers.ClassUMLWriter;
+import plugins.plantUML.models.AssociationData;
+import plugins.plantUML.models.AttributeData;
+import plugins.plantUML.models.ClassData;
+import plugins.plantUML.models.NaryData;
+import plugins.plantUML.models.NoteData;
+import plugins.plantUML.models.OperationData;
+import plugins.plantUML.models.PackageData;
+import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.SemanticsData;
+import plugins.plantUML.models.SubDiagramData;
+import plugins.plantUML.models.OperationData.Parameter;
 
 import com.vp.plugin.model.IParameter;
 import java.io.File;
@@ -47,7 +48,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	List<PackageData> exportedPackages = new ArrayList<>();
 	List<NaryData> exportedNary = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
-	List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
+	// List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
 
 	public ClassDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
@@ -95,24 +96,31 @@ public class ClassDiagramExporter extends DiagramExporter {
 		extractAttributes(classModel, classData);
 		extractOperations(classModel, classData);
 
-		List<plugins.plantUML.export.models.Reference> references = extractReferences(classModel); // TODO: clean up
-		List<SubDiagramData> subdiagrams = extractSubdiagrams(classModel);
+//		List<plugins.plantUML.models.Reference> references = extractReferences((IHasChildrenBaseModelElement) classModel); // TODO: clean up
+//		List<SubDiagramData> subdiagrams = extractSubdiagrams(classModel);
 
-		// cluttered : extractSemantics move to base diagram exporter, semantics data move to base element (need create?)
-		boolean hasSemantics = false;
-		if (!references.isEmpty() && references != null)
-			hasSemantics = true;
-			classData.getSemantics().setReferences(references);
-		if (!subdiagrams.isEmpty() && references != null)
-			hasSemantics = true;
-			classData.getSemantics().setSubDiagrams(subdiagrams);
-			
-		if(hasSemantics) 
-			classData.getSemantics().setOwnerName(classData.getName());
+//		// cluttered : extractSemantics move to base diagram exporter, semantics data move to base element (need create?)
+//		boolean hasSemantics = false;
+//		if (!references.isEmpty() && references != null)
+//			hasSemantics = true;
+//			classData.getSemantics().setReferences(references);
+//		if (!subdiagrams.isEmpty() && references != null)
+//			hasSemantics = true;
+//			classData.getSemantics().setSubDiagrams(subdiagrams);
+//			
+//		if(hasSemantics) {
+//			classData.getSemantics().setOwnerName(classData.getName());
+//			classData.getSemantics().setDescription(classData.getDescription());
+//		}
+//		
+
+		SemanticsData semantics = extractSemantics(classModel);
+
+		if (semantics != null) {
+			classData.setSemantics(extractSemantics(classModel));
+			getExportedSemantics().add(classData.getSemantics());
+		}
 		
-		if(hasSemantics)
-			exportedSemantics.add(classData.getSemantics());
-
 		exportedClasses.add(classData);
 		if (packageData != null)
 			packageData.getClasses().add(classData);

@@ -1,0 +1,35 @@
+@startuml
++class Class6 {
+}
++class C3 {
+	- d
+	- attribute
+	+getD()
+	+setD(d): void
+	+getAttribute()
+	+setAttribute(attribute): void
+}
++class C2 {
+	+operationc2()
+	+operation()
+	+constructor()
+}
++class C1 {
+	- attribute_c1
+	- attribute_c1_2
+	+ sdf
+	+ attribute
+}
+diamond "js.t2MmGAqACGQgR" as diamond_js_t2MmGAqACGQgR
+C2 <|-- C1 : generalc1_c2
+C3 <|.. C1 : realizationc1c3
+C1 <.. C2 : <<abstraction>> \n 
+C2 *-- C3
+C1 <.. Class6 : <<use>> \n 
+C1 <.. Class6 : <<abstraction>> \n 
+C1 ..> Class6
+C1 -- Class6
+"diamond_js_t2MmGAqACGQgR" o-- C3
+C1 o-- C2
+"diamond_js_t2MmGAqACGQgR" ..> C2
+@enduml

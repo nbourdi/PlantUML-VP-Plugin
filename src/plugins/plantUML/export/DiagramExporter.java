@@ -6,41 +6,67 @@ import java.util.List;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IClass;
+import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IReference;
 import com.vp.plugin.model.IStereotype;
-import plugins.plantUML.export.models.NoteData;
-import plugins.plantUML.export.models.Reference;
-import plugins.plantUML.export.models.SemanticsData;
-import plugins.plantUML.export.models.SubDiagramData;
+
+import plugins.plantUML.models.NoteData;
+import plugins.plantUML.models.Reference;
+import plugins.plantUML.models.SemanticsData;
+import plugins.plantUML.models.SubDiagramData;
 
 public class DiagramExporter {
 
 	protected List<NoteData> noteDatas = new ArrayList<>();
+	protected List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
+	
+	protected SemanticsData extractSemantics(IModelElement modelElement) {
+	    List<Reference> extractedReferences = extractReferences((IHasChildrenBaseModelElement) modelElement);
+	    List<SubDiagramData> extractedSubdiagrams = extractSubdiagrams(modelElement);
+	    String description = modelElement.getDescription();
 
-	protected List<Reference> extractReferences(IClass classModel) {
-		// TODO
+	    // Include semantics only if there is at least 1 of the 3 elements
+	    if ((extractedReferences != null && !extractedReferences.isEmpty()) ||
+	        (extractedSubdiagrams != null && !extractedSubdiagrams.isEmpty()) ||
+	        (description != null && !description.isEmpty())) {
+
+	        SemanticsData semanticsData = new SemanticsData();
+	        semanticsData.setOwnerName(modelElement.getName());
+	        semanticsData.setReferences(extractedReferences);
+	        semanticsData.setSubDiagrams(extractedSubdiagrams);
+	        semanticsData.setDescription(description); 
+
+	        return semanticsData;
+	        
+	    } else { // No meaningful information to extract	
+	        return null; 
+	    }
+	}
+
+	
+	private List<Reference> extractReferences(IHasChildrenBaseModelElement modelElement) { 
 		List<Reference> exportedReferences = new ArrayList<Reference>();
-		ApplicationManager.instance().getViewManager().showMessage("========= References::");
-		Iterator referenceIter = classModel.referenceIterator();
+		// ApplicationManager.instance().getViewManager().showMessage("========= References::");
+		Iterator referenceIter = modelElement.referenceIterator();
 		while (referenceIter.hasNext()) {
 			IReference reference = (IReference) referenceIter.next();
-			ApplicationManager.instance().getViewManager().showMessage(reference.getUrl() + " " + reference.getType());
+			// ApplicationManager.instance().getViewManager().showMessage(reference.getUrl() + " " + reference.getType());
 
 			Reference referenceData = null;
 
 			switch (reference.getType()) {
 			case IReference.TYPE_DIAGRAM:
-				referenceData = new Reference("diagram", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("diagram", reference.getDescription(), reference.getName(), reference.getUrlAsDiagram().getType()); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
 				break;
 
 			case IReference.TYPE_URL:
-				referenceData = new Reference("url", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("url", reference.getDescription(), reference.getUrl(), null);
 				break;
 
 			case IReference.TYPE_FILE:
-				referenceData = new Reference("file", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("file", reference.getDescription(), reference.getUrl(), null);
 				break;
 
 			case IReference.TYPE_FOLDER:
@@ -56,7 +82,7 @@ public class DiagramExporter {
 				break;
 
 			default:
-				ApplicationManager.instance().getViewManager().showMessage("Found and ignored unsupported reference");
+				ApplicationManager.instance().getViewManager().showMessage("Found and ignored an unsupported reference");
 				break;
 			}
 			if (referenceData != null)
@@ -95,7 +121,7 @@ public class DiagramExporter {
 		return stereotypes;
 	}
 
-	protected List<SubDiagramData> extractSubdiagrams(IModelElement modelElement) {
+	private List<SubDiagramData> extractSubdiagrams(IModelElement modelElement) {
 		List<SubDiagramData> subDiagramDatas = new ArrayList<SubDiagramData>();
 		IDiagramUIModel[] subDiagrams = modelElement.toSubDiagramArray();
 		if (subDiagrams != null) {
@@ -110,6 +136,16 @@ public class DiagramExporter {
 
 	public List<NoteData> getNotes() {
 		return noteDatas;
+	}
+
+
+	public List<SemanticsData> getExportedSemantics() {
+		return exportedSemantics;
+	}
+
+
+	public void setExportedSemantics(List<SemanticsData> exportedSemantics) {
+		this.exportedSemantics = exportedSemantics;
 	}
 	
 

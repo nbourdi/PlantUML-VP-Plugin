@@ -1,0 +1,25 @@
+@startjson
+[ {
+  "subDiagrams" : [ {
+    "name" : "sample",
+    "type" : "ClassDiagram"
+  } ]
+}, {
+  "references" : [ {
+    "type" : "file",
+    "name" : "${Project Path}/ti mporei na kanei to plantuml.txt"
+  } ]
+}, {
+  "references" : [ {
+    "type" : "diagram",
+    "name" : "Class Diagram/loaded_sample_1",
+    "diagramType" : "ClassDiagram"
+  } ]
+}, {
+  "references" : [ {
+    "type" : "url",
+    "description" : "descr url",
+    "name" : "http://reference-url.com"
+  } ]
+} ]
+@endjson
