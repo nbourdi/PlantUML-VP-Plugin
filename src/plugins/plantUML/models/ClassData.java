@@ -10,6 +10,7 @@ public class ClassData extends BaseWithSemanticsData {
     private List<String> stereotypes;
     private boolean isInPackage;
     private String visibility;
+    private String Uid;
     // private SemanticsData semantics = new SemanticsData();
 
     public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage, String description) {
@@ -80,6 +81,14 @@ public class ClassData extends BaseWithSemanticsData {
 
 	public void setVisibility(String visibility) {
 		this.visibility = visibility;
+	}
+
+	public String getUid() {
+		return Uid;
+	}
+
+	public void setUid(String Uid) {
+		this.Uid = Uid;
 	}
 
 //	public SemanticsData getSemantics() {

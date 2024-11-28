@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
-import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
@@ -70,7 +69,7 @@ public class DiagramExporter {
 				break;
 
 			case IReference.TYPE_FOLDER:
-				referenceData = new Reference("folder", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("folder", reference.getDescription(), reference.getUrl(), null);
 				break;
 
 			case IReference.TYPE_SHAPE:
@@ -127,8 +126,8 @@ public class DiagramExporter {
 		if (subDiagrams != null) {
 			for (IDiagramUIModel subDiagram : subDiagrams) {
 				subDiagramDatas.add(new SubDiagramData(subDiagram.getName(), subDiagram.getType()));
-				ApplicationManager.instance().getViewManager()
-						.showMessage("=====SUBDIAGRAM:: " + subDiagram.getName() + " " + subDiagram.getType());
+//				ApplicationManager.instance().getViewManager()
+//						.showMessage("=====SUBDIAGRAM:: " + subDiagram.getName() + " " + subDiagram.getType());
 			}
 		}
 		return subDiagramDatas;
