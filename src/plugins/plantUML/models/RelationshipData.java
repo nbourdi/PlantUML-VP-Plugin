@@ -84,6 +84,8 @@ public class RelationshipData {
         else if (type == "Include") {
         	symbol = "..>";
         	label = "<<Include>> \\n ";
+        } else if (type == "Containment") {
+        	symbol = "}--";
         }
         	
         

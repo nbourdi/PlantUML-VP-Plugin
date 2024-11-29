@@ -5,6 +5,7 @@ public class NoteData {
     private String content;
     private String id;
     private String alias;
+    private String Uid;
 
     public NoteData(String name, String content, String id) {
         this.name = (name != null && !name.isEmpty()) ? name : null;
@@ -39,4 +40,12 @@ public class NoteData {
     public String getId() {
         return id;
     }
+
+	public String getUid() {
+		return Uid;
+	}
+
+	public void setUid(String uid) {
+		Uid = uid;
+	}
 }

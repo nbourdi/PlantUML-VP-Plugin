@@ -58,7 +58,8 @@ public class DiagramImportPipeline {
         		importer.getClassDatas(),
         		importer.getPackageDatas(),
         		importer.getNaryDatas(),
-        		importer.getRelationshipDatas()
+        		importer.getRelationshipDatas(),
+        		importer.getNoteDatas()
         		);
         creator.createDiagram(); 
     }

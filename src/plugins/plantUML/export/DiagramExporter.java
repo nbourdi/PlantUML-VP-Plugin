@@ -137,15 +137,11 @@ public class DiagramExporter {
 		return noteDatas;
 	}
 
-
 	public List<SemanticsData> getExportedSemantics() {
 		return exportedSemantics;
 	}
 
-
 	public void setExportedSemantics(List<SemanticsData> exportedSemantics) {
 		this.exportedSemantics = exportedSemantics;
 	}
-	
-
 }

@@ -61,6 +61,14 @@ public class AssociationData extends RelationshipData {
 	public boolean isToEndNavigable() {
 		return toEndNavigable;
 	}
+	
+	public String getFromEndMultiplicity() {
+		return fromEndMultiplicity;
+	}
+	
+	public String getToEndMultiplicity() {
+		return toEndMultiplicity;
+	}
 
 }
 	

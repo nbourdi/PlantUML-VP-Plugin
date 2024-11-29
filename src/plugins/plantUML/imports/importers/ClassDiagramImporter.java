@@ -18,6 +18,7 @@ import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
+import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
@@ -34,6 +35,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 	private List<PackageData> packageDatas = new ArrayList<PackageData>(); 
 	private List<NaryData> naryDatas = new ArrayList<NaryData>();
 	private List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
+	private List<NoteData> noteDatas = new ArrayList<NoteData>();
     
     
 	public ClassDiagramImporter(ClassDiagram classDiagram) {
@@ -48,7 +50,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 			}
 		}
 		
-		// leafs can be etc, but for now assume everything is "levelled"
 		for (Entity entity : classDiagram.leafs()) {
 			
 			if (entity.getParentContainer().isRoot()) {
@@ -62,6 +63,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 				relationshipDatas.add(relationship);
 			
 		}
+		
 	}
 
 	private PackageData extractGroup(Entity groupEntity) {
@@ -69,8 +71,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 		PackageData packageData = null; // TODO: 1) this is temp solution 2) not always will this be a package?
 		
 		if (groupType == GroupType.PACKAGE) {
-			ApplicationManager.instance().getViewManager()
-	         .showMessage("in groups() extractuon ");
 			List<ClassData> packageClassDatas = new ArrayList<ClassData>();
 			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
 			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
@@ -96,8 +96,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	private RelationshipData extractRelationship(Link link) {
-		
-		
 		// TODO source and target may be anapoda an einai apo thn allh to arrow
 		String sourceID;
 		String targetID;
@@ -107,7 +105,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 		String decor2 = link.getType().getDecor2().toString();
 		
 		// DESIGN CONSTRAINT : double-ended relationships do not exist in VP.
-		
 		boolean isDecorated1 = (decor1 != "NONE" && decor1 != "NOT_NAVIGABLE");
 		boolean isDecorated2 = (decor2 != "NONE" && decor2 != "NOT_NAVIGABLE");
 		String decor = (isDecorated1 ? decor1 : decor2);
@@ -145,6 +142,8 @@ public class ClassDiagramImporter extends DiagramImporter {
 				isAssoc = true;
 			} else if (decor == "EXTENDS") { // TODO : arrow with solid line isnt in VP.. but means extend in puml
 				relationshipType = "Generalization";
+			} else if (decor == "CROWFOOT") {
+				relationshipType = "Containment";
 			}
 		} else {
 			// DASHED
@@ -181,13 +180,13 @@ public class ClassDiagramImporter extends DiagramImporter {
 		if (isAssoc) {
 			ApplicationManager.instance().getViewManager()
 	         .showMessage("in isAssoc ");
-			AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, link.getLabel().toString(), fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+			AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
 			associationData.setSourceID(sourceID);
 			associationData.setTargetID(targetID);
 			return associationData;
 			
 		} else {
-			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, link.getLabel().toString());
+			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
 			relationshipData.setSourceID(sourceID);
 			relationshipData.setTargetID(targetID);
 			return relationshipData;
@@ -199,20 +198,24 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
 		LeafType leafType = entity.getLeafType();
+		ApplicationManager.instance().getViewManager()
+        .showMessage("leaf type : "+ entity.getLeafType().toString());
 		if (leafType == LeafType.CLASS || leafType == LeafType.ABSTRACT_CLASS || leafType == LeafType.ANNOTATION
 				|| leafType == LeafType.STEREOTYPE || leafType == LeafType.STRUCT || leafType == LeafType.ENUM
 				|| leafType == LeafType.ENTITY || leafType == LeafType.INTERFACE || leafType == LeafType.PROTOCOL
 				|| leafType == LeafType.METACLASS) {
 		    // Create a ClassData model from the plantuml entity
 		    // name, isAbstract = false as it is a different leaf type, visibility = converted to string from enum,
-		    // isinPackage = false as its leaf, null description always.
+
 		    classes.add(extractClass(entity, leafType));		    
-		} else if (leafType == leafType.STATE_CHOICE) { 
+		} else if (leafType == leafType.STATE_CHOICE || leafType == leafType.ASSOCIATION) { 
 			// TYPE DIAMOND (n-ary)
 			// Due to plantUml's internal purpose being simply rendering, STATE_CHOICE (state diagram choice)
 			// is also used for the diamond entity as they are displayed the same.
+			// When declared as "<>" instead of "diamond", the leaf type is ASSOCIATION.
 			naries.add(extractNary(entity));
-			
+		} else if (leafType == leafType.NOTE) {
+			noteDatas.add(extractNote(entity));
 		}
 		
 		else {
@@ -370,7 +373,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	public List<RelationshipData> getRelationshipDatas() {
-		
 		return relationshipDatas;
+	}
+
+	public List<NoteData> getNoteDatas() {
+		return noteDatas;
 	}
 }

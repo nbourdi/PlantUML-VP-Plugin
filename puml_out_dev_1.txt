@@ -7,4 +7,11 @@ diamond "d1" as f1
 package p2 {
 	class class6
 }
+ClassUnique -- f1	 
+c1 --o c2 : aggregation end at c2
+c1 .. c2
+c2 x-- c3
+c3 *-- c4
+c4 --> c5 : shoudltn go through
+class6 <|.. f2 : realiza
 @enduml
