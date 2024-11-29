@@ -5,6 +5,7 @@ public class NaryData {
     private String id;
     private boolean isInPackage;
     private String alias;
+    private String Uid;
     
     public NaryData(String name, String id, boolean isInPackage) {
         this.name = (name != null && !name.isEmpty()) ? name : null;
@@ -35,4 +36,12 @@ public class NaryData {
     public boolean isInPackage() {
         return isInPackage;
     }
+
+	public String getUid() {
+		return Uid;
+	}
+
+	public void setUid(String uid) {
+		Uid = uid;
+	}
 }

@@ -1,6 +1,6 @@
 package plugins.plantUML.imports.importers;
 
-import java.io.File;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,16 +9,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.hibernate.cfg.beanvalidation.GroupsPerOperation;
-
-import com.jniwrapper.n;
 import com.vp.plugin.ApplicationManager;
 
-import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
-import net.sourceforge.plantuml.cucadiagram.Bodier;
 import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
+import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
@@ -26,8 +22,6 @@ import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
 import plugins.plantUML.models.OperationData.Parameter;
-import v.ber.op;
-import net.sourceforge.plantuml.abel.CucaNote;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
@@ -40,34 +34,17 @@ public class ClassDiagramImporter extends DiagramImporter {
 	private List<PackageData> packageDatas = new ArrayList<PackageData>(); 
 	private List<NaryData> naryDatas = new ArrayList<NaryData>();
 	private List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
-
+    
+    
 	public ClassDiagramImporter(ClassDiagram classDiagram) {
 		this.classDiagram = classDiagram;
 	}
 
 	public void extract() {
-//		LeafType.
-		
 		
 		for (Entity groupEntity : classDiagram.groups()) {
-			GroupType groupType = groupEntity.getGroupType();
-			
-			if (groupType == GroupType.PACKAGE) {
-				ApplicationManager.instance().getViewManager()
-		         .showMessage("in groups() extractuon ");
-				List<ClassData> packageClassDatas = new ArrayList<ClassData>();
-				List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
-				List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
-				
-				
-				for (Entity packagedLeaf : groupEntity.leafs()) {
-					extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
-				}
-				
-				// then also iterate over the groups groups...
-				PackageData packageData = new PackageData(groupEntity.getName(), packageClassDatas, null, packageNaryDatas, false, false);
-				
-				packageDatas.add(packageData);
+			if (groupEntity.getParentContainer().isRoot()) {
+				extractGroup(groupEntity);
 			}
 		}
 		
@@ -80,16 +57,144 @@ public class ClassDiagramImporter extends DiagramImporter {
 		}
 		
 		for (Link link : classDiagram.getLinks()) {
-			// only doing generaliz for now
-			relationshipDatas.add(extractRelationship(link));
+			RelationshipData relationship = extractRelationship(link);
+			if(relationship != null) 
+				relationshipDatas.add(relationship);
+			
 		}
 	}
 
+	private PackageData extractGroup(Entity groupEntity) {
+		GroupType groupType = groupEntity.getGroupType();
+		PackageData packageData = null; // TODO: 1) this is temp solution 2) not always will this be a package?
+		
+		if (groupType == GroupType.PACKAGE) {
+			ApplicationManager.instance().getViewManager()
+	         .showMessage("in groups() extractuon ");
+			List<ClassData> packageClassDatas = new ArrayList<ClassData>();
+			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
+			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
+			
+			
+			for (Entity packagedLeaf : groupEntity.leafs()) {
+				extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
+			}
+			
+			
+			for (Entity subgroupEntity : groupEntity.groups()) {
+				packagedPackageDatas.add(extractGroup(subgroupEntity));
+			}
+			
+			packageData = new PackageData(groupEntity.getName(), packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
+			packageData.setUid(groupEntity.getUid());
+			if (groupEntity.getParentContainer().isRoot()) {
+				packageDatas.add(packageData);
+			}
+		}
+		return packageData;
+		
+	}
+
 	private RelationshipData extractRelationship(Link link) {
-		String source = link.getEntity1().getUid();
-		String target = link.getEntity2().getName();
-		RelationshipData relationshipData = new RelationshipData(source, target, "Generalization", link.getLabel().toString());
-		return relationshipData;
+		
+		
+		// TODO source and target may be anapoda an einai apo thn allh to arrow
+		String sourceID;
+		String targetID;
+		
+		String relationshipType = "";
+		String decor1 = link.getType().getDecor1().toString();
+		String decor2 = link.getType().getDecor2().toString();
+		
+		// DESIGN CONSTRAINT : double-ended relationships do not exist in VP.
+		
+		boolean isDecorated1 = (decor1 != "NONE" && decor1 != "NOT_NAVIGABLE");
+		boolean isDecorated2 = (decor2 != "NONE" && decor2 != "NOT_NAVIGABLE");
+		String decor = (isDecorated1 ? decor1 : decor2);
+		boolean isNotNavigable = (decor1 == "NOT_NAVIGABLE" || decor2 == "NOT_NAVIGABLE");
+		
+		if (isDecorated1 && isDecorated2) {
+			ApplicationManager.instance().getViewManager()
+	         .showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
+			return null;
+		}
+		String lineStyle = link.getType().getStyle().toString();
+		ApplicationManager.instance().getViewManager()
+        .showMessage(lineStyle);
+		boolean isReverse = (lineStyle.contains("NORMAL")); // meaning the "from" side has the decoration
+		boolean isAssoc = false;
+		
+		//TODO check if theyre in the right way
+		String fromEndMultiplicity = link.getLinkArg().getQuantifier1();
+		String toEndMultiplicity = link.getLinkArg().getQuantifier2();
+		String fromEndAggregation = "";
+		if (lineStyle.contains("NORMAL")) {
+			// association, containment, composition, agregation
+			// TODO containment
+			
+			if (decor == "COMPOSITION") {
+				relationshipType = "Composition";
+				fromEndAggregation = "composite";
+				isAssoc = true;
+			} else if (decor == "AGREGATION") {
+				relationshipType = "Aggregation";
+				fromEndAggregation = "shared";
+				isAssoc = true;
+			} else if (!isDecorated1 && !isDecorated2) {
+				relationshipType = "Simple";
+				isAssoc = true;
+			} else if (decor == "EXTENDS") { // TODO : arrow with solid line isnt in VP.. but means extend in puml
+				relationshipType = "Generalization";
+			}
+		} else {
+			// DASHED
+			switch (decor) {
+			case "EXTENDS": // |>
+				relationshipType = "Realization";
+			
+				break;
+			case "ARROW": // > , abstraction and all stereotypes + dependency stereotypes all look the same...
+				relationshipType = "Dependency";
+				break;
+			case "NONE": // SHOULD ONLY BE FOR NOTES.
+				relationshipType = "Anchor";
+				break;
+
+			default:
+				ApplicationManager.instance().getViewManager()
+		         .showMessage("Warning: an unsupported type of relationship was found and not imported.");
+				break;
+			}
+		}
+		
+		//TODO IS THIS RIGHT?
+		if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
+			sourceID = link.getEntity1().getUid();
+			targetID = link.getEntity2().getUid();
+		} else {
+			sourceID = link.getEntity2().getUid();
+			targetID = link.getEntity1().getUid();
+		}
+		
+		if(relationshipType == "") return null; // TODO: temp fix. 
+		
+		if (isAssoc) {
+			ApplicationManager.instance().getViewManager()
+	         .showMessage("in isAssoc ");
+			AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, link.getLabel().toString(), fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+			associationData.setSourceID(sourceID);
+			associationData.setTargetID(targetID);
+			return associationData;
+			
+		} else {
+			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, link.getLabel().toString());
+			relationshipData.setSourceID(sourceID);
+			relationshipData.setTargetID(targetID);
+			return relationshipData;
+		}
+		
+		
+		
 	}
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
@@ -118,6 +223,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	private NaryData extractNary(Entity entity) {
 		NaryData naryData = new NaryData(entity.getName(), null, false);
+		naryData.setUid(entity.getUid());
 		return naryData;
 	}
 
@@ -237,16 +343,18 @@ public class ClassDiagramImporter extends DiagramImporter {
 						paramName = part;
 					}
 				}
-				Parameter parameter = new Parameter(paramName, paramType, paramValue);
-				parameters.add(parameter);
+				if (paramName != null && !paramName.isEmpty()) {
+					Parameter parameter = new Parameter(paramName, paramType, paramValue);
+					parameters.add(parameter);
+				}
 			}
 			String opName = m.getDisplay(false).replaceFirst("\\b" + detectedReturnType + "\\b", "")
 					.replaceAll("\\(.*\\)", "").trim();
 			OperationData operationData = new OperationData(opVisibility, opName, detectedReturnType, m.isAbstract(),
 					parameters, scope);
 			classData.addOperation(operationData);
-			classData.setUid(entity.getUid());
 		}
+		classData.setUid(entity.getUid());
 		return classData;
 	}
 
@@ -259,5 +367,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	public List<NaryData> getNaryDatas() {
 		return naryDatas;
+	}
+
+	public List<RelationshipData> getRelationshipDatas() {
+		
+		return relationshipDatas;
 	}
 }

@@ -177,7 +177,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 			AssociationData associationData = new AssociationData(sourceName, targetName, relationship.getModelType(),
 					relationship.getName(), fromEndMultiplicity, toEndMultiplicity,
 					// fromEnd.getNavigable() == 0,
-					toEnd.getNavigable() == 0, fromEnd.getAggregationKind(), toEnd.getAggregationKind());
+					toEnd.getNavigable() == 0, fromEnd.getAggregationKind());
 
 			relationshipDatas.add(associationData);
 			return;

@@ -155,8 +155,8 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                     toEndMultiplicity,
                     // fromEnd.getNavigable() == 0, 
                     toEnd.getNavigable() == 0, 
-                    fromEnd.getAggregationKind(),
-                    toEnd.getAggregationKind()
+                    fromEnd.getAggregationKind()
+                   // toEnd.getAggregationKind()
             );
 
             relationshipDatas.add(associationData);

@@ -29,7 +29,7 @@ public class DiagramImportPipeline {
     	
     	SourceStringReader reader = new SourceStringReader(source);
         List<String> lines;
-        boolean isCorrectSyntax;
+        
 		try {
 			lines = Files.readAllLines(inputFile.toPath());
 			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
@@ -42,7 +42,7 @@ public class DiagramImportPipeline {
                 ApplicationManager.instance().getViewManager().showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), 
                         errorMessage.toString());
                 return;
-			} else isCorrectSyntax = true; // TODO unnecessary 
+			} 
 		} catch (IOException e) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), 
                     "Error reading file from system: " + e.getMessage());
@@ -54,11 +54,11 @@ public class DiagramImportPipeline {
         ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram);
         importer.extract();
         
-        // will need big constructor to call with params
         ClassDiagramCreator creator = new ClassDiagramCreator(
         		importer.getClassDatas(),
         		importer.getPackageDatas(),
-        		importer.getNaryDatas()
+        		importer.getNaryDatas(),
+        		importer.getRelationshipDatas()
         		);
         creator.createDiagram(); 
     }

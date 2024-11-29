@@ -12,6 +12,7 @@ public class PackageData {
     private List<UseCaseData> usecases;
     private boolean isSubpackage;
     private boolean isRectangle; // is System in reality, but systems are not a different type in puml , just a rectangle shape
+    private String Uid;
 
     public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
         this.packageName = packageName;
@@ -68,6 +69,14 @@ public class PackageData {
 
 	public boolean isRectangle() {
 		return this.isRectangle;
+	}
+
+	public String getUid() {
+		return Uid;
+	}
+
+	public void setUid(String uid) {
+		Uid = uid;
 	}
 
 

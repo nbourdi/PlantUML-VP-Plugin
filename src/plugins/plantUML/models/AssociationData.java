@@ -8,7 +8,7 @@ public class AssociationData extends RelationshipData {
 	private boolean toEndNavigable;
 	
 	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
-			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation, String toEndAggregation) {
+			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation) {
 		super(source, target, type, name);
 		this.fromEndMultiplicity = fromEndMultiplicity;
 		this.toEndMultiplicity = toEndMultiplicity;
@@ -18,6 +18,8 @@ public class AssociationData extends RelationshipData {
 			this.setType("Aggregation");
 		} else if (fromEndAggregation == "composite") {
 			this.setType("Composition");
+		} else {
+			this.setType("Simple");
 		}
 	}
 
@@ -56,6 +58,9 @@ public class AssociationData extends RelationshipData {
 	    return output.toString();
 	}
 
+	public boolean isToEndNavigable() {
+		return toEndNavigable;
+	}
 
 }
 	
