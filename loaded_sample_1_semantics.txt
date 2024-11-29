@@ -1,0 +1,6 @@
+@startjson
+[ {
+  "ownerName" : "ClassInPack",
+  "description" : "this is a classinpack description"
+} ]
+@endjson

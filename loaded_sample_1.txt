@@ -1,0 +1,28 @@
+@startuml
+package P1 {
+	+enum ClassInPack {
+		- attribute
+		+getAttribute()
+		+setAttribute(attribute): void
+	}
+	diamond "U5x_NMmGAqAEDAii" as diamond_U5x_NMmGAqAEDAii
+	package SUBPack {
+		+abstract class "Class In subpack" {
+			~ attribute: short
+		}
+	}
+}
++class Class5 <<auxiliary>>, <<focus>>, <<metaclass>> {
+}
++abstract class "c1 abstract" <<metaclass>> {
+	- {static} attribute: int = 0
+	# attribute2: boolean = false
+	~ attribute3
+	- attribute4
+	+getAttribute4()
+	+setAttribute4(attribute4): void
+	#{static} operation(param1: char = "a", param2: string): void
+	+{abstract} operation2(): byte
+}
+P1 ..> "c1 abstract"
+@enduml

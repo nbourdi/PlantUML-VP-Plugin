@@ -1,0 +1,57 @@
+@startuml
++class Class262 {
+}
++class Class252 {
+}
++class Class222 {
+}
++class Class212 {
+}
++class Class202 {
+}
++class Class192 {
+}
++class Class182 {
+}
++class Class172 {
+}
++class Class162 {
+}
++class Class152 {
+}
++class Class142 {
+}
++class Class132 {
+}
++class Class122 {
+}
++class Class112 {
+}
++class Class102 {
+}
++class Class92 {
+}
++class Class82 {
+}
++class Class72 {
+}
+diamond "qxQzpMmGAqAEDAsj" as diamond_qxQzpMmGAqAEDAsj
+note "hi" as note_ivLvlMmGAqAEDAhg
+Class72 <|-- Class82 : generalization
+Class122 <.. Class112 : <<use>> \n usage
+Class102 <|.. Class92 : realization
+Class142 -- Class132 : simple association
+Class152 o-- Class82 : aggregation
+Class162 *--x Class102 : composition with x
+Class122 ..> Class172 : dependency
+Class182 ..> Class142 : instantiation and other stereotyped dependencies
+Class192 <.. Class152 : <<abstraction>> \n abstraction
+Class202 <.. Class162 : <<abstraction>> \n abstraction of type derive
+Class212 <.. Class172 : <<abstraction>> \n abstraction refine
+Class222 <.. Class182 : <<abstraction>> \n abstraction trace
+Class262 "0..*" *-- "1..*" Class252 : withMultiplicity
+"diamond_qxQzpMmGAqAEDAsj" o-- Class262
+"diamond_qxQzpMmGAqAEDAsj" -- Class182
+"diamond_qxQzpMmGAqAEDAsj" -- Class222
+"note_ivLvlMmGAqAEDAhg" .. Class192
+@enduml

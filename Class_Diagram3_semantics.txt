@@ -1,0 +1,42 @@
+@startjson
+[ {
+  "ownerName" : "Class102",
+  "references" : [ {
+    "type" : "file",
+    "name" : "${Project Path}/ti mporei na kanei to plantuml.txt"
+  }, {
+    "type" : "folder",
+    "description" : "description of reference folder",
+    "name" : "${Project Path}"
+  }, {
+    "type" : "model_element",
+    "name" : "c1 abstract"
+  }, {
+    "type" : "shape",
+    "name" : "Class112"
+  } ]
+}, {
+  "ownerName" : "Class92",
+  "references" : [ {
+    "type" : "diagram",
+    "description" : "description for the referece",
+    "name" : "Class Diagram/loaded_sample_1",
+    "diagramType" : "ClassDiagram"
+  } ],
+  "subDiagrams" : [ {
+    "name" : "Use Case Diagram1",
+    "type" : "UseCaseDiagram"
+  }, {
+    "name" : "sample",
+    "type" : "ClassDiagram"
+  } ],
+  "description" : "This class hides a lot of semantics."
+}, {
+  "ownerName" : "Class72",
+  "references" : [ {
+    "type" : "url",
+    "description" : "descr url",
+    "name" : "http://reference-url.com"
+  } ]
+} ]
+@endjson

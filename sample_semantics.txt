@@ -1,0 +1,10 @@
+@startjson
+[ {
+  "references" : [ {
+    "type" : "diagram",
+    "name" : "Use Case Diagram/Fill in formm use case"
+  } ]
+}, {
+  "description" : "sample description c1"
+} ]
+@endjson
