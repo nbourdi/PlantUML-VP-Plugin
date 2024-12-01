@@ -22,6 +22,7 @@ import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.SemanticsData;
 import plugins.plantUML.models.OperationData.Parameter;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.abel.GroupType;
@@ -36,55 +37,56 @@ public class ClassDiagramImporter extends DiagramImporter {
 	private List<NaryData> naryDatas = new ArrayList<NaryData>();
 	private List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
 	private List<NoteData> noteDatas = new ArrayList<NoteData>();
-    
-    
-	public ClassDiagramImporter(ClassDiagram classDiagram) {
+
+
+	public ClassDiagramImporter(ClassDiagram classDiagram, Map<String, SemanticsData> semanticsMap) {
+		super(semanticsMap);
 		this.classDiagram = classDiagram;
 	}
 
 	public void extract() {
-		
+
 		for (Entity groupEntity : classDiagram.groups()) {
 			if (groupEntity.getParentContainer().isRoot()) {
 				extractGroup(groupEntity);
 			}
 		}
-		
+
 		for (Entity entity : classDiagram.leafs()) {
-			
+
 			if (entity.getParentContainer().isRoot()) {
 				extractLeaf(entity, classDatas, naryDatas);
 			}
 		}
-		
+
 		for (Link link : classDiagram.getLinks()) {
 			RelationshipData relationship = extractRelationship(link);
 			if(relationship != null) 
 				relationshipDatas.add(relationship);
-			
+
 		}
-		
+
 	}
 
 	private PackageData extractGroup(Entity groupEntity) {
 		GroupType groupType = groupEntity.getGroupType();
 		PackageData packageData = null; // TODO: 1) this is temp solution 2) not always will this be a package?
-		
+
 		if (groupType == GroupType.PACKAGE) {
 			List<ClassData> packageClassDatas = new ArrayList<ClassData>();
 			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
 			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
-			
-			
+
+
 			for (Entity packagedLeaf : groupEntity.leafs()) {
 				extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
 			}
-			
-			
+
+
 			for (Entity subgroupEntity : groupEntity.groups()) {
 				packagedPackageDatas.add(extractGroup(subgroupEntity));
 			}
-			
+
 			packageData = new PackageData(groupEntity.getName(), packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
 			packageData.setUid(groupEntity.getUid());
 			if (groupEntity.getParentContainer().isRoot()) {
@@ -92,35 +94,35 @@ public class ClassDiagramImporter extends DiagramImporter {
 			}
 		}
 		return packageData;
-		
+
 	}
 
 	private RelationshipData extractRelationship(Link link) {
 		// TODO source and target may be anapoda an einai apo thn allh to arrow
 		String sourceID;
 		String targetID;
-		
+
 		String relationshipType = "";
 		String decor1 = link.getType().getDecor1().toString();
 		String decor2 = link.getType().getDecor2().toString();
-		
+
 		// DESIGN CONSTRAINT : double-ended relationships do not exist in VP.
 		boolean isDecorated1 = (decor1 != "NONE" && decor1 != "NOT_NAVIGABLE");
 		boolean isDecorated2 = (decor2 != "NONE" && decor2 != "NOT_NAVIGABLE");
 		String decor = (isDecorated1 ? decor1 : decor2);
 		boolean isNotNavigable = (decor1 == "NOT_NAVIGABLE" || decor2 == "NOT_NAVIGABLE");
-		
+
 		if (isDecorated1 && isDecorated2) {
 			ApplicationManager.instance().getViewManager()
-	         .showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
+			.showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
 			return null;
 		}
 		String lineStyle = link.getType().getStyle().toString();
 		ApplicationManager.instance().getViewManager()
-        .showMessage(lineStyle);
+		.showMessage(lineStyle);
 		boolean isReverse = (lineStyle.contains("NORMAL")); // meaning the "from" side has the decoration
 		boolean isAssoc = false;
-		
+
 		//TODO check if theyre in the right way
 		String fromEndMultiplicity = link.getLinkArg().getQuantifier1();
 		String toEndMultiplicity = link.getLinkArg().getQuantifier2();
@@ -128,7 +130,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 		if (lineStyle.contains("NORMAL")) {
 			// association, containment, composition, agregation
 			// TODO containment
-			
+
 			if (decor == "COMPOSITION") {
 				relationshipType = "Composition";
 				fromEndAggregation = "composite";
@@ -150,7 +152,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			switch (decor) {
 			case "EXTENDS": // |>
 				relationshipType = "Realization";
-			
+
 				break;
 			case "ARROW": // > , abstraction and all stereotypes + dependency stereotypes all look the same...
 				relationshipType = "Dependency";
@@ -161,11 +163,11 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 			default:
 				ApplicationManager.instance().getViewManager()
-		         .showMessage("Warning: an unsupported type of relationship was found and not imported.");
+				.showMessage("Warning: an unsupported type of relationship was found and not imported.");
 				break;
 			}
 		}
-		
+
 		//TODO IS THIS RIGHT?
 		if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
 			sourceID = link.getEntity1().getUid();
@@ -174,40 +176,40 @@ public class ClassDiagramImporter extends DiagramImporter {
 			sourceID = link.getEntity2().getUid();
 			targetID = link.getEntity1().getUid();
 		}
-		
+
 		if(relationshipType == "") return null; // TODO: temp fix. 
-		
+
 		if (isAssoc) {
 			ApplicationManager.instance().getViewManager()
-	         .showMessage("in isAssoc ");
+			.showMessage("in isAssoc ");
 			AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
 			associationData.setSourceID(sourceID);
 			associationData.setTargetID(targetID);
 			return associationData;
-			
+
 		} else {
 			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
 			relationshipData.setSourceID(sourceID);
 			relationshipData.setTargetID(targetID);
 			return relationshipData;
 		}
-		
-		
-		
+
+
+
 	}
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
 		LeafType leafType = entity.getLeafType();
 		ApplicationManager.instance().getViewManager()
-        .showMessage("leaf type : "+ entity.getLeafType().toString());
+		.showMessage("leaf type : "+ entity.getLeafType().toString());
 		if (leafType == LeafType.CLASS || leafType == LeafType.ABSTRACT_CLASS || leafType == LeafType.ANNOTATION
 				|| leafType == LeafType.STEREOTYPE || leafType == LeafType.STRUCT || leafType == LeafType.ENUM
 				|| leafType == LeafType.ENTITY || leafType == LeafType.INTERFACE || leafType == LeafType.PROTOCOL
 				|| leafType == LeafType.METACLASS) {
-		    // Create a ClassData model from the plantuml entity
-		    // name, isAbstract = false as it is a different leaf type, visibility = converted to string from enum,
+			// Create a ClassData model from the plantuml entity
+			// name, isAbstract = false as it is a different leaf type, visibility = converted to string from enum,
 
-		    classes.add(extractClass(entity, leafType));		    
+			classes.add(extractClass(entity, leafType));		    
 		} else if (leafType == leafType.STATE_CHOICE || leafType == leafType.ASSOCIATION) { 
 			// TYPE DIAMOND (n-ary)
 			// Due to plantUml's internal purpose being simply rendering, STATE_CHOICE (state diagram choice)
@@ -217,10 +219,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 		} else if (leafType == leafType.NOTE) {
 			noteDatas.add(extractNote(entity));
 		}
-		
+
 		else {
-		    ApplicationManager.instance().getViewManager()
-		            .showMessage("Warning: a leaf was not imported due to unsupported type..");
+			ApplicationManager.instance().getViewManager()
+			.showMessage("Warning: a leaf was not imported due to unsupported type..");
 		}
 	}
 
@@ -231,9 +233,17 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	private ClassData extractClass(Entity entity, LeafType classLeafType) {
+
 		String visibility = convertVisibility(entity.getVisibilityModifier());
-		ClassData classData = new ClassData(entity.getName(), false, visibility, false, null);
-		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>...
+		ClassData classData = new ClassData(entity.getDisplay().toString(), false, visibility, false, null);
+		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
+		
+		// TODO : get display or get name.... might cause trouble
+		String key = entity.getDisplay() + "|Class";
+		
+		boolean hasSemantics = getSemanticsMap().containsKey(key);
+		
+		if (hasSemantics) classData.setSemantics(getSemanticsMap().get(key));
 
 		Pattern pattern = Pattern.compile("<<([^>]+)>>");
 		List<String> stereotypes = new ArrayList<>();
@@ -256,11 +266,11 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		String leafTypeStereo = stereotypeMap.get(classLeafType);
 		if (leafTypeStereo != null) {
-		    if (classLeafType == LeafType.ABSTRACT_CLASS) {
-		        classData.setAbstract(true);
-		    } else {
-		        classData.addStereotype(leafTypeStereo);
-		    }
+			if (classLeafType == LeafType.ABSTRACT_CLASS) {
+				classData.setAbstract(true);
+			} else {
+				classData.addStereotype(leafTypeStereo);
+			}
 		}
 
 		for (String stereotype : stereotypes) {

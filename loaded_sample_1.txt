@@ -11,6 +11,7 @@ package P1 {
 			~ attribute: short
 		}
 	}
+	class Class5
 }
 +class Class5 <<auxiliary>>, <<focus>>, <<metaclass>> {
 }

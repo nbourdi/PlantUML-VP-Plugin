@@ -57,7 +57,8 @@ public class ClassDiagramCreator extends DiagramCreator {
 	Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
 	Map<IModelElement, IShapeUIModel> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
 
-	public ClassDiagramCreator(List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas) {
+	public ClassDiagramCreator(String diagramTitle, List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas) {
+		super(diagramTitle);
 		this.classDatas = classDatas;
 		this.packageDatas = packageDatas;
 		this.naryDatas = naryDatas;
@@ -67,7 +68,7 @@ public class ClassDiagramCreator extends DiagramCreator {
 	
 	public void createDiagram () { 
 		
-        classDiagram.setName("pakcage diagram");
+        classDiagram.setName(getDiagramTitle());
 		for (ClassData classData : classDatas) {
 			IClass classModel = createClass(classData);
 		}

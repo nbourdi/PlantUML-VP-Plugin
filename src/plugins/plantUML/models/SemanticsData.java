@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class SemanticsData {
 	
 	private String ownerName; // owner element name
+	private String ownerType;
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	private List<Reference> references;
@@ -47,5 +48,13 @@ public class SemanticsData {
 
 	public void setOwnerName(String ownerName) {
 		this.ownerName = ownerName;
+	}
+
+	public String getOwnerType() {
+		return ownerType;
+	}
+
+	public void setOwnerType(String ownerType) {
+		this.ownerType = ownerType;
 	}
 }

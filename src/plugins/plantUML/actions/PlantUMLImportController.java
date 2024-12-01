@@ -5,24 +5,17 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
 
-import javax.swing.JFileChooser;
+import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 
 import com.vp.plugin.ApplicationManager;
-import com.vp.plugin.DiagramManager;
 import com.vp.plugin.ViewManager;
 import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
-import com.vp.plugin.diagram.IClassDiagramUIModel;
-import com.vp.plugin.diagram.shape.IClassUIModel;
-import com.vp.plugin.model.IAssociation;
-import com.vp.plugin.model.IClass;
-import com.vp.plugin.model.factory.IModelElementFactory;
 
-import net.sourceforge.plantuml.syntax.SyntaxResult;
 import plugins.plantUML.imports.importers.DiagramImportPipeline;
-import plugins.plantUML.parser.PlantUMLParser;
 
 public class PlantUMLImportController implements VPActionController {
 
@@ -30,102 +23,86 @@ public class PlantUMLImportController implements VPActionController {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
         Component parentFrame = viewManager.getRootFrame();
 
-        JFileChooser fileChooser = viewManager.createJFileChooser();
-        fileChooser.setFileFilter(new FileFilter() {
-            public String getDescription() {
-                return "*.txt, *.puml";
-            }
+        JRadioButton singleDiagramButton = new JRadioButton("Import Single Diagram (without semantics)");
+        JRadioButton multipleDiagramsButton = new JRadioButton("Import Multiple Diagrams from Folder (with or without semantics)");
 
-            public boolean accept(File file) {
-                return file.isDirectory() || 
-                       file.getName().toLowerCase().endsWith(".txt") || 
-                       file.getName().toLowerCase().endsWith(".puml");
-            }
-        });
+        ButtonGroup group = new ButtonGroup();
+        group.add(singleDiagramButton);
+        group.add(multipleDiagramsButton);
 
-        int userSelection = fileChooser.showOpenDialog(parentFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            DiagramImportPipeline pipeline = new DiagramImportPipeline(file);
-            try {
-				String source = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-				pipeline.importFromSource(source);	
-		
-            } catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+        singleDiagramButton.setSelected(true);
 
-            
-//            PlantUMLParser parser = new PlantUMLParser(file);
-////
-//            try {
-//                // Parse the file
-//                SyntaxResult result = parser.parse();
-//
-//                if (result.isError()) {
-//                    // If there are syntax errors, display them
-//                    StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
-//                    for (String error : result.getErrors()) {
-//                        errorMessage.append(" - ").append(error).append("\n");
-//                    }
-//                    viewManager.showMessageDialog(parentFrame, errorMessage.toString());
-//                } else {
-//                    // If parsing is successful
-//                    viewManager.showMessageDialog(parentFrame, 
-//                        "Syntax is valid.\nDiagram Type: " + result.getUmlDiagramType() +
-//                        "\nDescription: " + result.getDescription());
-//                }
-//            } catch (IOException e) {
-//                // Handle file reading exceptions
-//                viewManager.showMessageDialog(parentFrame, 
-//                    "Error reading file: " + e.getMessage());
-//            }
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+        panel.add(singleDiagramButton);
+        panel.add(Box.createVerticalStrut(5)); 
+        panel.add(multipleDiagramsButton);
 
+        // Show the option dialog
+        int choice = JOptionPane.showConfirmDialog(
+            parentFrame,
+            panel,
+            "Select Import Option",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (choice != JOptionPane.OK_OPTION) {
+            return;
         }
-//    	 DiagramManager diagramManager = ApplicationManager.instance().getDiagramManager();
-//
-//         // Create a new Class Diagram
-//         IClassDiagramUIModel classDiagram = (IClassDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_CLASS_DIAGRAM);
-//         classDiagram.setName("Sample Class Diagram");
-//
-//         // Create a Class element
-//         IClass class1 = IModelElementFactory.instance().createClass();
-//         class1.setName("SampleClass");
-//         class1.setVisibility("public");
-//
-//         // Add the class to the diagram
-//         diagramManager.openDiagram(classDiagram);
-//         // diagramManager.createDiagramElement(classDiagram, class1);
-//
-//         // Create another Class element
-//         IClass class2 = IModelElementFactory.instance().createClass();
-//         class2.setName("AnotherClass");
-//         class2.setVisibility("public");
-//
-//         // Add the second class to the diagram
-//         IClassUIModel class2Shape = (IClassUIModel) diagramManager.createDiagramElement(classDiagram, class2);
-//         IClassUIModel class1Shape = (IClassUIModel) diagramManager.createDiagramElement(classDiagram, class1);
-//
-//         
-//         
-//         
-//         // Connect the two classes with an Association
-//         IAssociation association = IModelElementFactory.instance().createAssociation();
-//         association.setFrom(class1);
-//         association.setTo(class2);
-//         
-//         diagramManager.createConnector(classDiagram, association, class1Shape, class2Shape, null);
-//         // Save and update the project
-//         
-//         diagramManager.layout(classDiagram, DiagramManager.LAYOUT_ORTHOGONAL);
-//         ApplicationManager.instance().getProjectManager().saveProject();
-    	
-     
+
+        if (singleDiagramButton.isSelected()) {
+            // Handle single diagram import
+            JFileChooser fileChooser = viewManager.createJFileChooser();
+            fileChooser.setFileFilter(new FileFilter() {
+                @Override
+                public String getDescription() {
+                    return "*.txt, *.puml";
+                }
+
+                @Override
+                public boolean accept(File file) {
+                    return file.isDirectory() || 
+                           file.getName().toLowerCase().endsWith(".txt") || 
+                           file.getName().toLowerCase().endsWith(".puml");
+                }
+            });
+
+            int userSelection = fileChooser.showOpenDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                DiagramImportPipeline pipeline = new DiagramImportPipeline();
+                pipeline.importFromSource(file);
+            }
+        } else if (multipleDiagramsButton.isSelected()) {
+            // Handle multiple diagrams import
+            JFileChooser folderChooser = viewManager.createJFileChooser();
+            folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+            int userSelection = folderChooser.showOpenDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File folder = folderChooser.getSelectedFile();
+                File[] files = folder.listFiles((dir, name) -> 
+                    name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".puml")
+                );
+
+                if (files != null && files.length > 0) {
+                    DiagramImportPipeline pipeline = new DiagramImportPipeline(); // No single file required for batch import
+                    pipeline.importMultipleFiles(Arrays.asList(files));
+                } else {
+                    JOptionPane.showMessageDialog(
+                        parentFrame,
+                        "No valid diagram files found in the selected folder.",
+                        "Warning",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                }
+            }
+        }
     }
 
     public void update(VPAction action) {
         // No additional logic needed for updating the action
     }
 }
-

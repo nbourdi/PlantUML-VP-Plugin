@@ -169,11 +169,15 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 			IAssociationEnd fromEnd = (IAssociationEnd) association.getFromEnd();
 			IAssociationEnd toEnd = (IAssociationEnd) association.getToEnd();
-
-			String fromEndMultiplicity = fromEnd.getMultiplicity().equals("Unspecified") ? ""
-					: fromEnd.getMultiplicity();
-			String toEndMultiplicity = toEnd.getMultiplicity().equals("Unspecified") ? "" : toEnd.getMultiplicity();
-
+			String fromEndMultiplicity = "";
+			String toEndMultiplicity = "" ;
+			
+			if (fromEnd.getMultiplicity() != null) {
+				 fromEndMultiplicity = fromEnd.getMultiplicity().equals("Unspecified") ? "" : fromEnd.getMultiplicity();
+			}
+			if (toEnd.getMultiplicity() != null) {
+				 toEndMultiplicity = toEnd.getMultiplicity().equals("Unspecified") ? "" : toEnd.getMultiplicity();
+			}
 			AssociationData associationData = new AssociationData(sourceName, targetName, relationship.getModelType(),
 					relationship.getName(), fromEndMultiplicity, toEndMultiplicity,
 					// fromEnd.getNavigable() == 0,
@@ -185,7 +189,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 		ApplicationManager.instance().getViewManager()
 				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
-		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),

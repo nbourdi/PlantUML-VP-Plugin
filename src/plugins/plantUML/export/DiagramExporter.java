@@ -33,6 +33,7 @@ public class DiagramExporter {
 
 	        SemanticsData semanticsData = new SemanticsData();
 	        semanticsData.setOwnerName(modelElement.getName());
+	        semanticsData.setOwnerType(modelElement.getModelType());
 	        semanticsData.setReferences(extractedReferences);
 	        semanticsData.setSubDiagrams(extractedSubdiagrams);
 	        semanticsData.setDescription(description); 
@@ -126,8 +127,6 @@ public class DiagramExporter {
 		if (subDiagrams != null) {
 			for (IDiagramUIModel subDiagram : subDiagrams) {
 				subDiagramDatas.add(new SubDiagramData(subDiagram.getName(), subDiagram.getType()));
-//				ApplicationManager.instance().getViewManager()
-//						.showMessage("=====SUBDIAGRAM:: " + subDiagram.getName() + " " + subDiagram.getType());
 			}
 		}
 		return subDiagramDatas;

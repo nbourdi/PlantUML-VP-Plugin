@@ -12,6 +12,7 @@ import com.vp.plugin.view.IDialogHandler;
 import plugins.plantUML.export.ClassDiagramExporter;
 import plugins.plantUML.export.DiagramExportPipeline;
 import plugins.plantUML.export.UseCaseDiagramExporter;
+import plugins.plantUML.models.SemanticsData;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -180,18 +181,20 @@ public class PlantUMLExportController implements VPActionController {
                 }
 
                 DiagramExportPipeline pipeline = new DiagramExportPipeline(outputFolder);
-
-                for (IDiagramUIModel activeDiagram : selectedDiagrams) {
-                    try {
-                        pipeline.export(activeDiagram);
-                    } catch (IOException ex) {
-                        ApplicationManager.instance().getViewManager()
-                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error processing diagram: " + activeDiagram.getName() + "\n" + ex.getMessage());
-                    } catch (UnsupportedOperationException ex) {
-                        ApplicationManager.instance().getViewManager()
-                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), ex.getMessage());
-                    }
-                }
+                pipeline.exportDiagramList(selectedDiagrams);
+                
+//                for (IDiagramUIModel activeDiagram : selectedDiagrams) {
+//                    try {
+//                        pipeline.export(activeDiagram);
+//                        List<SemanticsData> semanticsDatas = pipeline.
+//                    } catch (IOException ex) {
+//                        ApplicationManager.instance().getViewManager()
+//                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error processing diagram: " + activeDiagram.getName() + "\n" + ex.getMessage());
+//                    } catch (UnsupportedOperationException ex) {
+//                        ApplicationManager.instance().getViewManager()
+//                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), ex.getMessage());
+//                    }
+//                }
 
                 ApplicationManager.instance().getViewManager()
                     .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error

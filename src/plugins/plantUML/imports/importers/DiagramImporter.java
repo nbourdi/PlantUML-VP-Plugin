@@ -2,13 +2,21 @@ package plugins.plantUML.imports.importers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
 import plugins.plantUML.models.NoteData;
+import plugins.plantUML.models.SemanticsData;
 
 public class DiagramImporter {	
 	
+	private Map<String, SemanticsData> semanticsMap;
+	
+	public DiagramImporter(Map<String, SemanticsData> semanticsMap) {
+		this.setSemanticsMap(semanticsMap);
+	}
+
 	protected String convertVisibility(VisibilityModifier visibilityModifier) {
 		if (visibilityModifier == VisibilityModifier.PUBLIC_METHOD 
 				|| visibilityModifier == VisibilityModifier.PUBLIC_FIELD)
@@ -43,6 +51,14 @@ public class DiagramImporter {
 	        return bracketedString.substring(1, bracketedString.length() - 1);
 	    }
 	    return bracketedString;
+	}
+
+	public Map<String, SemanticsData> getSemanticsMap() {
+		return semanticsMap;
+	}
+
+	public void setSemanticsMap(Map<String, SemanticsData> semanticsMap) {
+		this.semanticsMap = semanticsMap;
 	}
 
 	

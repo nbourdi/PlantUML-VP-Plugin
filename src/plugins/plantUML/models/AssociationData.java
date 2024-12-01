@@ -10,8 +10,8 @@ public class AssociationData extends RelationshipData {
 	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
 			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation) {
 		super(source, target, type, name);
-		this.fromEndMultiplicity = fromEndMultiplicity;
-		this.toEndMultiplicity = toEndMultiplicity;
+		this.fromEndMultiplicity = fromEndMultiplicity == null ? "" : fromEndMultiplicity;
+		this.toEndMultiplicity = toEndMultiplicity == null ? "" : toEndMultiplicity;
 		// this.fromEndNavigable = fromEndNavigable;
 		this.toEndNavigable = toEndNavigable;
 		if (fromEndAggregation == "shared") {

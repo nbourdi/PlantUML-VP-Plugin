@@ -25,6 +25,8 @@
 }
 +class Class122 {
 }
+-class Class122 {
+}
 +class Class112 {
 }
 +class Class102 {
