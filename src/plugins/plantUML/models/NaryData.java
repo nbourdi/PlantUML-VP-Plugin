@@ -1,14 +1,15 @@
 package plugins.plantUML.models;
 
-public class NaryData {
+public class NaryData extends BaseWithSemanticsData {
     private String name;
     private String id;
     private boolean isInPackage;
     private String alias;
     private String Uid;
     
-    public NaryData(String name, String id, boolean isInPackage) {
-        this.name = (name != null && !name.isEmpty()) ? name : null;
+    public NaryData(String name, String description, String id, boolean isInPackage) {
+        super(name, description);
+    	this.name = (name != null && !name.isEmpty()) ? name : null;
         this.id = id;
         this.isInPackage = isInPackage;
         this.alias = generateAlias();
@@ -23,10 +24,6 @@ public class NaryData {
     
     public String getId() {
         return id;
-    }
-    
-    public String getName() {
-        return name;
     }
 
     public String getAlias() {

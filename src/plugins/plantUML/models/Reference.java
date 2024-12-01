@@ -2,6 +2,9 @@ package plugins.plantUML.models;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class Reference {
+	
+	public Reference() {} // required for jackson json parsing
+ 
 	private String type; // diagram, url, file, folder, shape, model
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)

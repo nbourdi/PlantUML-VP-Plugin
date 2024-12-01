@@ -20,6 +20,7 @@ import com.vp.plugin.model.IRelationship;
 import plugins.plantUML.export.writers.ClassUMLWriter;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
+import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
 import plugins.plantUML.models.NoteData;
@@ -48,7 +49,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 	List<PackageData> exportedPackages = new ArrayList<>();
 	List<NaryData> exportedNary = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
-	// List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
 
 	public ClassDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
@@ -95,46 +95,25 @@ public class ClassDiagramExporter extends DiagramExporter {
 		classData.setStereotypes(extractStereotypes(classModel));
 		extractAttributes(classModel, classData);
 		extractOperations(classModel, classData);
-
-//		List<plugins.plantUML.models.Reference> references = extractReferences((IHasChildrenBaseModelElement) classModel); // TODO: clean up
-//		List<SubDiagramData> subdiagrams = extractSubdiagrams(classModel);
-
-//		// cluttered : extractSemantics move to base diagram exporter, semantics data move to base element (need create?)
-//		boolean hasSemantics = false;
-//		if (!references.isEmpty() && references != null)
-//			hasSemantics = true;
-//			classData.getSemantics().setReferences(references);
-//		if (!subdiagrams.isEmpty() && references != null)
-//			hasSemantics = true;
-//			classData.getSemantics().setSubDiagrams(subdiagrams);
-//			
-//		if(hasSemantics) {
-//			classData.getSemantics().setOwnerName(classData.getName());
-//			classData.getSemantics().setDescription(classData.getDescription());
-//		}
-//		
-
-		SemanticsData semantics = extractSemantics(classModel);
-
-		if (semantics != null) {
-			classData.setSemantics(extractSemantics(classModel));
-			getExportedSemantics().add(classData.getSemantics());
-		}
 		
+		addSemanticsIfExist(classModel, classData);
 		exportedClasses.add(classData);
 		if (packageData != null)
 			packageData.getClasses().add(classData);
 	}
 
+
+
 	private void extractNary(INARY naryModel, PackageData packageData) {
 		boolean isInPackage = (naryModel.getParent() instanceof IPackage);
 		String name = naryModel.getName();
 		String id = naryModel.getId();
-		NaryData naryData = new NaryData(name, id, isInPackage);
-		exportedNary.add(naryData);
+		NaryData naryData = new NaryData(name, naryModel.getDescription(), id, isInPackage);
+		addSemanticsIfExist(naryModel, naryData);
+		
 		if (packageData != null)
 			packageData.getNaries().add(naryData);
-
+		else exportedNary.add(naryData); // i changed if bug
 	}
 
 	private String getNaryAliasById(String naryId) {
@@ -199,7 +178,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackage(IPackage packageModel) {
 
 		if (!(packageModel.getParent() instanceof IPackage)) {
-			PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false, false);
+			PackageData packageData = new PackageData(packageModel.getName(), null, null, null, null, false, false);
 			IModelElement[] childElements = packageModel.toChildArray();
 			for (IModelElement childElement : childElements) {
 				if (childElement instanceof IClass) {
@@ -212,6 +191,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 				}
 			}
+			addSemanticsIfExist(packageModel, packageData);
 			exportedPackages.add(packageData);
 		}
 	}
@@ -219,7 +199,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
 		ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
 
-		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true, false);
+		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, null, true, false);
 		IModelElement[] childElements = packageModel.toChildArray();
 		for (IModelElement childElement : childElements) {
 			if (childElement instanceof IClass) {

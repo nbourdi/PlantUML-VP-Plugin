@@ -3,7 +3,7 @@ package plugins.plantUML.models;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PackageData {
+public class PackageData extends BaseWithSemanticsData {
     private String packageName;
     private List<ClassData> classes; 
     private List<PackageData> subPackages; // Nested packages if any
@@ -14,8 +14,9 @@ public class PackageData {
     private boolean isRectangle; // is System in reality, but systems are not a different type in puml , just a rectangle shape
     private String Uid;
 
-    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
-        this.packageName = packageName;
+    public PackageData(String packageName, String description, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
+        super(packageName, description);
+    	this.packageName = packageName;
         this.classes = classes != null ? classes : new ArrayList<>();
         this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
         this.setNaries(naries != null ? naries : new ArrayList<>());

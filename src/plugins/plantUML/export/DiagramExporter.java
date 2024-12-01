@@ -11,6 +11,7 @@ import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IReference;
 import com.vp.plugin.model.IStereotype;
 
+import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.Reference;
 import plugins.plantUML.models.SemanticsData;
@@ -58,7 +59,7 @@ public class DiagramExporter {
 
 			switch (reference.getType()) {
 			case IReference.TYPE_DIAGRAM:
-				referenceData = new Reference("diagram", reference.getDescription(), reference.getName(), reference.getUrlAsDiagram().getType()); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
+				referenceData = new Reference("diagram", reference.getDescription(), reference.getUrlAsDiagram().getName(), reference.getUrlAsDiagram().getType()); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
 				break;
 
 			case IReference.TYPE_URL:
@@ -132,6 +133,15 @@ public class DiagramExporter {
 		return subDiagramDatas;
 	}
 
+	protected void addSemanticsIfExist(IHasChildrenBaseModelElement modelElement, BaseWithSemanticsData modelData) {
+		SemanticsData semantics = extractSemantics(modelElement);
+
+		if (semantics != null) {
+			modelData.setSemantics(extractSemantics(modelElement));
+			getExportedSemantics().add(modelData.getSemantics());
+		}
+	}
+	
 	public List<NoteData> getNotes() {
 		return noteDatas;
 	}

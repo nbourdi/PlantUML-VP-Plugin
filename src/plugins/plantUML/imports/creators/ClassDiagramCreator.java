@@ -25,6 +25,7 @@ import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IGeneralization;
+import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IDependency;
 import com.vp.plugin.model.INARY;
 import com.vp.plugin.model.INOTE;
@@ -44,6 +45,7 @@ import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.OperationData.Parameter;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.SemanticsData;
 
 public class ClassDiagramCreator extends DiagramCreator {
 
@@ -56,7 +58,8 @@ public class ClassDiagramCreator extends DiagramCreator {
 	
 	Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
 	Map<IModelElement, IShapeUIModel> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
-
+	
+	
 	public ClassDiagramCreator(String diagramTitle, List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas) {
 		super(diagramTitle);
 		this.classDatas = classDatas;
@@ -188,6 +191,7 @@ public class ClassDiagramCreator extends DiagramCreator {
 		String entityId = naryData.getUid();
 		elementMap.put(entityId, naryModel);
 		naryModel.setName(naryData.getName());
+		putInSemanticsMap(naryModel, naryData);
 		INARYUIModel naryShape = (INARYUIModel) diagramManager.createDiagramElement(classDiagram, naryModel);
 		shapeMap.put(naryModel, naryShape);
 		return naryModel;
@@ -217,6 +221,8 @@ public class ClassDiagramCreator extends DiagramCreator {
 			packageModel.addChild(subPackageModel);
 			packageShape.addChild(shapeMap.get(subPackageModel));			
 		}
+
+		putInSemanticsMap(packageModel, packageData);
 		return packageModel; 
 	}
 
@@ -264,10 +270,14 @@ public class ClassDiagramCreator extends DiagramCreator {
 			}
 			classModel.addOperation(operationModel);
 		}
+
+		putInSemanticsMap(classModel, classData);
 		
 		IClassUIModel classShape = (IClassUIModel) diagramManager.createDiagramElement(classDiagram, classModel);
 		shapeMap.put(classModel, classShape);
 		classShape.fitSize();
 		return classModel;
 	}
+
+	
 }

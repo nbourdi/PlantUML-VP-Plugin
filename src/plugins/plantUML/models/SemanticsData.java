@@ -1,5 +1,6 @@
 package plugins.plantUML.models;
 
+import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -10,10 +11,10 @@ public class SemanticsData {
 	private String ownerType;
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	private List<Reference> references;
+	private List<Reference> references = new ArrayList<Reference>();
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	private List<SubDiagramData> subDiagrams;
+	private List<SubDiagramData> subDiagrams = new ArrayList<SubDiagramData>();
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	private String description;

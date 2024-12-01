@@ -9,6 +9,8 @@ public class SubDiagramData {
 		this.type = type;
 	}
 	
+	public SubDiagramData() {} // required for jackson json parsing
+	
 	public String getName() {
 		return name;
 	}

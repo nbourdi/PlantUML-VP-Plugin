@@ -14,6 +14,12 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vp.plugin.ApplicationManager;
+import com.vp.plugin.diagram.IDiagramUIModel;
+import com.vp.plugin.model.IHasChildrenBaseModelElement;
+import com.vp.plugin.model.IModelElement;
+import com.vp.plugin.model.IProject;
+import com.vp.plugin.model.IReference;
+import com.vp.plugin.model.factory.IModelElementFactory;
 
 import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
@@ -21,7 +27,9 @@ import net.sourceforge.plantuml.jsondiagram.JsonDiagram;
 import net.sourceforge.plantuml.syntax.SyntaxChecker;
 import net.sourceforge.plantuml.syntax.SyntaxResult;
 import plugins.plantUML.imports.creators.ClassDiagramCreator;
+import plugins.plantUML.models.Reference;
 import plugins.plantUML.models.SemanticsData;
+import plugins.plantUML.models.SubDiagramData;
 
 public class DiagramImportPipeline {
 
@@ -30,10 +38,11 @@ public class DiagramImportPipeline {
     // Hash map to contain the mapping of entities to semanticsData for lookup when creating 
     // String key is of format ownerName|ownerType to uniquely map to an element
     Map<String, SemanticsData> semanticsMap = new HashMap<>();
-
-//    public DiagramImportPipeline(File inputFile) {
-//        this.inputFile = inputFile;
-//    }
+    
+    // Have to wait for every model element and reference to be added so that
+    // no null references or subdiagrams are left hanging or unimported.
+    // For that, collect and update this map from every diagram import
+    Map<IHasChildrenBaseModelElement, SemanticsData> modelSemanticsMap = new HashMap<IHasChildrenBaseModelElement, SemanticsData>();
 
     public void importMultipleFiles(List<File> files) {
         List<File> jsonFiles = new ArrayList<>();
@@ -86,15 +95,13 @@ public class DiagramImportPipeline {
         // Import other diagrams
         for (File otherFile : otherFiles) {
         	importFromSource(otherFile);
-//            try {
-//                String source = new String(Files.readAllBytes(otherFile.toPath()), StandardCharsets.UTF_8);
-//                importFromSource(source);
-//            } catch (IOException e) {
-//                ApplicationManager.instance().getViewManager().showMessageDialog(
-//                        ApplicationManager.instance().getViewManager().getRootFrame(),
-//                        "Error importing diagram: " + otherFile.getName() + "\n" + e.getMessage()
-//                );
-//            }
+        }
+        
+        for (Map.Entry<IHasChildrenBaseModelElement, SemanticsData> entry : modelSemanticsMap.entrySet()) {
+            IHasChildrenBaseModelElement modelElement = entry.getKey();
+            SemanticsData semanticsData = entry.getValue();
+
+            setModelElementSemantics(modelElement, semanticsData);
         }
     }
     private void importSemantics(String source) {
@@ -110,7 +117,7 @@ public class DiagramImportPipeline {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             // Parsing  JSON source string into a list of SemanticsData 
-            List<SemanticsData> semanticsDataList = objectMapper.readValue(source, new TypeReference<List<SemanticsData>>() {});
+            List<SemanticsData> semanticsDataList = objectMapper.readValue(jsonContent, new TypeReference<List<SemanticsData>>() {});
 
             for (SemanticsData semanticsData : semanticsDataList) {
                 String key = semanticsData.getOwnerName() + "|" + semanticsData.getOwnerType();
@@ -125,7 +132,7 @@ public class DiagramImportPipeline {
     
     private String extractJsonContent(String source) {
         // regex to match json between @startuml and @enduml
-        Pattern pattern = Pattern.compile("@startuml(.*?)@enduml", Pattern.DOTALL);
+        Pattern pattern = Pattern.compile("@startjson(.*?)@endjson", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(source);
 
         if (matcher.find()) {
@@ -143,7 +150,7 @@ public class DiagramImportPipeline {
             SyntaxResult result = SyntaxChecker.checkSyntax(lines);
 
             if (result.isError()) {
-                // If there are syntax errors, display them
+                // If there are syntax errors, display line at fault
                 StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
                 for (String error : result.getErrors()) {
                     errorMessage.append(" - ").append(error)
@@ -173,6 +180,8 @@ public class DiagramImportPipeline {
                     importer.getNoteDatas()
             );
             creator.createDiagram();
+            modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
+        
         } catch (IOException e) {
             ApplicationManager.instance().getViewManager().showMessageDialog(
                     ApplicationManager.instance().getViewManager().getRootFrame(),
@@ -180,4 +189,85 @@ public class DiagramImportPipeline {
             );
         }
     }
+	
+	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData) {
+		
+		// TODO I need to fetch the diagrams everytime ? depends when i call this and from where
+		// could move up to class fields
+		IProject project = ApplicationManager.instance().getProjectManager().getProject();
+		IDiagramUIModel[] diagrams = project.toDiagramArray();
+		IModelElement[] modelElements = project.toModelElementArray();
+		
+		
+		String desc = semanticsData.getDescription();
+		List<SubDiagramData> subDiagramDatas = semanticsData.getSubDiagrams();
+		List<Reference> references = semanticsData.getReferences();
+		
+		Map<String, IDiagramUIModel> diagramLookup = new HashMap<>();
+		for (IDiagramUIModel diagram : diagrams) {
+		    diagramLookup.put(diagram.getName(), diagram);
+		}
+		
+		
+		for (SubDiagramData subDiagramData : subDiagramDatas) {
+		    String subDiagramName = subDiagramData.getName();
+
+		    IDiagramUIModel diagram = diagramLookup.get(subDiagramName);
+		    if (diagram != null) {
+		        modelElement.addSubDiagram(diagram);
+		    }
+		}
+		
+		Map<String, IModelElement> modelElementLookup = new HashMap<>();
+		for (IModelElement projectModelElement : modelElements) {
+		    modelElementLookup.put(projectModelElement.getName(), projectModelElement);
+		}
+	
+		for (Reference reference : references) {
+			IReference referenceModel = IModelElementFactory.instance().createReference();
+			modelElement.addReference(referenceModel);
+			referenceModel.setDescription(reference.getDescription());
+		    
+			switch (reference.getType()) {
+		    case "diagram":
+		    	referenceModel.setUrlAsDiagram(diagramLookup.get(reference.getName()));
+		        referenceModel.setType(IReference.TYPE_DIAGRAM);
+		        referenceModel.setName(reference.getName());
+		        // referenceModel.setUrl(reference.getName());
+		        break;
+		    case "url":
+		        referenceModel.setType(IReference.TYPE_URL);
+		        referenceModel.setUrl(reference.getName());
+		        break;
+		    case "file":
+		        referenceModel.setType(IReference.TYPE_FILE);
+		        referenceModel.setUrl(reference.getName());
+		        break;
+		    case "folder":
+		        referenceModel.setType(IReference.TYPE_FOLDER);
+		        referenceModel.setUrl(reference.getName());
+		        break;
+		    case "shape":
+		        referenceModel.setType(IReference.TYPE_SHAPE);
+		        referenceModel.setName(reference.getName());
+		        break;
+		    case "model_element":
+		    	referenceModel.setUrlAsModel(modelElementLookup.get(reference.getName()));
+		    	ApplicationManager.instance().getViewManager().showMessage("reference.getName() " +reference.getName() + " referencemodel url " + referenceModel.getUrl() + " res of lookup " );
+		    	
+		        referenceModel.setType(IReference.TYPE_MODEL_ELEMENT);
+		        referenceModel.setName(reference.getName());
+		        break;
+		    
+		    default:
+		    	ApplicationManager.instance().getViewManager()
+		         .showMessage("Unknown reference type: " + reference.getType());
+		        break;
+			}
+			
+		}
+			
+		modelElement.setDescription(desc);
+	}
+	
 }

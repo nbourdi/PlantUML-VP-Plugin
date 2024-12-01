@@ -77,7 +77,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
 			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
 
-
+			
 			for (Entity packagedLeaf : groupEntity.leafs()) {
 				extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
 			}
@@ -87,8 +87,16 @@ public class ClassDiagramImporter extends DiagramImporter {
 				packagedPackageDatas.add(extractGroup(subgroupEntity));
 			}
 
-			packageData = new PackageData(groupEntity.getName(), packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
+			String name = removeBrackets(groupEntity.getDisplay().toString());
+			packageData = new PackageData(groupEntity.getName(), null, packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
 			packageData.setUid(groupEntity.getUid());
+			
+			String key = name + "|Package";
+			
+			boolean hasSemantics = getSemanticsMap().containsKey(key);
+			
+			if (hasSemantics) packageData.setSemantics(getSemanticsMap().get(key));
+			
 			if (groupEntity.getParentContainer().isRoot()) {
 				packageDatas.add(packageData);
 			}
@@ -227,19 +235,27 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	private NaryData extractNary(Entity entity) {
-		NaryData naryData = new NaryData(entity.getName(), null, false);
+		
+		String name = removeBrackets(entity.getDisplay().toString());
+		NaryData naryData = new NaryData(entity.getName(), null, null, false);
 		naryData.setUid(entity.getUid());
+		
+		String key = name + "|NARY";
+		boolean hasSemantics = getSemanticsMap().containsKey(key);
+		
+		if (hasSemantics) naryData.setSemantics(getSemanticsMap().get(key));
 		return naryData;
 	}
 
 	private ClassData extractClass(Entity entity, LeafType classLeafType) {
 
 		String visibility = convertVisibility(entity.getVisibilityModifier());
-		ClassData classData = new ClassData(entity.getDisplay().toString(), false, visibility, false, null);
+		String name = removeBrackets(entity.getDisplay().toString());
+		ClassData classData = new ClassData(name, false, visibility, false, null);
 		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
 		
 		// TODO : get display or get name.... might cause trouble
-		String key = entity.getDisplay() + "|Class";
+		String key = name + "|Class";
 		
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
 		
