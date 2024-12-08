@@ -2,23 +2,12 @@ package plugins.plantUML;
 
 import java.io.File;
 
-import com.vp.plugin.VPPlugin;
 import com.vp.plugin.VPPluginCommandLineSupport;
-import com.vp.plugin.VPPluginInfo;
 
 import plugins.plantUML.imports.importers.DiagramImportPipeline;
 
-public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
+public class CommandLineSupport implements VPPluginCommandLineSupport {
 
-	@Override
-	public void loaded(VPPluginInfo pluginInfo) {
-		
-	}
-
-	@Override
-	public void unloaded() {
-		
-	}
     @Override
     public void invoke(String[] args) {
         if (args == null || args.length < 2) {
@@ -29,6 +18,7 @@ public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
         String action = null;
         String path = null;
 
+        // Parse arguments
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-action":
@@ -59,6 +49,7 @@ public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
             return;
         }
 
+        // Perform action
         switch (action.toLowerCase()) {
             case "import":
                 performImport(path);
@@ -84,6 +75,5 @@ public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
         // Implement your export logic here
         System.out.println("Exporting to path: " + path);
         // TODO: Add actual export functionality
-    
     }
 }

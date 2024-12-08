@@ -11,10 +11,14 @@ import java.util.regex.Pattern;
 
 import com.vp.plugin.ApplicationManager;
 
+import javassist.expr.NewArray;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
 import net.sourceforge.plantuml.cucadiagram.Member;
+import net.sourceforge.plantuml.decoration.LinkType;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
+import net.sourceforge.plantuml.wire.WLinkType;
 import plugins.plantUML.models.AssociationData;
+import plugins.plantUML.models.AssociationPoint;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
@@ -37,6 +41,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 	private List<NaryData> naryDatas = new ArrayList<NaryData>();
 	private List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
 	private List<NoteData> noteDatas = new ArrayList<NoteData>();
+
+	private List<AssociationPoint> associationPoints = new ArrayList<AssociationPoint>();
+
+	private Map<String, AssociationPoint> assocPointMap = new HashMap<String, AssociationPoint>();
 
 
 	public ClassDiagramImporter(ClassDiagram classDiagram, Map<String, SemanticsData> semanticsMap) {
@@ -66,6 +74,8 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		}
 
+
+
 	}
 
 	private PackageData extractGroup(Entity groupEntity) {
@@ -77,11 +87,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
 			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
 
-			
+
 			for (Entity packagedLeaf : groupEntity.leafs()) {
 				extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
 			}
-
 
 			for (Entity subgroupEntity : groupEntity.groups()) {
 				packagedPackageDatas.add(extractGroup(subgroupEntity));
@@ -90,13 +99,13 @@ public class ClassDiagramImporter extends DiagramImporter {
 			String name = removeBrackets(groupEntity.getDisplay().toString());
 			packageData = new PackageData(groupEntity.getName(), null, packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
 			packageData.setUid(groupEntity.getUid());
-			
+
 			String key = name + "|Package";
-			
+
 			boolean hasSemantics = getSemanticsMap().containsKey(key);
-			
+
 			if (hasSemantics) packageData.setSemantics(getSemanticsMap().get(key));
-			
+
 			if (groupEntity.getParentContainer().isRoot()) {
 				packageDatas.add(packageData);
 			}
@@ -126,35 +135,46 @@ public class ClassDiagramImporter extends DiagramImporter {
 			return null;
 		}
 		String lineStyle = link.getType().getStyle().toString();
-		ApplicationManager.instance().getViewManager()
-		.showMessage(lineStyle);
+
 		boolean isReverse = (lineStyle.contains("NORMAL")); // meaning the "from" side has the decoration
 		boolean isAssoc = false;
+		boolean isAssocClassSolid = false;
+		boolean isAssocClassDashed= false;
 
 		//TODO check if theyre in the right way
 		String fromEndMultiplicity = link.getLinkArg().getQuantifier1();
 		String toEndMultiplicity = link.getLinkArg().getQuantifier2();
 		String fromEndAggregation = "";
 		if (lineStyle.contains("NORMAL")) {
-			// association, containment, composition, agregation
-			// TODO containment
+			// association, containment, composition, agregation are solid line links
 
 			if (decor == "COMPOSITION") {
 				relationshipType = "Composition";
 				fromEndAggregation = "composite";
 				isAssoc = true;
+				{
+					isAssocClassSolid = true;
+				}
 			} else if (decor == "AGREGATION") {
 				relationshipType = "Aggregation";
 				fromEndAggregation = "shared";
 				isAssoc = true;
+				if (link.getEntity1().getLeafType() == LeafType.POINT_FOR_ASSOCIATION || link.getEntity2().getLeafType() == LeafType.POINT_FOR_ASSOCIATION)
+				{
+					isAssocClassSolid = true;
+				}
 			} else if (!isDecorated1 && !isDecorated2) {
 				relationshipType = "Simple";
 				isAssoc = true;
+				{
+					isAssocClassSolid = true;
+				}
 			} else if (decor == "EXTENDS") { // TODO : arrow with solid line isnt in VP.. but means extend in puml
 				relationshipType = "Generalization";
 			} else if (decor == "CROWFOOT") {
 				relationshipType = "Containment";
 			}
+
 		} else {
 			// DASHED
 			switch (decor) {
@@ -165,8 +185,13 @@ public class ClassDiagramImporter extends DiagramImporter {
 			case "ARROW": // > , abstraction and all stereotypes + dependency stereotypes all look the same...
 				relationshipType = "Dependency";
 				break;
-			case "NONE": // SHOULD ONLY BE FOR NOTES.
-				relationshipType = "Anchor";
+			case "NONE": // ".." note anchor or assoc class
+				if (link.getEntity1().getLeafType() == LeafType.POINT_FOR_ASSOCIATION || link.getEntity2().getLeafType() == LeafType.POINT_FOR_ASSOCIATION)
+				{
+					relationshipType = "AssociationClass";
+					isAssocClassDashed = true;
+				}
+				else relationshipType = "Anchor"; 
 				break;
 
 			default:
@@ -187,13 +212,43 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		if(relationshipType == "") return null; // TODO: temp fix. 
 
-		if (isAssoc) {
-			ApplicationManager.instance().getViewManager()
-			.showMessage("in isAssoc ");
-			AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
-			associationData.setSourceID(sourceID);
-			associationData.setTargetID(targetID);
-			return associationData;
+		if (isAssocClassSolid || isAssocClassDashed)  {
+
+			Entity pointEntity;
+			Entity otherEntity;
+
+			if (link.getEntity1().getLeafType() == LeafType.POINT_FOR_ASSOCIATION) {
+				pointEntity = link.getEntity1(); 
+				otherEntity = link.getEntity2();
+			} else {
+				pointEntity = link.getEntity2();
+				otherEntity = link.getEntity1();
+			}
+
+
+			AssociationPoint associationPoint = assocPointMap.get(pointEntity.getUid()); 
+
+			if(isAssocClassDashed) { // the associationclass dashed relationship 
+
+
+				associationPoint.setToUid(otherEntity.getUid());
+				// no relationship add, we will add it as association class ?
+			}
+			else if (isAssocClassSolid) { // 
+				if (associationPoint.getFromUid1() == null) associationPoint.setFromUid1(otherEntity.getUid());
+				else {
+					// uid1 has been filled so we fill in uid2 and the full VP association is ready 
+					associationPoint.setFromUid2(otherEntity.getUid());
+
+				}
+			}
+			else if (isAssoc) {
+				AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+				associationData.setSourceID(sourceID);
+				associationData.setTargetID(targetID);
+
+				return associationData;
+			}
 
 		} else {
 			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
@@ -201,9 +256,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			relationshipData.setTargetID(targetID);
 			return relationshipData;
 		}
-
-
-
+		return null;
 	}
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
@@ -218,14 +271,19 @@ public class ClassDiagramImporter extends DiagramImporter {
 			// name, isAbstract = false as it is a different leaf type, visibility = converted to string from enum,
 
 			classes.add(extractClass(entity, leafType));		    
-		} else if (leafType == leafType.STATE_CHOICE || leafType == leafType.ASSOCIATION) { 
+		} else if (leafType == LeafType.STATE_CHOICE || leafType == LeafType.ASSOCIATION) { 
 			// TYPE DIAMOND (n-ary)
 			// Due to plantUml's internal purpose being simply rendering, STATE_CHOICE (state diagram choice)
 			// is also used for the diamond entity as they are displayed the same.
 			// When declared as "<>" instead of "diamond", the leaf type is ASSOCIATION.
 			naries.add(extractNary(entity));
-		} else if (leafType == leafType.NOTE) {
+		} 
+		else if (leafType == LeafType.NOTE) {
 			noteDatas.add(extractNote(entity));
+		} else if (leafType == LeafType.POINT_FOR_ASSOCIATION) {
+			AssociationPoint point = new AssociationPoint(entity.getUid());
+			associationPoints.add(point);
+			assocPointMap.put(entity.getUid(), point);
 		}
 
 		else {
@@ -235,14 +293,14 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	private NaryData extractNary(Entity entity) {
-		
+
 		String name = removeBrackets(entity.getDisplay().toString());
 		NaryData naryData = new NaryData(entity.getName(), null, null, false);
 		naryData.setUid(entity.getUid());
-		
+
 		String key = name + "|NARY";
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
-		
+
 		if (hasSemantics) naryData.setSemantics(getSemanticsMap().get(key));
 		return naryData;
 	}
@@ -253,12 +311,12 @@ public class ClassDiagramImporter extends DiagramImporter {
 		String name = removeBrackets(entity.getDisplay().toString());
 		ClassData classData = new ClassData(name, false, visibility, false, null);
 		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
-		
+
 		// TODO : get display or get name.... might cause trouble
 		String key = name + "|Class";
-		
+
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
-		
+
 		if (hasSemantics) classData.setSemantics(getSemanticsMap().get(key));
 
 		Pattern pattern = Pattern.compile("<<([^>]+)>>");
@@ -295,14 +353,17 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		List<String> basicTypes = Arrays.asList("int", "char", "string", "boolean", "float", "double", "void", "short",
 				"byte");
+		String typesPattern = String.join("|", basicTypes);
+		Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
+
 		// fields:: MOST OF THIS IS CONVENTION BASED, NOT SOLIDLY DEFINED SYNTAX
 		for (CharSequence cs : entity.getBodier().getFieldsToDisplay()) {
 			final Member m = (Member) cs;
 			final VisibilityModifier fieldModifier = m.getVisibilityModifier();
 			String attrVisibility = convertVisibility(fieldModifier);
 			String scope = m.isStatic() ? "classifier" : "instance";
-			String typesPattern = String.join("|", basicTypes);
-			Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
+			//String typesPattern = String.join("|", basicTypes);
+			//Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
 			Matcher matcher1 = pattern1.matcher(m.getDisplay(false));
 			String detectedType = "";
 
@@ -318,7 +379,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			String detectedValue = null;
 
 			if (valueMatcher.find())
-				detectedValue = valueMatcher.group(1); // Capture the value after '='
+				detectedValue = valueMatcher.group(1); // Captures the value after '='
 
 			if (detectedValue != null)
 				attributeName = attributeName.replaceAll("=\\s*" + Pattern.quote(detectedValue), "").trim();
@@ -333,7 +394,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			String opVisibility = convertVisibility(methodModifier);
 
 			String scope = m.isStatic() ? "classifier" : "instance";
-			String typesPattern = String.join("|", basicTypes);
+
 			Pattern returnTypePattern = Pattern.compile("\\b(" + typesPattern + ")\\b(?=\\s+\\w+\\()");
 			Matcher returnTypeMatcher = returnTypePattern.matcher(m.getDisplay(false));
 			String detectedReturnType = "";
@@ -358,20 +419,23 @@ public class ClassDiagramImporter extends DiagramImporter {
 				String paramName = null;
 				String paramValue = null;
 
-				String[] parts = param.split("\\s+");
-				for (int i = 0; i < parts.length; i++) {
-					String part = parts[i];
-
-					if (basicTypes.contains(part)) {
-						paramType = part;
-					} else if (i == parts.length - 1 && part.contains("=")) {
-						String[] nameValue = part.split("=");
-						paramName = nameValue[0].trim();
-						paramValue = nameValue[1].trim();
-					} else {
-						paramName = part;
-					}
+				String[] nameValueParts = param.split("=", 2); 
+				String namePart = nameValueParts[0].trim(); 
+				if (nameValueParts.length > 1) {
+					paramValue = nameValueParts[1].trim(); 
 				}
+
+				String[] nameParts = namePart.split("\\s+"); 
+				if (nameParts.length == 1) {
+					paramName = nameParts[0];
+				} else {
+					if (basicTypes.contains(nameParts[0])) {
+						paramType = nameParts[0];
+						paramName = nameParts[1]; 
+					} else {
+						paramName = nameParts[1] + " : " + nameParts[0];			        }
+				}
+
 				if (paramName != null && !paramName.isEmpty()) {
 					Parameter parameter = new Parameter(paramName, paramType, paramValue);
 					parameters.add(parameter);
@@ -404,5 +468,8 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	public List<NoteData> getNoteDatas() {
 		return noteDatas;
+	}
+	public List<AssociationPoint> getAssociationPoints() {
+		return associationPoints;
 	}
 }

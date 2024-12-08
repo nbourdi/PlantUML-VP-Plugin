@@ -7,6 +7,8 @@ public class AssociationData extends RelationshipData {
 	// private boolean fromEndNavigable; // basically unsupported 
 	private boolean toEndNavigable;
 	
+	private String Uid;
+	
 	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
 			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation) {
 		super(source, target, type, name);
@@ -43,14 +45,14 @@ public class AssociationData extends RelationshipData {
 	    }
 
 	    // Construct the export format string with multiplicities and navigability
-	    output.append(formatName(getSource()))
+	    output.append(formatAlias(getSource()))
 	          .append(" ")
 	          .append(fromMultiplicity)
 	          .append(symbol)
 	          .append(toNavig)
 	          .append(toMultiplicity)
 	          .append(" ")
-	          .append(formatName(getTarget()))
+	          .append(formatAlias(getTarget()))
 	          .append(prefix)
 	          .append(getName())
 	          .append("\n");
@@ -68,6 +70,14 @@ public class AssociationData extends RelationshipData {
 	
 	public String getToEndMultiplicity() {
 		return toEndMultiplicity;
+	}
+
+	public String getUid() {
+		return Uid;
+	}
+
+	public void setUid(String uid) {
+		Uid = uid;
 	}
 
 }

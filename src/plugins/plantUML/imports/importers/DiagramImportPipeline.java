@@ -32,8 +32,8 @@ import plugins.plantUML.models.SemanticsData;
 import plugins.plantUML.models.SubDiagramData;
 
 public class DiagramImportPipeline {
-
-  //  private final File inputFile;
+	
+	IProject project = ApplicationManager.instance().getProjectManager().getProject();
     
     // Hash map to contain the mapping of entities to semanticsData for lookup when creating 
     // String key is of format ownerName|ownerType to uniquely map to an element
@@ -97,11 +97,14 @@ public class DiagramImportPipeline {
         	importFromSource(otherFile);
         }
         
+		IDiagramUIModel[] diagrams = project.toDiagramArray();
+		IModelElement[] modelElements = project.toAllLevelModelElementArray();
+        
         for (Map.Entry<IHasChildrenBaseModelElement, SemanticsData> entry : modelSemanticsMap.entrySet()) {
             IHasChildrenBaseModelElement modelElement = entry.getKey();
             SemanticsData semanticsData = entry.getValue();
 
-            setModelElementSemantics(modelElement, semanticsData);
+            setModelElementSemantics(modelElement, semanticsData, diagrams, modelElements);
         }
     }
     private void importSemantics(String source) {
@@ -168,6 +171,9 @@ public class DiagramImportPipeline {
             ClassDiagram classDiagram = (ClassDiagram) reader.getBlocks().get(0).getDiagram();
             
             String diagramTitle = sourceFile.getName();
+            if (diagramTitle.contains(".")) {
+                diagramTitle = diagramTitle.substring(0, diagramTitle.lastIndexOf('.'));
+            }
             ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram, semanticsMap);
             importer.extract();
 
@@ -177,7 +183,8 @@ public class DiagramImportPipeline {
                     importer.getPackageDatas(),
                     importer.getNaryDatas(),
                     importer.getRelationshipDatas(),
-                    importer.getNoteDatas()
+                    importer.getNoteDatas(),
+                    importer.getAssociationPoints()
             );
             creator.createDiagram();
             modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
@@ -190,15 +197,8 @@ public class DiagramImportPipeline {
         }
     }
 	
-	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData) {
-		
-		// TODO I need to fetch the diagrams everytime ? depends when i call this and from where
-		// could move up to class fields
-		IProject project = ApplicationManager.instance().getProjectManager().getProject();
-		IDiagramUIModel[] diagrams = project.toDiagramArray();
-		IModelElement[] modelElements = project.toModelElementArray();
-		
-		
+	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData, IDiagramUIModel[] diagrams, IModelElement[] modelElements) {
+				
 		String desc = semanticsData.getDescription();
 		List<SubDiagramData> subDiagramDatas = semanticsData.getSubDiagrams();
 		List<Reference> references = semanticsData.getReferences();
@@ -219,8 +219,9 @@ public class DiagramImportPipeline {
 		}
 		
 		Map<String, IModelElement> modelElementLookup = new HashMap<>();
+		// TODO: sos, this doesnt account for type, just puts name, need fix + not all packages
 		for (IModelElement projectModelElement : modelElements) {
-		    modelElementLookup.put(projectModelElement.getName(), projectModelElement);
+		    modelElementLookup.put(projectModelElement.getName() + "|" +projectModelElement.getModelType(), projectModelElement);
 		}
 	
 		for (Reference reference : references) {
@@ -252,7 +253,8 @@ public class DiagramImportPipeline {
 		        referenceModel.setName(reference.getName());
 		        break;
 		    case "model_element":
-		    	referenceModel.setUrlAsModel(modelElementLookup.get(reference.getName()));
+		    	referenceModel.setUrlAsModel(modelElementLookup.get(reference.getName()+ "|" + reference.getModelType()));
+		    	
 		    	ApplicationManager.instance().getViewManager().showMessage("reference.getName() " +reference.getName() + " referencemodel url " + referenceModel.getUrl() + " res of lookup " );
 		    	
 		        referenceModel.setType(IReference.TYPE_MODEL_ELEMENT);

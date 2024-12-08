@@ -1,44 +1,35 @@
 package plugins.plantUML.export;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IAssociation;
+import com.vp.plugin.model.IAssociationClass;
 import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
-import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INARY;
 import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IOperation;
 import com.vp.plugin.model.IPackage;
+import com.vp.plugin.model.IParameter;
 import com.vp.plugin.model.IRelationship;
 
-import plugins.plantUML.export.writers.ClassUMLWriter;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
-import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
 import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.OperationData;
+import plugins.plantUML.models.OperationData.Parameter;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
-import plugins.plantUML.models.SemanticsData;
-import plugins.plantUML.models.SubDiagramData;
-import plugins.plantUML.models.OperationData.Parameter;
-
-import com.vp.plugin.model.IParameter;
-import java.io.File;
-import java.io.IOException;
-import java.lang.ref.Reference;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.poi.openxml4j.opc.Package;
 
 public class ClassDiagramExporter extends DiagramExporter {
 
@@ -49,6 +40,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 	List<PackageData> exportedPackages = new ArrayList<>();
 	List<NaryData> exportedNary = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
+
+	private List<NaryData> allExportedNary = new ArrayList<>();
 
 	public ClassDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
@@ -66,8 +59,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 				if (modelElement instanceof IClass) {
 					if (!(modelElement.getParent() instanceof IPackage))
 						extractClass((IClass) modelElement, null);
-				} else if (modelElement instanceof IRelationship) {
-					extractRelationship((IRelationship) modelElement);
 				} else if (modelElement instanceof IPackage) {
 					extractPackage((IPackage) modelElement);
 				} else if (modelElement instanceof INARY) {
@@ -75,15 +66,29 @@ public class ClassDiagramExporter extends DiagramExporter {
 						extractNary((INARY) modelElement, null);
 				} else if (modelElement instanceof INOTE) {
 					this.extractNote((INOTE) modelElement);
+				} else if (modelElement instanceof IRelationship) {
+					//  just to not  show the message
 				} else {
 					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
-							+ modelElement.getName() + " is of unsupported type and will not be processed ... ");
+							+ modelElement.getName() +" is of unsupported type and will not be processed ... ");
 				}
 			} else {
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: modelElement is null for a diagram element.");
 			}
 		}
+
+		for (IDiagramElement diagramElement : allElements) {
+			IModelElement modelElement = diagramElement.getModelElement();
+
+			if (modelElement != null) {
+
+				if (modelElement instanceof IRelationship /*&&  !(modelElement instanceof IAssociationClass) */) {
+					extractRelationship((IRelationship) modelElement);
+				} 
+			}
+		}
+		
 		exportedNotes = getNotes(); // from base diagram exporter
 
 	}
@@ -91,7 +96,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);
 		ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), classModel.getVisibility(),
-				isInPackage, classModel.getDescriptionWithReferenceModels());
+				isInPackage, classModel.getDescription());
 		classData.setStereotypes(extractStereotypes(classModel));
 		extractAttributes(classModel, classData);
 		extractOperations(classModel, classData);
@@ -101,8 +106,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 		if (packageData != null)
 			packageData.getClasses().add(classData);
 	}
-
-
 
 	private void extractNary(INARY naryModel, PackageData packageData) {
 		boolean isInPackage = (naryModel.getParent() instanceof IPackage);
@@ -114,10 +117,12 @@ public class ClassDiagramExporter extends DiagramExporter {
 		if (packageData != null)
 			packageData.getNaries().add(naryData);
 		else exportedNary.add(naryData); // i changed if bug
+		
+		allExportedNary.add(naryData); // naries are to be reversed by id so whether in package or not, need to add so that relationships arent pointing to null.
 	}
 
 	private String getNaryAliasById(String naryId) {
-		for (NaryData naryData : exportedNary) {
+		for (NaryData naryData : allExportedNary) {
 			if (naryData.getId().equals(naryId)) {
 				return naryData.getAlias();
 			}
@@ -128,7 +133,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractRelationship(IRelationship relationship) {
 		IModelElement source = (IModelElement) relationship.getFrom();
 		IModelElement target = (IModelElement) relationship.getTo();
-
+		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
@@ -136,12 +141,12 @@ public class ClassDiagramExporter extends DiagramExporter {
 			sourceName = getNaryAliasById(((INARY) source).getId());
 		} else if (source instanceof INOTE) {
 			sourceName = getNoteAliasById(((INOTE) source).getId());
-		}
+		} 
 		if (target instanceof INARY) {
 			targetName = getNaryAliasById(((INARY) target).getId());
 		} else if (target instanceof INOTE) {
 			targetName = getNoteAliasById(((INOTE) target).getId());
-		}
+		} 
 
 		if (relationship instanceof IAssociation) {
 			IAssociation association = (IAssociation) relationship;
@@ -161,15 +166,42 @@ public class ClassDiagramExporter extends DiagramExporter {
 					relationship.getName(), fromEndMultiplicity, toEndMultiplicity,
 					// fromEnd.getNavigable() == 0,
 					toEnd.getNavigable() == 0, fromEnd.getAggregationKind());
-
 			relationshipDatas.add(associationData);
 			return;
 		}
+		if (relationship instanceof IAssociationClass) {
+			
+			IAssociation association;
+			
+			// TODO
+			// i left here, class cast exception bc sometimes the target is the assoc and others the source so have to check.
+			if (source instanceof IAssociation) {
+				association = (IAssociation) source;
+				String associationFrom = formatAlias(association.getFrom().getName());
+				String associationTo = formatAlias(association.getTo().getName());
+				// association.setName("association for assocClass");
+				sourceName = "(" + associationFrom + ", " + associationTo + ")";
+			} else {
+				association = (IAssociation) target;
+				String associationFrom = association.getFrom().getName();
+				String associationTo = association.getTo().getName();
+				// association.setName("association for assocClass");
+				targetName = "(" + associationFrom + ", " + associationTo + ")";
+			}
+			
+			ApplicationManager.instance().getViewManager().showMessage("In associationClass block with getFrom: " + sourceName + " target: " +targetName);
+			
+		}
+		
 
 		ApplicationManager.instance().getViewManager()
 				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
 		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 
+		if (sourceName == null || targetName == null) {
+			ApplicationManager.instance().getViewManager()
+			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+		}
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),
 				relationship.getName());
 		relationshipDatas.add(relationshipData);
@@ -262,5 +294,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 	public List<NoteData> getExportedNotes() {
 		return exportedNotes;
+	}
+	private String formatAlias(String name) {
+			return name.replaceAll("[^a-zA-Z0-9]", "_");
 	}
 }

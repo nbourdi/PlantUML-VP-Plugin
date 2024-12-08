@@ -8,8 +8,12 @@ import java.util.Map;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
 import com.vp.plugin.diagram.IClassDiagramUIModel;
+import com.vp.plugin.diagram.IConnectorUIModel;
+import com.vp.plugin.diagram.IDiagramElement;
+import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.IShapeUIModel;
 import com.vp.plugin.diagram.connector.IAnchorUIModel;
+import com.vp.plugin.diagram.connector.IAssociationClassUIModel;
 import com.vp.plugin.diagram.connector.IAssociationUIModel;
 import com.vp.plugin.diagram.connector.IContainmentUIModel;
 import com.vp.plugin.diagram.connector.IGeneralizationUIModel;
@@ -21,6 +25,7 @@ import com.vp.plugin.diagram.shape.INoteUIModel;
 import com.vp.plugin.diagram.shape.IPackageUIModel;
 import com.vp.plugin.model.IAnchor;
 import com.vp.plugin.model.IAssociation;
+import com.vp.plugin.model.IAssociationClass;
 import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
@@ -37,6 +42,7 @@ import com.vp.plugin.model.factory.IModelElementFactory;
 import com.vp.plugin.model.IModelElement;
 
 import plugins.plantUML.models.AssociationData;
+import plugins.plantUML.models.AssociationPoint;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
@@ -45,7 +51,6 @@ import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.OperationData.Parameter;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
-import plugins.plantUML.models.SemanticsData;
 
 public class ClassDiagramCreator extends DiagramCreator {
 
@@ -54,19 +59,21 @@ public class ClassDiagramCreator extends DiagramCreator {
 	List<NaryData> naryDatas = new ArrayList<NaryData>();
 	List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
 	List<NoteData> noteDatas = new ArrayList<NoteData>();
+	List<AssociationPoint> assocPoints = new ArrayList<AssociationPoint>();
 	IClassDiagramUIModel classDiagram = (IClassDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_CLASS_DIAGRAM);
 	
 	Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
-	Map<IModelElement, IShapeUIModel> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
+	Map<IModelElement, IDiagramElement> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
 	
 	
-	public ClassDiagramCreator(String diagramTitle, List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas) {
+	public ClassDiagramCreator(String diagramTitle, List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas, List<AssociationPoint> assocPoints) {
 		super(diagramTitle);
 		this.classDatas = classDatas;
 		this.packageDatas = packageDatas;
 		this.naryDatas = naryDatas;
 		this.relationshipDatas = relationshipDatas;
-		this.noteDatas = noteDatas;
+		this.noteDatas = noteDatas;	
+		this.assocPoints = assocPoints;
 	}
 	
 	public void createDiagram () { 
@@ -92,93 +99,11 @@ public class ClassDiagramCreator extends DiagramCreator {
 		}
 		
 		for (RelationshipData relationshipData : relationshipDatas) {
-			
-			String fromID = relationshipData.getSourceID();
-			String toID = relationshipData.getTargetID();
-			IModelElement fromModelElement = elementMap.get(fromID);
-			IModelElement toModelElement = elementMap.get(toID);
-			if (fromModelElement == null || toModelElement == null) {
-				ApplicationManager.instance().getViewManager()
-		        .showMessage("Warning: a relationship was skipped because one of its ends was not a previously imported modelElement");
-				continue;
-			}
-			
-			if (relationshipData instanceof AssociationData) {
-				IAssociation association = IModelElementFactory.instance().createAssociation();
-				association.setFrom(fromModelElement);
-				association.setTo(toModelElement);
-				
-				if (relationshipData.getType() == "Aggregation") {
-					IAssociationEnd aggregationFromEnd = (IAssociationEnd) association.getFromEnd();
-					aggregationFromEnd.setAggregationKind(IAssociationEnd.AGGREGATION_KIND_AGGREGATION);
-				}
-				else if (relationshipData.getType() == "Composition") {
-					IAssociationEnd compositionFromEnd = (IAssociationEnd) association.getFromEnd();
-					compositionFromEnd.setAggregationKind(IAssociationEnd.AGGREGATION_KIND_COMPOSITED);
-				}
-				// TODO : decide if ignore navigables..
-				if (((AssociationData) relationshipData).isToEndNavigable()) {
-					IAssociationEnd toEnd = (IAssociationEnd) association.getToEnd();
-					// toEnd.setNavigable();
-				}
-				
-				IAssociationEnd associationFromEnd = (IAssociationEnd) association.getFromEnd();
-				associationFromEnd.setMultiplicity(((AssociationData) relationshipData).getFromEndMultiplicity());
-				IAssociationEnd associationToEnd = (IAssociationEnd) association.getToEnd();
-				associationToEnd.setMultiplicity(((AssociationData) relationshipData).getToEndMultiplicity());
-				IAssociationUIModel associationConnector = (IAssociationUIModel) diagramManager.createConnector(classDiagram, association, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-				
-				if (relationshipData.getName() != "NULL") // label
-					association.setName(relationshipData.getName());
-			}
-			
-			else {			
-				switch (relationshipData.getType()) {
-				
-				case "Generalization":
-					IGeneralization generalization = IModelElementFactory.instance().createGeneralization();					
-					generalization.setFrom(fromModelElement);
-					generalization.setTo(toModelElement);
-					IGeneralizationUIModel generalizationConnector = (IGeneralizationUIModel) diagramManager.createConnector(classDiagram, generalization, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-					if (relationshipData.getName() != "NULL") // label
-						generalization.setName(relationshipData.getName());
-					break;
-
-				case "Realization":
-					IRealization realization = IModelElementFactory.instance().createRealization();
-					realization.setFrom(fromModelElement);
-					realization.setTo(toModelElement);
-					IRealizationUIModel realizationConnector = (IRealizationUIModel) diagramManager.createConnector(classDiagram, realization, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-					if (relationshipData.getName() != "NULL") // label
-						realization.setName(relationshipData.getName());
-					break;
-					
-				case "Dependency":
-					IDependency dependency = IModelElementFactory.instance().createDependency();
-					dependency.setFrom(fromModelElement);
-					dependency.setTo(toModelElement);
-					IDependencyUIModel dependencyConnector = (IDependencyUIModel) diagramManager.createConnector(classDiagram, dependency, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-					if (relationshipData.getName() != "NULL") // label
-						dependency.setName(relationshipData.getName());
-					break;
-				case "Anchor": // be ware of constraint on notes.
-					IAnchor anchor = IModelElementFactory.instance().createAnchor();
-					anchor.setFrom(fromModelElement);
-					anchor.setTo(toModelElement);
-					IAnchorUIModel anchorConnector = (IAnchorUIModel) diagramManager.createConnector(classDiagram, anchor, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-					if (relationshipData.getName() != "NULL") // label
-						anchor.setName(relationshipData.getName());
-					break;
-					
-				case "Containment":
-					// Containment is only a UI model, not a model element
-					IContainmentUIModel containmentConnector = (IContainmentUIModel) diagramManager.createConnector(classDiagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-				default:
-					ApplicationManager.instance().getViewManager()
-			        .showMessage("Warning: unsupported type of relationship was skipped");
-					break;
-				}			
-			}			
+			createRelationship(relationshipData);			
+		}
+		
+		for (AssociationPoint assocPoint : assocPoints) {
+			createAssocPoint(assocPoint);
 		}
 		
 		diagramManager.layout(classDiagram, DiagramManager.LAYOUT_AUTO);
@@ -186,10 +111,123 @@ public class ClassDiagramCreator extends DiagramCreator {
         ApplicationManager.instance().getDiagramManager().openDiagram(classDiagram);
 	}
 
+	private void createAssocPoint(AssociationPoint assocPoint) {
+		
+		// TODO add aggregation etc, need association data for that.
+		IModelElement fromElement = elementMap.get(assocPoint.getFromUid1());
+		IModelElement toElement = elementMap.get(assocPoint.getFromUid2());
+		IAssociation association = IModelElementFactory.instance().createAssociation();
+		association.setFrom(fromElement);
+		association.setTo(toElement);
+		IAssociationUIModel associationConnector = (IAssociationUIModel) diagramManager.createConnector(classDiagram, association, shapeMap.get(fromElement), shapeMap.get(toElement), null);
+		
+		shapeMap.put(association, associationConnector); // cast may not work?
+		
+		IAssociationClass associationClass = IModelElementFactory.instance().createAssociationClass();
+		
+		associationClass.setFrom(association); 
+		associationClass.setTo(elementMap.get(assocPoint.getToUid())); 
+		
+		IAssociationClassUIModel associationClassConnector = (IAssociationClassUIModel) diagramManager.createConnector(classDiagram, associationClass, associationConnector, shapeMap.get(elementMap.get(assocPoint.getToUid())), null);
+		
+	}
+
+	private void createRelationship(RelationshipData relationshipData) {
+		String fromID = relationshipData.getSourceID();
+		String toID = relationshipData.getTargetID();
+		IModelElement fromModelElement = elementMap.get(fromID);
+		IModelElement toModelElement = elementMap.get(toID);
+		if (fromModelElement == null || toModelElement == null) {
+			ApplicationManager.instance().getViewManager()
+	        .showMessage("Warning: a relationship was skipped because one of its ends was not a previously imported modelElement");
+			return;
+		}
+		
+		if (relationshipData instanceof AssociationData) {
+			IAssociation association = IModelElementFactory.instance().createAssociation();
+			association.setFrom(fromModelElement);
+			association.setTo(toModelElement);
+			
+			if (relationshipData.getType() == "Aggregation") {
+				IAssociationEnd aggregationFromEnd = (IAssociationEnd) association.getFromEnd();
+				aggregationFromEnd.setAggregationKind(IAssociationEnd.AGGREGATION_KIND_AGGREGATION);
+			}
+			else if (relationshipData.getType() == "Composition") {
+				IAssociationEnd compositionFromEnd = (IAssociationEnd) association.getFromEnd();
+				compositionFromEnd.setAggregationKind(IAssociationEnd.AGGREGATION_KIND_COMPOSITED);
+			}
+			// TODO : decide if ignore navigables..
+			if (((AssociationData) relationshipData).isToEndNavigable()) {
+				IAssociationEnd toEnd = (IAssociationEnd) association.getToEnd();
+				// toEnd.setNavigable();
+			}
+			
+			IAssociationEnd associationFromEnd = (IAssociationEnd) association.getFromEnd();
+			associationFromEnd.setMultiplicity(((AssociationData) relationshipData).getFromEndMultiplicity());
+			IAssociationEnd associationToEnd = (IAssociationEnd) association.getToEnd();
+			associationToEnd.setMultiplicity(((AssociationData) relationshipData).getToEndMultiplicity());
+			IAssociationUIModel associationConnector = (IAssociationUIModel) diagramManager.createConnector(classDiagram, association, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+			
+			
+			if (relationshipData.getName() != "NULL") // label
+				association.setName(relationshipData.getName());
+		}
+		
+		else {			
+			switch (relationshipData.getType()) {
+			case "Generalization":
+				IGeneralization generalization = IModelElementFactory.instance().createGeneralization();					
+				generalization.setFrom(fromModelElement);
+				generalization.setTo(toModelElement);
+				IGeneralizationUIModel generalizationConnector = (IGeneralizationUIModel) diagramManager.createConnector(classDiagram, generalization, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+				if (relationshipData.getName() != "NULL") // label
+					generalization.setName(relationshipData.getName());
+				break;
+
+			case "Realization":
+				IRealization realization = IModelElementFactory.instance().createRealization();
+				realization.setFrom(fromModelElement);
+				realization.setTo(toModelElement);
+				IRealizationUIModel realizationConnector = (IRealizationUIModel) diagramManager.createConnector(classDiagram, realization, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+				if (relationshipData.getName() != "NULL") // label
+					realization.setName(relationshipData.getName());
+				break;
+				
+			case "Dependency":
+				IDependency dependency = IModelElementFactory.instance().createDependency();
+				dependency.setFrom(fromModelElement);
+				dependency.setTo(toModelElement);
+				IDependencyUIModel dependencyConnector = (IDependencyUIModel) diagramManager.createConnector(classDiagram, dependency, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+				if (relationshipData.getName() != "NULL") // label
+					dependency.setName(relationshipData.getName());
+				break;
+			case "Anchor": // be ware of constraint on notes.
+				IAnchor anchor = IModelElementFactory.instance().createAnchor();
+				anchor.setFrom(fromModelElement);
+				anchor.setTo(toModelElement);
+				IAnchorUIModel anchorConnector = (IAnchorUIModel) diagramManager.createConnector(classDiagram, anchor, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+				if (relationshipData.getName() != "NULL") // label
+					anchor.setName(relationshipData.getName());
+				break;
+				
+			case "Containment":
+				// Containment is only a UI model, not a model element
+				IContainmentUIModel containmentConnector = (IContainmentUIModel) diagramManager.createConnector(classDiagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+			default:
+				ApplicationManager.instance().getViewManager()
+		        .showMessage("Warning: unsupported type of relationship was skipped");
+				break;
+			}			
+		}
+		
+	}
+
 	private INARY createNary(NaryData naryData) {		
 		INARY naryModel = IModelElementFactory.instance().createNARY();
 		String entityId = naryData.getUid();
 		elementMap.put(entityId, naryModel);
+		// TODO: naries dont conflict for some reason..
+		checkAndSettleNameConflict(naryData.getName(), "NARY");
 		naryModel.setName(naryData.getName());
 		putInSemanticsMap(naryModel, naryData);
 		INARYUIModel naryShape = (INARYUIModel) diagramManager.createDiagramElement(classDiagram, naryModel);
@@ -200,6 +238,9 @@ public class ClassDiagramCreator extends DiagramCreator {
 	private IPackage createPackage(PackageData packageData) {
 		IPackage packageModel = IModelElementFactory.instance().createPackage();
 		elementMap.put(packageData.getUid(), packageModel);
+		
+		checkAndSettleNameConflict(packageData.getName(), "Package");
+		
 		packageModel.setName(packageData.getPackageName());		
 		IPackageUIModel packageShape = (IPackageUIModel) diagramManager.createDiagramElement(classDiagram, packageModel);
 		shapeMap.put(packageModel, packageShape);
@@ -207,19 +248,19 @@ public class ClassDiagramCreator extends DiagramCreator {
 		for (ClassData packagedClassData : packageData.getClasses()) {
 			IClass packagedClassModel = createClass(packagedClassData);
 			packageModel.addChild(packagedClassModel);
-			packageShape.addChild(shapeMap.get(packagedClassModel));
+			packageShape.addChild((IShapeUIModel) shapeMap.get(packagedClassModel));
 		}
 		
 		for (NaryData packagedNaryData : packageData.getNaries()) {
 			INARY packagedNaryModel = createNary(packagedNaryData);
 			packageModel.addChild(packagedNaryModel);
-			packageShape.addChild(shapeMap.get(packagedNaryModel));
+			packageShape.addChild((IShapeUIModel) shapeMap.get(packagedNaryModel));
 		}
 		
 		for (PackageData subPackageData : packageData.getSubPackages()) {
 			IPackage subPackageModel = createPackage(subPackageData);
 			packageModel.addChild(subPackageModel);
-			packageShape.addChild(shapeMap.get(subPackageModel));			
+			packageShape.addChild((IShapeUIModel) shapeMap.get(subPackageModel));			
 		}
 
 		putInSemanticsMap(packageModel, packageData);
@@ -231,9 +272,9 @@ public class ClassDiagramCreator extends DiagramCreator {
 		IClass classModel = IModelElementFactory.instance().createClass();
 		String entityId = classData.getUid();
 		elementMap.put(entityId, classModel);
+				
+		checkAndSettleNameConflict(classData.getName(), "Class");
 		
-		// TODO: design Q: importing a class name that already exists
-		// sets the name to a different unique one, or should we design so that aux view is created?
 		classModel.setName(classData.getName());
 		ApplicationManager.instance().getViewManager()
          .showMessage("classData name: " + classData.getName() + " classModel name " + classModel.getName());

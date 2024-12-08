@@ -59,27 +59,27 @@ public class DiagramExporter {
 
 			switch (reference.getType()) {
 			case IReference.TYPE_DIAGRAM:
-				referenceData = new Reference("diagram", reference.getDescription(), reference.getUrlAsDiagram().getName(), reference.getUrlAsDiagram().getType()); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
+				referenceData = new Reference("diagram", reference.getDescription(), reference.getUrlAsDiagram().getName(), reference.getUrlAsDiagram().getType(), null); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
 				break;
 
 			case IReference.TYPE_URL:
-				referenceData = new Reference("url", reference.getDescription(), reference.getUrl(), null);
+				referenceData = new Reference("url", reference.getDescription(), reference.getUrl(), null, null);
 				break;
 
 			case IReference.TYPE_FILE:
-				referenceData = new Reference("file", reference.getDescription(), reference.getUrl(), null);
+				referenceData = new Reference("file", reference.getDescription(), reference.getUrl(), null, null);
 				break;
 
 			case IReference.TYPE_FOLDER:
-				referenceData = new Reference("folder", reference.getDescription(), reference.getUrl(), null);
+				referenceData = new Reference("folder", reference.getDescription(), reference.getUrl(), null, null);
 				break;
 
 			case IReference.TYPE_SHAPE:
-				referenceData = new Reference("shape", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("shape", reference.getDescription(), reference.getName(), null, null);
 				break;
 
 			case IReference.TYPE_MODEL_ELEMENT:
-				referenceData = new Reference("model_element", reference.getDescription(), reference.getName(), null);
+				referenceData = new Reference("model_element", reference.getDescription(), reference.getUrlAsModel().getName(), null, reference.getUrlAsModel().getModelType());
 				break;
 
 			default:

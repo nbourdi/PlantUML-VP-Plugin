@@ -23,6 +23,8 @@ public class ClassUMLWriter extends PlantUMLWriter {
     private List<ClassData> classes;
     private List<RelationshipData> relationships;
     private List<NaryData> naries;
+    
+
 
     public ClassUMLWriter(List<ClassData> classes, List<RelationshipData> relationships, List<PackageData> packages, List<NaryData> naries, List<NoteData> notes) {
     	super(notes);
@@ -105,6 +107,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
     private String writeClass(ClassData classData, String indent) {
     	StringBuilder classString = new StringBuilder();
     	String name = formatName(classData.getName());
+    	String aliasDeclaration = formatAlias(classData.getName()).equals(classData.getName()) ? "" : (" as " + formatAlias(classData.getName()));
     	
     	// equivalents mapping
     	Map<String, String> keywordStereotypes = new HashMap<>();
@@ -122,14 +125,14 @@ public class ClassUMLWriter extends PlantUMLWriter {
     	if (classData.getStereotypes().size() == 1 && !classData.isAbstract()) {
     	    String stereotype = classData.getStereotypes().get(0).toLowerCase();  
     	    if (keywordStereotypes.containsKey(stereotype)) {
-    	        classString.append(keywordStereotypes.get(stereotype)).append(" ").append(name);
+    	        classString.append(keywordStereotypes.get(stereotype)).append(" ").append(name).append(aliasDeclaration);
     	    } else {
     	        // if not puml keyword
-    	        classString.append("class ").append(name).append(" <<").append(stereotype).append(">>");
+    	        classString.append("class ").append(name).append(aliasDeclaration).append(" <<").append(stereotype).append(">>");
     	    }
     	} else {
     	    // Default to "class" with any stereotypes listed
-    	    classString.append("class ").append(name);
+    	    classString.append("class ").append(name).append(aliasDeclaration);
     	    if (!classData.getStereotypes().isEmpty()) {
     	        String stereotypesString = classData.getStereotypes().stream()
     	            .map(stereotype -> "<<" + stereotype + ">>")
@@ -203,8 +206,8 @@ public class ClassUMLWriter extends PlantUMLWriter {
         classString.append(indent + "}\n");
         return classString.toString();
     }
-    
-    private String writeVisibility(String visibility) {
+
+	private String writeVisibility(String visibility) {
     	String visibilityCharacter = "";
     	switch (visibility) {
     		case "private": 
@@ -225,6 +228,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
 
 
 	private String writeRelationship(RelationshipData relationship) {
+
 		return relationship.toExportFormat();
     }
 

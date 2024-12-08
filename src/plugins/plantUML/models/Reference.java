@@ -1,5 +1,6 @@
 package plugins.plantUML.models;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.teamdev.jxbrowser.deps.org.checkerframework.common.returnsreceiver.qual.This;
 
 public class Reference {
 	
@@ -13,12 +14,16 @@ public class Reference {
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	private String diagramType; // type of diagram, relevant when type is "diagram"
+	
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	private String modelType; // type of model element, relevant when type is "model_element"
 
-	public Reference(String type, String description, String name, String diagramType) {
+	public Reference(String type, String description, String name, String diagramType, String modelType) {
 		setType(type);
 		setDescription(description);
 		setName(name);
 		setDiagramType(diagramType);
+		setModelType(modelType);
 	}
 
 	public String getType() {
@@ -55,5 +60,18 @@ public class Reference {
 		} else {
 			this.diagramType = null;
 		}
+	}
+	
+	public void setModelType(String modelType) {
+		if("model_element".equals(this.modelType)) {
+			this.modelType = modelType;
+		} else {
+			this.modelType = null;
+		}
+		
+	}
+
+	public String getModelType() {
+		return modelType;
 	}
 }
