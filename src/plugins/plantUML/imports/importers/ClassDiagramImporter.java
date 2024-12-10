@@ -115,7 +115,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 	}
 
 	private RelationshipData extractRelationship(Link link) {
-		// TODO source and target may be anapoda an einai apo thn allh to arrow
 		String sourceID;
 		String targetID;
 
@@ -141,7 +140,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 		boolean isAssocClassSolid = false;
 		boolean isAssocClassDashed= false;
 
-		//TODO check if theyre in the right way
 		String fromEndMultiplicity = link.getLinkArg().getQuantifier1();
 		String toEndMultiplicity = link.getLinkArg().getQuantifier2();
 		String fromEndAggregation = "";
@@ -152,6 +150,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 				relationshipType = "Composition";
 				fromEndAggregation = "composite";
 				isAssoc = true;
+				if (link.getEntity1().getLeafType() == LeafType.POINT_FOR_ASSOCIATION || link.getEntity2().getLeafType() == LeafType.POINT_FOR_ASSOCIATION)
 				{
 					isAssocClassSolid = true;
 				}
@@ -166,6 +165,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			} else if (!isDecorated1 && !isDecorated2) {
 				relationshipType = "Simple";
 				isAssoc = true;
+				if (link.getEntity1().getLeafType() == LeafType.POINT_FOR_ASSOCIATION || link.getEntity2().getLeafType() == LeafType.POINT_FOR_ASSOCIATION)
 				{
 					isAssocClassSolid = true;
 				}
@@ -201,7 +201,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 			}
 		}
 
-		//TODO IS THIS RIGHT?
 		if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
 			sourceID = link.getEntity1().getUid();
 			targetID = link.getEntity2().getUid();
@@ -229,28 +228,25 @@ public class ClassDiagramImporter extends DiagramImporter {
 			AssociationPoint associationPoint = assocPointMap.get(pointEntity.getUid()); 
 
 			if(isAssocClassDashed) { // the associationclass dashed relationship 
-
-
 				associationPoint.setToUid(otherEntity.getUid());
-				// no relationship add, we will add it as association class ?
 			}
 			else if (isAssocClassSolid) { // 
 				if (associationPoint.getFromUid1() == null) associationPoint.setFromUid1(otherEntity.getUid());
 				else {
 					// uid1 has been filled so we fill in uid2 and the full VP association is ready 
 					associationPoint.setFromUid2(otherEntity.getUid());
-
 				}
 			}
-			else if (isAssoc) {
+			
+
+		} else if (isAssoc) {
 				AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
 				associationData.setSourceID(sourceID);
 				associationData.setTargetID(targetID);
 
 				return associationData;
-			}
-
-		} else {
+		}
+		else {
 			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
 			relationshipData.setSourceID(sourceID);
 			relationshipData.setTargetID(targetID);
@@ -261,15 +257,11 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
 		LeafType leafType = entity.getLeafType();
-		ApplicationManager.instance().getViewManager()
-		.showMessage("leaf type : "+ entity.getLeafType().toString());
 		if (leafType == LeafType.CLASS || leafType == LeafType.ABSTRACT_CLASS || leafType == LeafType.ANNOTATION
 				|| leafType == LeafType.STEREOTYPE || leafType == LeafType.STRUCT || leafType == LeafType.ENUM
 				|| leafType == LeafType.ENTITY || leafType == LeafType.INTERFACE || leafType == LeafType.PROTOCOL
 				|| leafType == LeafType.METACLASS) {
-			// Create a ClassData model from the plantuml entity
-			// name, isAbstract = false as it is a different leaf type, visibility = converted to string from enum,
-
+			
 			classes.add(extractClass(entity, leafType));		    
 		} else if (leafType == LeafType.STATE_CHOICE || leafType == LeafType.ASSOCIATION) { 
 			// TYPE DIAMOND (n-ary)
@@ -312,7 +304,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 		ClassData classData = new ClassData(name, false, visibility, false, null);
 		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
 
-		// TODO : get display or get name.... might cause trouble
 		String key = name + "|Class";
 
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
@@ -352,7 +343,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 		}
 
 		List<String> basicTypes = Arrays.asList("int", "char", "string", "boolean", "float", "double", "void", "short",
-				"byte");
+				"byte", "String");
 		String typesPattern = String.join("|", basicTypes);
 		Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
 

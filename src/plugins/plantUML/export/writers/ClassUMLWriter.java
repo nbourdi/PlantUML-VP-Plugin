@@ -69,11 +69,11 @@ public class ClassUMLWriter extends PlantUMLWriter {
 	    StringBuilder naryString = new StringBuilder();
 	    String alias = naryData.getAlias();
 	    String id = naryData.getId();
-
-	    naryString.append(indent).append("diamond ")
-	              .append("\"").append(id).append("\"")
-	    		  .append(" as " + alias + "\n");
+	    String name = naryData.getName();
 	    
+	    naryString.append(indent).append("diamond ")
+        .append("\"").append(name).append("\"")
+		  .append(" as " + alias + "\n");
 	    
 	    return naryString.toString();
 	}
@@ -81,7 +81,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
 
 	private String writePackage(PackageData packageData, String indent) {
     	StringBuilder packageString = new StringBuilder();
-    	String name = formatName(packageData.getPackageName());
+    	String name = formatName(packageData.getName());
     	
     	packageString.append(indent).append("package " ).append(name).append(" {\n");
     	

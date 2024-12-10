@@ -66,18 +66,15 @@ public class RelationshipData {
 		String label = "";
 		String prefix = "";
 
-
-
-
 		if (type == "Generalization") {
 			symbol = "<|--";
 		} else if (type == "Realization") {
 			symbol = "<|..";
 		} else if (type == "Abstraction") {
-			symbol = "<..";
+			symbol = "..>"; //
 			label = "<<abstraction>> \\n ";
 		} else if (type == "Usage") {
-			symbol = "<..";
+			symbol = "..>"; //
 			label = "<<use>> \\n ";
 		} else if (type == "Dependency") {
 			symbol = "..>";

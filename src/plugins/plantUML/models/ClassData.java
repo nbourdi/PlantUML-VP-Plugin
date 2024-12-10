@@ -13,7 +13,6 @@ public class ClassData extends BaseWithSemanticsData {
     private boolean isInPackage;
     private String visibility;
     private String Uid;
-    // private SemanticsData semantics = new SemanticsData();
 
     public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage, String description) {
     	super(name, description);
@@ -25,7 +24,13 @@ public class ClassData extends BaseWithSemanticsData {
         this.setInPackage(isInPackage);
     }
 
-    public void addAttribute(AttributeData attribute) {
+    public ClassData(String name, String description, boolean isInPackage) { // interfaces for component
+    	super(name, description);
+    	this.setInPackage(isInPackage);
+    	this.stereotypes = new ArrayList<>();
+	}
+
+	public void addAttribute(AttributeData attribute) {
         getAttributes().add(attribute);
     }
 

@@ -215,7 +215,7 @@ public class ClassDiagramCreator extends DiagramCreator {
 				IContainmentUIModel containmentConnector = (IContainmentUIModel) diagramManager.createConnector(classDiagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT, shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
 			default:
 				ApplicationManager.instance().getViewManager()
-		        .showMessage("Warning: unsupported type of relationship was skipped");
+		        .showMessage("Warning: unsupported type " + relationshipData.getType() + " of relationship was skipped");
 				break;
 			}			
 		}
@@ -241,7 +241,7 @@ public class ClassDiagramCreator extends DiagramCreator {
 		
 		checkAndSettleNameConflict(packageData.getName(), "Package");
 		
-		packageModel.setName(packageData.getPackageName());		
+		packageModel.setName(packageData.getName());		
 		IPackageUIModel packageShape = (IPackageUIModel) diagramManager.createDiagramElement(classDiagram, packageModel);
 		shapeMap.put(packageModel, packageShape);
 		

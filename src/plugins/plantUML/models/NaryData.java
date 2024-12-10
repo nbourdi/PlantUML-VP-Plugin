@@ -16,10 +16,10 @@ public class NaryData extends BaseWithSemanticsData {
     }
     
     private String generateAlias() {
-        if (this.name == null) {
-            return "diamond_" + id.replaceAll("[^a-zA-Z0-9]", "_");
-        } 
-        return name;
+       // if (this.name == null) {
+        return "diamond_" + id.replaceAll("[^a-zA-Z0-9]", "_");
+        //} 
+        // return name;
     }
     
     public String getId() {
@@ -40,5 +40,14 @@ public class NaryData extends BaseWithSemanticsData {
 
 	public void setUid(String uid) {
 		Uid = uid;
+	}
+
+	@Override
+	public String getName() {
+		if (name != null) {
+			return name;
+		} 
+		// unnamed nary
+		return " ";
 	}
 }

@@ -47,6 +47,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 		this.diagram = diagram;
 	}
 
+	@Override
 	public void extract() {
 
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
@@ -173,19 +174,15 @@ public class ClassDiagramExporter extends DiagramExporter {
 			
 			IAssociation association;
 			
-			// TODO
-			// i left here, class cast exception bc sometimes the target is the assoc and others the source so have to check.
-			if (source instanceof IAssociation) {
+				if (source instanceof IAssociation) {
 				association = (IAssociation) source;
 				String associationFrom = formatAlias(association.getFrom().getName());
 				String associationTo = formatAlias(association.getTo().getName());
-				// association.setName("association for assocClass");
 				sourceName = "(" + associationFrom + ", " + associationTo + ")";
 			} else {
 				association = (IAssociation) target;
 				String associationFrom = association.getFrom().getName();
 				String associationTo = association.getTo().getName();
-				// association.setName("association for assocClass");
 				targetName = "(" + associationFrom + ", " + associationTo + ")";
 			}
 			
@@ -298,4 +295,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private String formatAlias(String name) {
 			return name.replaceAll("[^a-zA-Z0-9]", "_");
 	}
+
+
 }

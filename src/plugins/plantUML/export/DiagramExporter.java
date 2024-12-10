@@ -17,36 +17,38 @@ import plugins.plantUML.models.Reference;
 import plugins.plantUML.models.SemanticsData;
 import plugins.plantUML.models.SubDiagramData;
 
-public class DiagramExporter {
+public abstract class DiagramExporter {
+
+	public abstract void extract();
 
 	protected List<NoteData> noteDatas = new ArrayList<>();
 	protected List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
-	
+
 	protected SemanticsData extractSemantics(IModelElement modelElement) {
-	    List<Reference> extractedReferences = extractReferences((IHasChildrenBaseModelElement) modelElement);
-	    List<SubDiagramData> extractedSubdiagrams = extractSubdiagrams(modelElement);
-	    String description = modelElement.getDescription();
+		List<Reference> extractedReferences = extractReferences((IHasChildrenBaseModelElement) modelElement);
+		List<SubDiagramData> extractedSubdiagrams = extractSubdiagrams(modelElement);
+		String description = modelElement.getDescription();
 
-	    // Include semantics only if there is at least 1 of the 3 elements
-	    if ((extractedReferences != null && !extractedReferences.isEmpty()) ||
-	        (extractedSubdiagrams != null && !extractedSubdiagrams.isEmpty()) ||
-	        (description != null && !description.isEmpty())) {
+		// Include semantics only if there is at least 1 of the 3 elements
+		if ((extractedReferences != null && !extractedReferences.isEmpty()) ||
+				(extractedSubdiagrams != null && !extractedSubdiagrams.isEmpty()) ||
+				(description != null && !description.isEmpty())) {
 
-	        SemanticsData semanticsData = new SemanticsData();
-	        semanticsData.setOwnerName(modelElement.getName());
-	        semanticsData.setOwnerType(modelElement.getModelType());
-	        semanticsData.setReferences(extractedReferences);
-	        semanticsData.setSubDiagrams(extractedSubdiagrams);
-	        semanticsData.setDescription(description); 
+			SemanticsData semanticsData = new SemanticsData();
+			semanticsData.setOwnerName(modelElement.getName());
+			semanticsData.setOwnerType(modelElement.getModelType());
+			semanticsData.setReferences(extractedReferences);
+			semanticsData.setSubDiagrams(extractedSubdiagrams);
+			semanticsData.setDescription(description); 
 
-	        return semanticsData;
-	        
-	    } else { // No meaningful information to extract	
-	        return null; 
-	    }
+			return semanticsData;
+
+		} else { // No meaningful information to extract	
+			return null; 
+		}
 	}
 
-	
+
 	private List<Reference> extractReferences(IHasChildrenBaseModelElement modelElement) { 
 		List<Reference> exportedReferences = new ArrayList<Reference>();
 		// ApplicationManager.instance().getViewManager().showMessage("========= References::");
@@ -57,35 +59,40 @@ public class DiagramExporter {
 
 			Reference referenceData = null;
 
-			switch (reference.getType()) {
-			case IReference.TYPE_DIAGRAM:
-				referenceData = new Reference("diagram", reference.getDescription(), reference.getUrlAsDiagram().getName(), reference.getUrlAsDiagram().getType(), null); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
-				break;
+			try {
+				switch (reference.getType()) {
+				case IReference.TYPE_DIAGRAM:
+					referenceData = new Reference("diagram", reference.getDescription(), reference.getUrlAsDiagram().getName(), reference.getUrlAsDiagram().getType(), null); // TODO: throws nullpointer bc getUrlAsDiagram when the diagram is not in project
+					break;
 
-			case IReference.TYPE_URL:
-				referenceData = new Reference("url", reference.getDescription(), reference.getUrl(), null, null);
-				break;
+				case IReference.TYPE_URL:
+					referenceData = new Reference("url", reference.getDescription(), reference.getUrl(), null, null);
+					break;
 
-			case IReference.TYPE_FILE:
-				referenceData = new Reference("file", reference.getDescription(), reference.getUrl(), null, null);
-				break;
+				case IReference.TYPE_FILE:
+					referenceData = new Reference("file", reference.getDescription(), reference.getUrl(), null, null);
+					break;
 
-			case IReference.TYPE_FOLDER:
-				referenceData = new Reference("folder", reference.getDescription(), reference.getUrl(), null, null);
-				break;
+				case IReference.TYPE_FOLDER:
+					referenceData = new Reference("folder", reference.getDescription(), reference.getUrl(), null, null);
+					break;
 
-			case IReference.TYPE_SHAPE:
-				referenceData = new Reference("shape", reference.getDescription(), reference.getName(), null, null);
-				break;
+				case IReference.TYPE_SHAPE:
+					referenceData = new Reference("shape", reference.getDescription(), reference.getName(), null, null);
+					break;
 
-			case IReference.TYPE_MODEL_ELEMENT:
-				referenceData = new Reference("model_element", reference.getDescription(), reference.getUrlAsModel().getName(), null, reference.getUrlAsModel().getModelType());
-				break;
+				case IReference.TYPE_MODEL_ELEMENT:
+					referenceData = new Reference("model_element", reference.getDescription(), reference.getUrlAsModel().getName(), null, reference.getUrlAsModel().getModelType());
+					break;
 
-			default:
-				ApplicationManager.instance().getViewManager().showMessage("Found and ignored an unsupported reference");
-				break;
+				default:
+					ApplicationManager.instance().getViewManager().showMessage("Found and ignored an unsupported reference");
+					break;
+				}
+			} catch (NullPointerException e) {
+				ApplicationManager.instance().getViewManager().showMessage("Warning: a reference by model element " + modelElement.getName() + " was null possibly due to referencing a deleted element/diagram.");
 			}
+
 			if (referenceData != null)
 				exportedReferences.add(referenceData);
 		}
@@ -133,7 +140,7 @@ public class DiagramExporter {
 		return subDiagramDatas;
 	}
 
-	protected void addSemanticsIfExist(IHasChildrenBaseModelElement modelElement, BaseWithSemanticsData modelData) {
+	protected void addSemanticsIfExist(IModelElement modelElement, BaseWithSemanticsData modelData) {
 		SemanticsData semantics = extractSemantics(modelElement);
 
 		if (semantics != null) {
@@ -141,7 +148,7 @@ public class DiagramExporter {
 			getExportedSemantics().add(modelData.getSemantics());
 		}
 	}
-	
+
 	public List<NoteData> getNotes() {
 		return noteDatas;
 	}

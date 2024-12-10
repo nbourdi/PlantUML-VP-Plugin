@@ -1,7 +1,7 @@
 @startuml
 -abstract ClassUnique {
 	-int  int field1  {static} = sdfsdfv sdfds {abstract}
-	+ void oper(int param1, byte param2, t = 1) {abstract}
+	+ void oper(int param1, byte param2, three t=1) {abstract}
 }
 diamond "d1" as f1
 package p2 {

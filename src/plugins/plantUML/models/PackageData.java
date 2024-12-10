@@ -4,19 +4,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PackageData extends BaseWithSemanticsData {
-    private String packageName;
-    private List<ClassData> classes; 
-    private List<PackageData> subPackages; // Nested packages if any
-    private List<NaryData> naries;
-    private List<ActorData> actors;
-    private List<UseCaseData> usecases;
+    private List<ClassData> classes = new ArrayList<>(); 
+    private List<PackageData> subPackages = new ArrayList<>(); // Nested packages if any
+    private List<NaryData> naries = new ArrayList<>();
+    private List<ActorData> actors = new ArrayList<>();
+    private List<UseCaseData> usecases = new ArrayList<>();
+    private List<ComponentData> components = new ArrayList<ComponentData>();
     private boolean isSubpackage;
-    private boolean isRectangle; // is System in reality, but systems are not a different type in puml , just a rectangle shape
+    private boolean isRectangle = false; // is System in reality, but systems are not a different type in puml , just a rectangle shape
     private String Uid;
 
+    public PackageData(String packageName, String description, boolean isSubpackage) {
+    	super(packageName, description);
+    	this.isSubpackage = isSubpackage;
+    	
+    }
     public PackageData(String packageName, String description, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
         super(packageName, description);
-    	this.packageName = packageName;
         this.classes = classes != null ? classes : new ArrayList<>();
         this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
         this.setNaries(naries != null ? naries : new ArrayList<>());
@@ -25,10 +29,6 @@ public class PackageData extends BaseWithSemanticsData {
         this.actors = actors != null ? actors : new ArrayList<>();
         this.classes = classes != null ? classes : new ArrayList<>();
         this.isRectangle = isRectangle;
-    }
-
-    public String getPackageName() {
-        return packageName;
     }
 
     
@@ -79,6 +79,12 @@ public class PackageData extends BaseWithSemanticsData {
 	public void setUid(String uid) {
 		Uid = uid;
 	}
-
+	
+	public List<ComponentData> getComponents() {
+		return components;
+	}
+	public void setComponents(List<ComponentData> components) {
+		this.components = components;
+	}
 
 }
