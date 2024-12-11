@@ -17,9 +17,11 @@ public class NaryData extends BaseWithSemanticsData {
     
     private String generateAlias() {
        // if (this.name == null) {
-        return "diamond_" + id.replaceAll("[^a-zA-Z0-9]", "_");
+    	if(this.id != null) 
+    		return "diamond_" + id.replaceAll("[^a-zA-Z0-9]", "_");
         //} 
         // return name;
+		return null;
     }
     
     public String getId() {

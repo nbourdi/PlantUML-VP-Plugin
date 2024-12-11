@@ -73,9 +73,6 @@ public class ClassDiagramImporter extends DiagramImporter {
 				relationshipDatas.add(relationship);
 
 		}
-
-
-
 	}
 
 	private PackageData extractGroup(Entity groupEntity) {
@@ -257,10 +254,8 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 	private void extractLeaf(Entity entity, List<ClassData> classes, List<NaryData> naries) {
 		LeafType leafType = entity.getLeafType();
-		if (leafType == LeafType.CLASS || leafType == LeafType.ABSTRACT_CLASS || leafType == LeafType.ANNOTATION
-				|| leafType == LeafType.STEREOTYPE || leafType == LeafType.STRUCT || leafType == LeafType.ENUM
-				|| leafType == LeafType.ENTITY || leafType == LeafType.INTERFACE || leafType == LeafType.PROTOCOL
-				|| leafType == LeafType.METACLASS) {
+		
+		if (leafType.isLikeClass()) {
 			
 			classes.add(extractClass(entity, leafType));		    
 		} else if (leafType == LeafType.STATE_CHOICE || leafType == LeafType.ASSOCIATION) { 
@@ -302,20 +297,13 @@ public class ClassDiagramImporter extends DiagramImporter {
 		String visibility = convertVisibility(entity.getVisibilityModifier());
 		String name = removeBrackets(entity.getDisplay().toString());
 		ClassData classData = new ClassData(name, false, visibility, false, null);
-		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
-
 		String key = name + "|Class";
 
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
 
 		if (hasSemantics) classData.setSemantics(getSemanticsMap().get(key));
 
-		Pattern pattern = Pattern.compile("<<([^>]+)>>");
-		List<String> stereotypes = new ArrayList<>();
-		Matcher matcher = pattern.matcher(rawStereotypes);
-		while (matcher.find()) {
-			stereotypes.add(matcher.group(1)); // group(1) gets the part inside << >>
-		}
+		List<String> stereotypes = extractStereotypes(entity, classData);
 
 		Map<LeafType, String> stereotypeMap = new HashMap<>();
 		stereotypeMap.put(LeafType.ABSTRACT_CLASS, "Abstract");

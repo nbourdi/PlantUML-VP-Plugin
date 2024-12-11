@@ -9,6 +9,9 @@ import java.util.Map;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
+import com.vp.plugin.diagram.IDiagramElement;
+import com.vp.plugin.diagram.IDiagramUIModel;
+import com.vp.plugin.diagram.shape.INoteUIModel;
 import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
@@ -21,7 +24,7 @@ import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.SemanticsData;
 import v.ajp.ig;
 
-public class DiagramCreator {
+public abstract class DiagramCreator {
 	
 	DiagramManager diagramManager = ApplicationManager.instance().getDiagramManager();
 	private String diagramTitle;
@@ -33,7 +36,12 @@ public class DiagramCreator {
 	
 	Map<String, List<IModelElement>> allModelsMap = new HashMap<>();
 	
-	IPackage package1 = IModelElementFactory.instance().createPackage();
+	// IPackage package1 = IModelElementFactory.instance().createPackage();
+	
+	protected Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
+	protected Map<IModelElement, IDiagramElement> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
+	
+	protected IDiagramUIModel diagram;
 		
 	
 	public DiagramCreator(String diagramTitle) {
@@ -48,6 +56,8 @@ public class DiagramCreator {
 		// TODO: this need be moved up to importer
 		// package1.setName("testing plugin package3");
 	}
+	
+	public abstract void createDiagram();
 	
 	protected void checkAndSettleNameConflict(String name, String type) {
 		String key = name + "|" + type; 
@@ -78,6 +88,9 @@ public class DiagramCreator {
 		INOTE noteModel = IModelElementFactory.instance().createNOTE();
 		noteModel.setName(noteData.getName());
 		noteModel.setDescription(noteData.getContent());
+		INoteUIModel noteShape = (INoteUIModel) diagramManager.createDiagramElement(diagram, noteModel);
+		elementMap.put(noteData.getUid(), noteModel);
+		shapeMap.put(noteModel, noteShape);
 		return noteModel;
 	}
 

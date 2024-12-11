@@ -1,24 +1,19 @@
 package plugins.plantUML.imports.creators;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
 import com.vp.plugin.diagram.IClassDiagramUIModel;
-import com.vp.plugin.diagram.IConnectorUIModel;
-import com.vp.plugin.diagram.IDiagramElement;
-import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.IShapeUIModel;
 import com.vp.plugin.diagram.connector.IAnchorUIModel;
 import com.vp.plugin.diagram.connector.IAssociationClassUIModel;
 import com.vp.plugin.diagram.connector.IAssociationUIModel;
 import com.vp.plugin.diagram.connector.IContainmentUIModel;
+import com.vp.plugin.diagram.connector.IDependencyUIModel;
 import com.vp.plugin.diagram.connector.IGeneralizationUIModel;
 import com.vp.plugin.diagram.connector.IRealizationUIModel;
-import com.vp.plugin.diagram.connector.IDependencyUIModel;
 import com.vp.plugin.diagram.shape.IClassUIModel;
 import com.vp.plugin.diagram.shape.INARYUIModel;
 import com.vp.plugin.diagram.shape.INoteUIModel;
@@ -29,9 +24,9 @@ import com.vp.plugin.model.IAssociationClass;
 import com.vp.plugin.model.IAssociationEnd;
 import com.vp.plugin.model.IAttribute;
 import com.vp.plugin.model.IClass;
-import com.vp.plugin.model.IGeneralization;
-import com.vp.plugin.model.IHasChildrenBaseModelElement;
 import com.vp.plugin.model.IDependency;
+import com.vp.plugin.model.IGeneralization;
+import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INARY;
 import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IOperation;
@@ -39,7 +34,6 @@ import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IParameter;
 import com.vp.plugin.model.IRealization;
 import com.vp.plugin.model.factory.IModelElementFactory;
-import com.vp.plugin.model.IModelElement;
 
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AssociationPoint;
@@ -62,10 +56,6 @@ public class ClassDiagramCreator extends DiagramCreator {
 	List<AssociationPoint> assocPoints = new ArrayList<AssociationPoint>();
 	IClassDiagramUIModel classDiagram = (IClassDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_CLASS_DIAGRAM);
 	
-	Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
-	Map<IModelElement, IDiagramElement> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
-	
-	
 	public ClassDiagramCreator(String diagramTitle, List<ClassData> classDatas, List<PackageData> packageDatas, List<NaryData> naryDatas, List<RelationshipData> relationshipDatas, List<NoteData> noteDatas, List<AssociationPoint> assocPoints) {
 		super(diagramTitle);
 		this.classDatas = classDatas;
@@ -74,8 +64,10 @@ public class ClassDiagramCreator extends DiagramCreator {
 		this.relationshipDatas = relationshipDatas;
 		this.noteDatas = noteDatas;	
 		this.assocPoints = assocPoints;
+		diagram = classDiagram;
 	}
 	
+	@Override
 	public void createDiagram () { 
 		
         classDiagram.setName(getDiagramTitle());
@@ -93,9 +85,9 @@ public class ClassDiagramCreator extends DiagramCreator {
 		
 		for (NoteData noteData : noteDatas) { // TODO:  clean up + possibly buggy? 
 			INOTE noteModel = createNote(noteData);
-			INoteUIModel noteShape = (INoteUIModel) diagramManager.createDiagramElement(classDiagram, noteModel);
-			elementMap.put(noteData.getUid(), noteModel);
-			shapeMap.put(noteModel, noteShape);
+//			INoteUIModel noteShape = (INoteUIModel) diagramManager.createDiagramElement(classDiagram, noteModel);
+//			elementMap.put(noteData.getUid(), noteModel);
+//			shapeMap.put(noteModel, noteShape);
 		}
 		
 		for (RelationshipData relationshipData : relationshipDatas) {
@@ -113,7 +105,6 @@ public class ClassDiagramCreator extends DiagramCreator {
 
 	private void createAssocPoint(AssociationPoint assocPoint) {
 		
-		// TODO add aggregation etc, need association data for that.
 		IModelElement fromElement = elementMap.get(assocPoint.getFromUid1());
 		IModelElement toElement = elementMap.get(assocPoint.getFromUid2());
 		IAssociation association = IModelElementFactory.instance().createAssociation();

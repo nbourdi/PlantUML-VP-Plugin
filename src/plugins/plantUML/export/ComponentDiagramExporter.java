@@ -223,7 +223,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		Iterator portIterator =  componentModel.portIterator();
 		while (portIterator.hasNext()) {
 			IPort portModel = (IPort) portIterator.next();
-			PortData portData = new PortData(portModel.getName(), portModel.getId());
+			PortData portData = new PortData(portModel.getName());
+			portData.setId(portModel.getId());
 			
 			componentData.getPorts().add(portData);
 			allExportedPorts.add(portData);

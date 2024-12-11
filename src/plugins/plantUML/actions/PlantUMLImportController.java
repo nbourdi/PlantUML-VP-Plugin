@@ -39,7 +39,6 @@ public class PlantUMLImportController implements VPActionController {
         panel.add(Box.createVerticalStrut(5)); 
         panel.add(multipleDiagramsButton);
 
-        // Show the option dialog
         int choice = JOptionPane.showConfirmDialog(
             parentFrame,
             panel,
