@@ -56,7 +56,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 			IModelElement modelElement = diagramElement.getModelElement();
 
 			if (modelElement != null) {
-
+				// Add the model element as exported beforehand, remove later if unsupported 
+				allExportedElements.add(modelElement);
 				if (modelElement instanceof IClass) {
 					if (!(modelElement.getParent() instanceof IPackage))
 						extractClass((IClass) modelElement, null);
@@ -70,6 +71,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 				} else if (modelElement instanceof IRelationship) {
 					//  just to not  show the message
 				} else {
+					allExportedElements.remove(modelElement);
 					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
 							+ modelElement.getName() +" is of unsupported type and will not be processed ... ");
 				}

@@ -19,6 +19,7 @@ import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IPort;
 import com.vp.plugin.model.IRelationship;
+import com.vp.vpuml.plugin.umlpluginmodel.ModelElement;
 
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.ClassData;
@@ -55,7 +56,9 @@ public class ComponentDiagramExporter extends DiagramExporter {
 			IModelElement modelElement = diagramElement.getModelElement();
 
 			if (modelElement != null) {
-
+				
+				// Add the model element as exported beforehand, remove later if unsupported 
+				allExportedElements.add(modelElement);
 				if (modelElement instanceof IComponent) {
 					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof IComponent))
 						extractComponent((IComponent) modelElement, null, null);
@@ -73,6 +76,7 @@ public class ComponentDiagramExporter extends DiagramExporter {
 					
 					//  just to not  show the message
 				} else {
+					allExportedElements.remove(modelElement);
 					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
 							+ modelElement.getName() +" is of unsupported type and will not be processed ... ");
 				}
@@ -99,7 +103,12 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	private void extractRelationship(IRelationship relationship) {
 		IModelElement source = (IModelElement) relationship.getFrom();
 		IModelElement target = (IModelElement) relationship.getTo();
-		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
+		
+		// Checking if the relationship ends are exported (could be unsupported types)
+		if (!allExportedElements.contains(source) || !allExportedElements.contains(target)) {
+			return;
+		}
+		
 		String sourceName = source.getName();
 		String targetName = target.getName();
 

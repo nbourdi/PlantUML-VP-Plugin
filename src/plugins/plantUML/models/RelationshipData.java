@@ -12,7 +12,6 @@ public class RelationshipData {
 	private String sourceID;
 	private String targetID;
 	private String name;
-	Map<String, String> typeMap = new HashMap<String, String>();
 
 	public RelationshipData(String source, String target, String type, String name) {
 		this.source = source;
@@ -57,9 +56,11 @@ public class RelationshipData {
 		}
 		return name;
 	}
+	
 	protected String formatAlias(String name) {
 		return name.replaceAll("[^a-zA-Z0-9]", "_");
 	}
+	
 	public String toExportFormat() {
 
 		String symbol = "--";
@@ -97,7 +98,6 @@ public class RelationshipData {
 		}
 
 		if (type == "AssociationClass") {
-			// TODO
 			symbol = "..";
 			if (source.contains(",")) {
 				target = formatAlias(target);

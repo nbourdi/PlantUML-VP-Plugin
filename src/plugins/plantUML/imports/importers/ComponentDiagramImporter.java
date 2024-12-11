@@ -18,6 +18,8 @@ import net.sourceforge.plantuml.abel.Link;
 import net.sourceforge.plantuml.decoration.symbol.USymbol;
 import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.style.SName;
+import plugins.plantUML.models.AssociationData;
+import plugins.plantUML.models.AssociationPoint;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.ComponentData;
 import plugins.plantUML.models.NaryData;
@@ -45,7 +47,6 @@ public class ComponentDiagramImporter extends DiagramImporter {
 	}
 
 
-
 	public void extract() {
 
 		for (Entity groupEntity : componentDiagram.groups()) { 
@@ -65,16 +66,118 @@ public class ComponentDiagramImporter extends DiagramImporter {
 			}
 		}
 
-		//		for (Link link : componentDiagram.getLinks()) {
-		//			RelationshipData relationship = extractRelationship(link);
-		//			if(relationship != null) 
-		//				relationshipDatas.add(relationship);
-		//
-		//		}
+		for (Link link : componentDiagram.getLinks()) {
+			RelationshipData relationship = extractRelationship(link);
+			if(relationship != null) 
+				relationshipDatas.add(relationship);
+
+		}
 	}
 
-	private void extractLeaf(Entity entity, List<ComponentData> components, List<ClassData> interfaces) {
+	private RelationshipData extractRelationship(Link link) {
+		String sourceID;
+		String targetID;
 
+		String relationshipType = "";
+		String decor1 = link.getType().getDecor1().toString();
+		String decor2 = link.getType().getDecor2().toString();
+
+		boolean isDecorated1 = (decor1 != "NONE" && decor1 != "NOT_NAVIGABLE");
+		boolean isDecorated2 = (decor2 != "NONE" && decor2 != "NOT_NAVIGABLE");
+		String decor = (isDecorated1 ? decor1 : decor2);
+		boolean isNotNavigable = (decor1 == "NOT_NAVIGABLE" || decor2 == "NOT_NAVIGABLE");
+	
+		// DESIGN CONSTRAINT : double-ended relationships do not exist in VP.
+		if (isDecorated1 && isDecorated2) {
+			ApplicationManager.instance().getViewManager()
+			.showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
+			return null;
+		}
+		String lineStyle = link.getType().getStyle().toString();
+
+		boolean isReverse = (lineStyle.contains("NORMAL")); // meaning the "from" side has the decoration
+		boolean isAssoc = false;
+
+		String fromEndMultiplicity = link.getLinkArg().getQuantifier1();
+		String toEndMultiplicity = link.getLinkArg().getQuantifier2();
+		String fromEndAggregation = "";
+		if (lineStyle.contains("NORMAL")) {
+			// association, containment, composition, agregation are solid line links
+
+			if (decor == "COMPOSITION") {
+				relationshipType = "Composition";
+				fromEndAggregation = "composite";
+				isAssoc = true;
+			} else if (decor == "AGREGATION") {
+				relationshipType = "Aggregation";
+				fromEndAggregation = "shared";
+				isAssoc = true;
+		
+			} else if (!isDecorated1 && !isDecorated2) {
+				relationshipType = "Simple";
+				isAssoc = true;
+				
+			} else if (decor == "EXTENDS") { // TODO : arrow with solid line isnt in VP.. but means extend in puml
+				relationshipType = "Generalization";
+			} else if (decor == "CROWFOOT") {
+				relationshipType = "Containment";
+			}
+
+		} else {
+			// DASHED
+			switch (decor) {
+			case "EXTENDS": // |>
+				relationshipType = "Realization";
+
+				break;
+			case "ARROW": // > , abstraction and all stereotypes + dependency stereotypes all look the same...
+				relationshipType = "Dependency";
+				break;
+			case "NONE": // ".." note anchor or assoc class
+				relationshipType = "Anchor"; 
+				break;
+
+			default:
+				ApplicationManager.instance().getViewManager()
+				.showMessage("Warning: an unsupported type of relationship was found and not imported.");
+				break;
+			}
+		}
+
+		if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
+			sourceID = link.getEntity1().getUid();
+			targetID = link.getEntity2().getUid();
+		} else {
+			sourceID = link.getEntity2().getUid();
+			targetID = link.getEntity1().getUid();
+		}
+
+		if(relationshipType == "") return null; // TODO: temp fix. 
+
+		if (isAssoc) {
+				AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+				associationData.setSourceID(sourceID);
+				associationData.setTargetID(targetID);
+
+				return associationData;
+		}
+		else {
+			RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
+			relationshipData.setSourceID(sourceID);
+			relationshipData.setTargetID(targetID);
+			return relationshipData;
+		}
+	}
+
+
+
+	private void extractLeaf(Entity entity, List<ComponentData> components, List<ClassData> interfaces) {
+		
+		// notes have null usymbols
+		if (entity.getLeafType() == LeafType.NOTE) {
+			noteDatas.add(extractNote(entity));
+			return;
+		}
 		// ideally leafTypes would be more specific than they are for component, workaround by getting SNames fromUSymbols
 
 		SName sName = entity.getUSymbol().getSName();
@@ -216,7 +319,7 @@ public class ComponentDiagramImporter extends DiagramImporter {
 		return packageDatas;
 	}
 
-	public List<NoteData> getNotes() {
+	public List<NoteData> getNoteDatas() {
 		return noteDatas;
 	}
 }

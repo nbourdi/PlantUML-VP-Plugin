@@ -238,7 +238,7 @@ public class DiagramImportPipeline {
 						componentDiagramImporter.getInterfaceDatas(),
 						componentDiagramImporter.getPackageDatas(),
 						componentDiagramImporter.getRelationshipDatas(), 
-						componentDiagramImporter.getNotes()
+						componentDiagramImporter.getNoteDatas()
 						);
 				
 				componentDiagramCreator.createDiagram();

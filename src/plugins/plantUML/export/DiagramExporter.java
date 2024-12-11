@@ -1,8 +1,11 @@
 package plugins.plantUML.export;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IHasChildrenBaseModelElement;
@@ -10,6 +13,7 @@ import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IReference;
 import com.vp.plugin.model.IStereotype;
+import com.vp.vpuml.plugin.umlpluginmodel.ModelElement;
 
 import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.NoteData;
@@ -23,6 +27,9 @@ public abstract class DiagramExporter {
 
 	protected List<NoteData> noteDatas = new ArrayList<>();
 	protected List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
+	
+	// Set of all exported elements for constant lookup so that no relationships with un-exported elements are written
+	protected Set<IModelElement> allExportedElements = new HashSet<>();
 
 	protected SemanticsData extractSemantics(IModelElement modelElement) {
 		List<Reference> extractedReferences = extractReferences((IHasChildrenBaseModelElement) modelElement);

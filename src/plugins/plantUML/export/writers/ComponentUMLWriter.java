@@ -63,9 +63,10 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 	}
 	
 	private String writeRelationship(RelationshipData relationship) {
-
+		
 		return relationship.toExportFormat();
     }
+	
 	private String writePackage(PackageData packageData, String indent) {
 		StringBuilder packageString = new StringBuilder();
 		String name = formatName(packageData.getName());
@@ -113,7 +114,7 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 		componentString.append("[").append(name).append("]");	// TODO: "as" may be needed
 		if (!componentData.getStereotypes().isEmpty()) {
 			String stereotypesString = componentData.getStereotypes().stream()
-					.filter(stereotype -> !"component".equals(stereotype)) // Exclude "UseCase", VP auto applies it to every use case for some reason
+					.filter(stereotype -> !"component".equals(stereotype)) // Exclude "component", VP auto applies it to every use case for some reason
 					.map(stereotype -> "<<" + stereotype + ">>")
 					.collect(Collectors.joining(", "));
 			if (!stereotypesString.isEmpty()) { 
