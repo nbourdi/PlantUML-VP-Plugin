@@ -3,24 +3,15 @@ package plugins.plantUML.models;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActorData {
-	private String name;
-	private List<String> stereotypes = new ArrayList<String>();
+public class ActorData extends BaseWithSemanticsData {
+	private List<String> stereotypes;
 	private boolean isInPackage;
 	private boolean isBusiness;
 	
-	public ActorData(String name, List<String> stereotypes) {
-		this.setName(name);
-		this.stereotypes = stereotypes == null ? new ArrayList<String>() : stereotypes;
+	public ActorData(String name, String description) {
+		super(name, description);
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
 
 	public List<String> getStereotypes() {
 		return stereotypes;

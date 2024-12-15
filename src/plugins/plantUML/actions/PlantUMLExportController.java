@@ -68,7 +68,7 @@ public class PlantUMLExportController implements VPActionController {
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
             JLabel folderLabel = new JLabel("Output Folder:");
-            outputFolderField = new JTextField();
+            outputFolderField = new JTextField("C:\\Users\\30695\\Documents"); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
             browseButton.addActionListener((ActionEvent e) -> {
@@ -130,7 +130,7 @@ public class PlantUMLExportController implements VPActionController {
             }
 
             JScrollPane scrollPane = new JScrollPane(contentPanel);
-            scrollPane.setPreferredSize(new Dimension(400, 300));
+            scrollPane.setPreferredSize(new Dimension(700, 500));
             scrollPane.getViewport().setBackground(Color.WHITE); // Ensure the scroll pane viewport is white
 
             mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -143,7 +143,7 @@ public class PlantUMLExportController implements VPActionController {
         	this.dialog = dialog;
             dialog.setTitle("Select Diagrams to Export");
             dialog.setModal(true);
-            dialog.setSize(500, 400);
+            dialog.setSize(600, 600);
         }
 
         @Override
@@ -172,7 +172,7 @@ public class PlantUMLExportController implements VPActionController {
                     }
                 }
 
-                // Perform the extraction logic for each selected diagram
+                // Perform the extraction for each selected diagram
                 File outputFolder = new File(outputFolderField.getText());
                 if (!outputFolder.exists() || !outputFolder.isDirectory()) {
                     ApplicationManager.instance().getViewManager()
@@ -182,27 +182,13 @@ public class PlantUMLExportController implements VPActionController {
 
                 DiagramExportPipeline pipeline = new DiagramExportPipeline(outputFolder);
                 pipeline.exportDiagramList(selectedDiagrams);
-                
-//                for (IDiagramUIModel activeDiagram : selectedDiagrams) {
-//                    try {
-//                        pipeline.export(activeDiagram);
-//                        List<SemanticsData> semanticsDatas = pipeline.
-//                    } catch (IOException ex) {
-//                        ApplicationManager.instance().getViewManager()
-//                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error processing diagram: " + activeDiagram.getName() + "\n" + ex.getMessage());
-//                    } catch (UnsupportedOperationException ex) {
-//                        ApplicationManager.instance().getViewManager()
-//                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), ex.getMessage());
-//                    }
-//                }
-
+          
                 ApplicationManager.instance().getViewManager()
                     .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
                 dialog.close();
             });
 
             closeButton.addActionListener((ActionEvent e) -> {
-                // Close the dialog
                 dialog.close();
             });
 

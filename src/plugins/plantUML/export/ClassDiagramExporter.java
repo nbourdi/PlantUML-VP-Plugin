@@ -43,7 +43,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 	private List<NaryData> allExportedNary = new ArrayList<>();
 
-	public ClassDiagramExporter(IDiagramUIModel diagram) throws IOException {
+	public ClassDiagramExporter(IDiagramUIModel diagram) {
 		this.diagram = diagram;
 	}
 

@@ -71,7 +71,7 @@ public class ComponentDiagramExporter extends DiagramExporter {
 				} else if (modelElement instanceof INOTE) {
 					this.extractNote((INOTE) modelElement);
 				} else if (modelElement instanceof IRelationship) {
-					extractRelationship((IRelationship) modelElement);
+					
 				} else if (modelElement instanceof IPort) {
 					
 					//  just to not  show the message
@@ -86,7 +86,17 @@ public class ComponentDiagramExporter extends DiagramExporter {
 			}
 		}
 
+		for (IDiagramElement diagramElement : allElements) {
+			IModelElement modelElement = diagramElement.getModelElement();
 
+			if (modelElement != null) {
+
+				if (modelElement instanceof IRelationship /*&&  !(modelElement instanceof IAssociationClass) */) {
+					extractRelationship((IRelationship) modelElement);
+				} 
+			}
+		}
+		
 		exportedNotes = getNotes(); // from base diagram exporter
 
 	}

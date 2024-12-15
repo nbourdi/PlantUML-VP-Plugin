@@ -5,6 +5,7 @@ import com.vp.plugin.diagram.IDiagramUIModel;
 import plugins.plantUML.export.writers.ClassUMLWriter;
 import plugins.plantUML.export.writers.ComponentUMLWriter;
 import plugins.plantUML.export.writers.PlantJSONWriter;
+import plugins.plantUML.export.writers.SequenceUMLWriter;
 import plugins.plantUML.export.writers.UseCaseWriter;
 import plugins.plantUML.models.SemanticsData;
 
@@ -74,6 +75,26 @@ public class DiagramExportPipeline {
 				}
 				break;
 
+			case "InteractionDiagram":
+				SequenceDiagramExporter seqde = new SequenceDiagramExporter(diagram);
+				seqde.extract();
+				SequenceUMLWriter sequenceWriter = new SequenceUMLWriter(
+						seqde.getNotes(),
+						seqde.getExportedInteractionActors(),
+						seqde.getExportedLifelines(),
+						seqde.getExportedMessages(),
+						seqde.getExportedFragments(),
+						seqde.getExportedRefs(),
+						seqde.getExportedAnchors()
+						);
+				sequenceWriter.writeToFile(outputFile);
+//
+//				if (seqde.getExportedSemantics() != null && !seqde.getExportedSemantics().isEmpty()) {
+//
+//					projectSemanticsDatas.addAll(seqde.getExportedSemantics());
+//				}
+				
+				break;
 			case "UseCaseDiagram":
 				UseCaseDiagramExporter ucde = new UseCaseDiagramExporter(diagram);
 				ucde.extract();

@@ -1,10 +1,5 @@
 package plugins.plantUML.models;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.orm.ertodb.DialectDBTypeMapper;
-
 public class RelationshipData {
 	private String source;
 	private String target;
@@ -20,95 +15,75 @@ public class RelationshipData {
 		this.name = name != null ? name : "";
 	}
 
-	public String getSource() {
-		return source;
-	}
-
-	public String getTarget() {
-		return target;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-
-
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
 	protected String formatName(String name) { // TODO: duplicate code..
 		/*
-		 * Spaces and other non-letter characters are not 
-		 * supported as names for plantUML
+		 * Spaces and other non-letter characters are not supported as names for
+		 * plantUML
 		 */
 		if (!name.matches("[a-zA-Z0-9]+")) {
 			return "\"" + name + "\"";
 		}
 		return name;
 	}
-	
+
 	protected String formatAlias(String name) {
 		return name.replaceAll("[^a-zA-Z0-9]", "_");
 	}
-	
-	public String toExportFormat() {
 
+	public String toExportFormat() {
 		String symbol = "--";
 		String label = "";
 		String prefix = "";
 
-		if (type == "Generalization") {
+		switch (type) {
+		case "Generalization":
 			symbol = "<|--";
-		} else if (type == "Realization") {
+			break;
+		case "Realization":
 			symbol = "<|..";
-		} else if (type == "Abstraction") {
-			symbol = "..>"; //
-			label = "<<abstraction>> \\n ";
-		} else if (type == "Usage") {
-			symbol = "..>"; //
-			label = "<<use>> \\n ";
-		} else if (type == "Dependency") {
+			break;
+		case "Abstraction":
 			symbol = "..>";
-		} else if (type == "Anchor") {
+			label = "<<abstraction>> \n ";
+			break;
+		case "Usage":
+			symbol = "..>";
+			label = "<<use>> \n ";
+			break;
+		case "Dependency":
+			symbol = "..>";
+			break;
+		case "Anchor":
 			symbol = "..";
-		} else if (type == "Extend") {
+			break;
+		case "Extend":
 			symbol = "<..";
-			label = "<<Extend>> \\n ";
-		}
-		else if (type == "Include") {
+			label = "<<Extend>> \n ";
+			break;
+		case "Include":
 			symbol = "..>";
-			label = "<<Include>> \\n ";
-		} else if (type == "Containment") {
+			label = "<<Include>> \n ";
+			break;
+		case "Containment":
 			symbol = "}--";
+			break;
 		}
-
 
 		if (!label.isEmpty() || !name.isEmpty()) {
 			prefix = " : ";
 		}
 
-		if (type == "AssociationClass") {
+		if ("AssociationClass".equals(type)) {
 			symbol = "..";
 			if (source.contains(",")) {
 				target = formatAlias(target);
 			} else {
 				source = formatAlias(source);
 			}
-			return source  + " " + symbol + " " + target + prefix + name + "\n";
+			return source + " " + symbol + " " + target + prefix + name + "\n";
 		}
 
 		return formatAlias(source) + " " + symbol + " " + formatAlias(target) + prefix + label + name + "\n";
-
 	}
 
 	public String getSourceID() {
@@ -125,5 +100,30 @@ public class RelationshipData {
 
 	public void setTargetID(String targetID) {
 		this.targetID = targetID;
+	}
+	
+
+	public String getSource() {
+		return source;
+	}
+
+	public String getTarget() {
+		return target;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 }
