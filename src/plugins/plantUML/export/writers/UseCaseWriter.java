@@ -71,7 +71,7 @@ public class UseCaseWriter extends PlantUMLWriter {
 
 	private String writePackage(PackageData packageData, String indent) {
     	StringBuilder packageString = new StringBuilder();
-    	String name = formatName(packageData.getPackageName());
+    	String name = formatName(packageData.getName());
     	String definition = packageData.isRectangle() ? "rectangle " : "package " ;
     	packageString.append(indent).append(definition).append(name).append(" {\n");
     	

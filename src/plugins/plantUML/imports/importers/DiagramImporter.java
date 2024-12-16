@@ -7,19 +7,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.sourceforge.plantuml.abel.Entity;
+import net.sourceforge.plantuml.sequencediagram.Participant;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
 import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.NoteData;
 import plugins.plantUML.models.SemanticsData;
 
-public class DiagramImporter {	
+public abstract class DiagramImporter {
 	
 	private Map<String, SemanticsData> semanticsMap;
 	
 	public DiagramImporter(Map<String, SemanticsData> semanticsMap) {
 		this.setSemanticsMap(semanticsMap);
 	}
-	
+
+	public abstract void  extract();
 	protected String convertVisibility(VisibilityModifier visibilityModifier) {
 		if (visibilityModifier == VisibilityModifier.PUBLIC_METHOD 
 				|| visibilityModifier == VisibilityModifier.PUBLIC_FIELD)
@@ -30,7 +32,6 @@ public class DiagramImporter {
 		else if (visibilityModifier == VisibilityModifier.PROTECTED_METHOD 
 				|| visibilityModifier == VisibilityModifier.PROTECTED_FIELD) {
 			return "protected";
-			
 		}
 		else if (visibilityModifier == VisibilityModifier.PACKAGE_PRIVATE_METHOD 
 				|| visibilityModifier == VisibilityModifier.PACKAGE_PRIVATE_FIELD) {
@@ -57,6 +58,18 @@ public class DiagramImporter {
 	}
 	
 	protected List<String> extractStereotypes(Entity entity, BaseWithSemanticsData data) {
+		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
+		Pattern pattern = Pattern.compile("<<([^>]+)>>");
+		List<String> stereotypes = new ArrayList<>();
+		Matcher matcher = pattern.matcher(rawStereotypes);
+		while (matcher.find()) {
+			stereotypes.add(matcher.group(1)); // group(1) gets the part inside << >>
+		}
+		return stereotypes;
+	}
+
+	// For lifelines + interaction Actors
+	protected List<String> extractStereotypes(Participant entity, BaseWithSemanticsData data) {
 		String rawStereotypes = entity.getStereotype() == null ? "" :  entity.getStereotype().toString(); // in a single string like <<Stereo1>><<stereo2>>
 		Pattern pattern = Pattern.compile("<<([^>]+)>>");
 		List<String> stereotypes = new ArrayList<>();

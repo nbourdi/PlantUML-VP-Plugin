@@ -181,7 +181,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 	private void extractPackage(IModelElement modelElement) {
         
         if (!(modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem)) {
-	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, false, modelElement instanceof ISystem);
+	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, null, false, modelElement instanceof ISystem);
 	        IModelElement[] childElements = modelElement.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IActor) {
@@ -201,7 +201,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 	private void extractPackagedPackage(IModelElement childElement, PackageData parent) {
         ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
         
-        PackageData packageData = new PackageData(childElement.getName(), null, null, null, true, childElement instanceof ISystem);
+        PackageData packageData = new PackageData(childElement.getName(), null, null, null, null, true, childElement instanceof ISystem);
         IModelElement[] childElements = childElement.toChildArray();
         for (IModelElement childElement1 : childElements) {
         	if (childElement1 instanceof IActor) {

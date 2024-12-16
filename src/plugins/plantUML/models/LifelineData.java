@@ -41,5 +41,4 @@ public class LifelineData extends BaseWithSemanticsData {
 		this.isCreatedByMessage = isCreatedByMessage;
 	}
 
-
 }

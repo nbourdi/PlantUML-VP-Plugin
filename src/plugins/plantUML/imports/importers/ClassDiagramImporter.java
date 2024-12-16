@@ -1,11 +1,7 @@
 package plugins.plantUML.imports.importers;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +13,7 @@ import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.decoration.LinkType;
 import net.sourceforge.plantuml.skin.VisibilityModifier;
 import net.sourceforge.plantuml.wire.WLinkType;
+import org.apache.tools.ant.taskdefs.Pack;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AssociationPoint;
 import plugins.plantUML.models.AttributeData;
@@ -52,6 +49,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 		this.classDiagram = classDiagram;
 	}
 
+	@Override
 	public void extract() {
 
 		for (Entity groupEntity : classDiagram.groups()) {
@@ -71,45 +69,41 @@ public class ClassDiagramImporter extends DiagramImporter {
 			RelationshipData relationship = extractRelationship(link);
 			if(relationship != null) 
 				relationshipDatas.add(relationship);
-
 		}
 	}
 
 	private PackageData extractGroup(Entity groupEntity) {
-		GroupType groupType = groupEntity.getGroupType();
-		PackageData packageData = null; // TODO: 1) this is temp solution 2) not always will this be a package?
+        GroupType groupType = groupEntity.getGroupType();
+        PackageData packageData = null;
 
-		if (groupType == GroupType.PACKAGE) {
-			List<ClassData> packageClassDatas = new ArrayList<ClassData>();
-			List<PackageData> packagedPackageDatas = new ArrayList<PackageData>(); 
-			List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
+        if (groupType == GroupType.PACKAGE) {
+            List<ClassData> packageClassDatas = new ArrayList<ClassData>();
+            List<PackageData> packagedPackageDatas = new ArrayList<PackageData>();
+            List<NaryData> packageNaryDatas = new ArrayList<NaryData>();
 
+            for (Entity packagedLeaf : groupEntity.leafs())
+                extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
 
-			for (Entity packagedLeaf : groupEntity.leafs()) {
-				extractLeaf(packagedLeaf, packageClassDatas, packageNaryDatas);
-			}
+            for (Entity subgroupEntity : groupEntity.groups())
+                packagedPackageDatas.add(extractGroup(subgroupEntity));
 
-			for (Entity subgroupEntity : groupEntity.groups()) {
-				packagedPackageDatas.add(extractGroup(subgroupEntity));
-			}
+            String name = removeBrackets(groupEntity.getDisplay().toString());
+            packageData = new PackageData(groupEntity.getName(), null, packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
+            packageData.setUid(groupEntity.getUid());
 
-			String name = removeBrackets(groupEntity.getDisplay().toString());
-			packageData = new PackageData(groupEntity.getName(), null, packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
-			packageData.setUid(groupEntity.getUid());
+            String key = name + "|Package";
 
-			String key = name + "|Package";
+            boolean hasSemantics = getSemanticsMap().containsKey(key);
 
-			boolean hasSemantics = getSemanticsMap().containsKey(key);
+            if (hasSemantics) packageData.setSemantics(getSemanticsMap().get(key));
 
-			if (hasSemantics) packageData.setSemantics(getSemanticsMap().get(key));
+            if (groupEntity.getParentContainer().isRoot()) {
+                packageDatas.add(packageData);
+            }
+        }
+        return packageData;
 
-			if (groupEntity.getParentContainer().isRoot()) {
-				packageDatas.add(packageData);
-			}
-		}
-		return packageData;
-
-	}
+    }
 
 	private RelationshipData extractRelationship(Link link) {
 		String sourceID;
@@ -120,10 +114,10 @@ public class ClassDiagramImporter extends DiagramImporter {
 		String decor2 = link.getType().getDecor2().toString();
 
 		// DESIGN CONSTRAINT : double-ended relationships do not exist in VP.
-		boolean isDecorated1 = (decor1 != "NONE" && decor1 != "NOT_NAVIGABLE");
-		boolean isDecorated2 = (decor2 != "NONE" && decor2 != "NOT_NAVIGABLE");
+		boolean isDecorated1 = (!Objects.equals(decor1, "NONE") && !Objects.equals(decor1, "NOT_NAVIGABLE"));
+		boolean isDecorated2 = (!Objects.equals(decor2, "NONE") && !Objects.equals(decor2, "NOT_NAVIGABLE"));
 		String decor = (isDecorated1 ? decor1 : decor2);
-		boolean isNotNavigable = (decor1 == "NOT_NAVIGABLE" || decor2 == "NOT_NAVIGABLE");
+		boolean isNotNavigable = (Objects.equals(decor1, "NOT_NAVIGABLE") || Objects.equals(decor2, "NOT_NAVIGABLE"));
 
 		if (isDecorated1 && isDecorated2) {
 			ApplicationManager.instance().getViewManager()

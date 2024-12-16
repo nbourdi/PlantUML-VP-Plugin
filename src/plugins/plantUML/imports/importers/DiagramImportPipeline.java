@@ -35,12 +35,14 @@ import net.sourceforge.plantuml.core.Diagram;
 import net.sourceforge.plantuml.decoration.symbol.USymbol;
 import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.jsondiagram.JsonDiagram;
+import net.sourceforge.plantuml.sequencediagram.SequenceDiagram;
 import net.sourceforge.plantuml.skin.UmlDiagramType;
 import net.sourceforge.plantuml.style.SName;
 import net.sourceforge.plantuml.syntax.SyntaxChecker;
 import net.sourceforge.plantuml.syntax.SyntaxResult;
 import plugins.plantUML.imports.creators.ClassDiagramCreator;
 import plugins.plantUML.imports.creators.ComponentDiagramCreator;
+import plugins.plantUML.imports.creators.SequenceDiagramCreator;
 import plugins.plantUML.models.Reference;
 import plugins.plantUML.models.SemanticsData;
 import plugins.plantUML.models.SubDiagramData;
@@ -91,7 +93,7 @@ public class DiagramImportPipeline {
 			return;
 		}
 
-		if (jsonFiles.size() != 0) {
+		if (!jsonFiles.isEmpty()) {
 			File jsonFile = jsonFiles.get(0);
 
 			// Import JSON semantics file FIRST. This way we can know ahead of time what semanticsData to add to the BaseWithSemanticsDatas.
@@ -206,9 +208,9 @@ public class DiagramImportPipeline {
 			
 			switch (umlDiagramType) {
 			case CLASS:
-				
+
 				ClassDiagram classDiagram = (ClassDiagram) diagram;
-				
+
 				ClassDiagramImporter classDiagramImporter = new ClassDiagramImporter(classDiagram, semanticsMap);
 				classDiagramImporter.extract();
 
@@ -245,33 +247,40 @@ public class DiagramImportPipeline {
 				modelSemanticsMap.putAll(componentDiagramCreator.getDiagramSemanticsMap());
 				
 				break;
+			case SEQUENCE:
+
+				SequenceDiagram sequenceDiagram = (SequenceDiagram) diagram;
+				SequenceDiagramImporter sequenceDiagramImporter = new SequenceDiagramImporter(sequenceDiagram, semanticsMap);
+				sequenceDiagramImporter.extract();
+
+				SequenceDiagramCreator sequenceDiagramCreator = new SequenceDiagramCreator(
+						diagramTitle,
+						sequenceDiagramImporter.getLifelineDatas(),
+						sequenceDiagramImporter.getActorDatas()
+				);
+
+				sequenceDiagramCreator.createDiagram();
+				modelSemanticsMap.putAll(sequenceDiagramCreator.getDiagramSemanticsMap());
+
 			default:
-				
-				CucaDiagram diagramcuca = (CucaDiagram) diagram;
-				Collection<Entity> leafs = diagramcuca.leafs();
-				Collection<Entity> groups= diagramcuca.groups();
-				for (Entity leafEntity : leafs) {
-					USymbol symbol=  leafEntity.getUSymbol();
-					if (symbol == diagramcuca.getSkinParam().actorStyle().toUSymbol()) {
-						ApplicationManager.instance().getViewManager().showMessage("actor" + symbol.getSName());
-					};
-					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +leafEntity.getLeafType().toString());;
-				}
-				for (Entity groupEntity : groups) {
-					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +groupEntity.getGroupType().toString());;
-				}
-				break;
+
+				//ApplicationManager.instance().getViewManager().showMessageDialog("Un");
+
+//                CucaDiagram diagramcuca = (UmlDiagram) diagram;
+//				Collection<Entity> leafs = diagramcuca.leafs();
+//				Collection<Entity> groups= diagramcuca.groups();
+//				for (Entity leafEntity : leafs) {
+//					USymbol symbol=  leafEntity.getUSymbol();
+//					if (symbol == diagramcuca.getSkinParam().actorStyle().toUSymbol()) {
+//						ApplicationManager.instance().getViewManager().showMessage("actor" + symbol.getSName());
+//					};
+//					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +leafEntity.getLeafType().toString());;
+//				}
+//				for (Entity groupEntity : groups) {
+//					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +groupEntity.getGroupType().toString());;
+//				}
+//				break;
 			}
-			
-			
-//			else if (diagram instanceof DescriptionDiagram) {
-//				ApplicationManager.instance().getViewManager().showMessageDialog(
-//						ApplicationManager.instance().getViewManager().getRootFrame(),
-//						"Composite found"
-//						);
-//			}
-
-
 
 		} catch (IOException e) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(
