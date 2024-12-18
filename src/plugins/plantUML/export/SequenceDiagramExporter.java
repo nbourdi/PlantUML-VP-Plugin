@@ -42,15 +42,14 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 	List<ActorData> exportedInteractionActors = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
-	List<RelationshipData> relationshipDatas = new ArrayList<>();
 	List<LifelineData> exportedLifelines = new ArrayList<>();
 	List<MessageData> exportedMessages = new ArrayList<>();
 	List<CombinedFragment> exportedFragments = new ArrayList<>(); 
 	List<InteractionRef> exportedRefs = new ArrayList<>();
-	private List<RelationshipData> exportedAnchors = new ArrayList<>();
+	List<RelationshipData> exportedAnchors = new ArrayList<>();
 
 	Map<IInteractionLifeLine, LifelineData> lifelineMap = new HashMap<IInteractionLifeLine, LifelineData>();
-	private Set<IMessage> processedMessages = new HashSet<>(); // New Set to track processed messages
+	private final Set<IMessage> processedMessages = new HashSet<>(); // New Set to track processed messages
 
 
 
@@ -104,8 +103,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		}
 
 		for (ICombinedFragment modelElement : iCombinedFragments) {
-			if (modelElement instanceof ICombinedFragment) {
-				extractFragment((ICombinedFragment) modelElement);
+			if (modelElement != null) {
+				extractFragment(modelElement);
 			}
 		}
 
@@ -118,7 +117,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		exportedNotes = getNotes(); // from base diagram exporter
 
 		for (IAnchor anchor : iAnchors) {
-			extractAnchor((IAnchor) anchor);
+			extractAnchor(anchor);
 		}
 	}
 
@@ -130,10 +129,10 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		String targetName = target.getName();
 
 		if (source instanceof INOTE) {
-			sourceName = getNoteAliasById(((INOTE) source).getId());
+			sourceName = getNoteAliasById(source.getId());
 
 		} else if (target instanceof INOTE) {
-			targetName = getNoteAliasById(((INOTE) target).getId());
+			targetName = getNoteAliasById(target.getId());
 		} 
 		if (sourceName == null || targetName == null) {
 			ApplicationManager.instance().getViewManager()
@@ -149,7 +148,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 		if(refModel.getRefersTo() == null) {
 			ApplicationManager.instance().getViewManager()
-			.showMessage("A ref refering to nothing was skipped.");
+			.showMessage("A ref referring to nothing was skipped.");
 			return;
 		}
 		String referenceName = refModel.getRefersTo().getName();
@@ -189,8 +188,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 		String sequenceNumber = messageModel.getSequenceNumber();
 
-		IModelElement source = (IModelElement) messageModel.getFrom();
-		IModelElement target = (IModelElement) messageModel.getTo();
+		IModelElement source = messageModel.getFrom();
+		IModelElement target = messageModel.getTo();
 		ApplicationManager.instance().getViewManager().showMessage("rel type? " + messageModel.getModelType());
 
 		String sourceName = (source == null) ? "[" : source.getName();
@@ -203,11 +202,10 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		MessageData messageData = new MessageData(sourceName, targetName, "Message", messageModel.getName());
 
 		if (messageModel.getType() == IMessage.TYPE_CREATE_MESSAGE) {
-			LifelineData createLifelineData = lifelineMap.get(target);
+			LifelineData createLifelineData = lifelineMap.get((IInteractionLifeLine) target);
 			createLifelineData.setCreatedByMessage(true);
 			messageData.setCreate(true, createLifelineData);
 		} else if (messageModel.getType() == IMessage.TYPE_DURATION_MESSAGE) {
-			ApplicationManager.instance().getViewManager().showMessage("DURATION");
 			int durationHeight = messageModel.getDurationHeight();
 			messageData.setDuration(durationHeight);
 		} else if (messageModel.getType() == IMessage.TYPE_RECURSIVE_MESSAGE) {
@@ -218,9 +216,9 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		IModelElement actionType = messageModel.getActionType();
 		if (actionType != null) {
 
-			if (actionType.getName() == "Return")
+			if (actionType.getName().equals("Return"))
 				messageData.setReply(true);
-			else if (actionType.getName() == "Destroy") {
+			else if (actionType.getName().equals("Destroy")) {
 				messageData.setDestroy(true);
 			}
 		}

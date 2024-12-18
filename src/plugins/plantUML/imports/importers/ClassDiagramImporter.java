@@ -200,7 +200,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			targetID = link.getEntity1().getUid();
 		}
 
-		if(relationshipType == "") return null; // TODO: temp fix. 
+		if(relationshipType.isEmpty()) return null; // TODO: temp fix.
 
 		if (isAssocClassSolid || isAssocClassDashed)  {
 
@@ -215,13 +215,12 @@ public class ClassDiagramImporter extends DiagramImporter {
 				otherEntity = link.getEntity1();
 			}
 
-
 			AssociationPoint associationPoint = assocPointMap.get(pointEntity.getUid()); 
 
 			if(isAssocClassDashed) { // the associationclass dashed relationship 
 				associationPoint.setToUid(otherEntity.getUid());
 			}
-			else if (isAssocClassSolid) { // 
+			else { //
 				if (associationPoint.getFromUid1() == null) associationPoint.setFromUid1(otherEntity.getUid());
 				else {
 					// uid1 has been filled so we fill in uid2 and the full VP association is ready 

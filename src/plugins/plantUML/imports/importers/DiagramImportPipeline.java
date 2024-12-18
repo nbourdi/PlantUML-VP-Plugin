@@ -256,7 +256,10 @@ public class DiagramImportPipeline {
 				SequenceDiagramCreator sequenceDiagramCreator = new SequenceDiagramCreator(
 						diagramTitle,
 						sequenceDiagramImporter.getLifelineDatas(),
-						sequenceDiagramImporter.getActorDatas()
+						sequenceDiagramImporter.getActorDatas(),
+						sequenceDiagramImporter.getMessageDatas(),
+						sequenceDiagramImporter.getRefDatas(),
+						sequenceDiagramImporter.getCombinedFragments()
 				);
 
 				sequenceDiagramCreator.createDiagram();

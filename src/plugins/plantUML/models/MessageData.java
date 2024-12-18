@@ -11,8 +11,6 @@ public class MessageData extends RelationshipData {
 	private boolean isRecursive;
 	private LifelineData createdLifeline;
 	private boolean isDuration;
-//	private boolean isDurationStart;
-//	private boolean isDurationEnd;
 	private int durationHeight;
 
 	public MessageData(String source, String target, String type, String name) {
@@ -82,6 +80,10 @@ public class MessageData extends RelationshipData {
 		setCreatedLifeline(createdLifelineData);
 	}
 
+	public void setCreate(boolean isCreate) {
+		this.isCreate = isCreate;
+	}
+
 	public boolean isDestroy() {
 		return isDestroy;
 	}
@@ -102,6 +104,14 @@ public class MessageData extends RelationshipData {
 		this.isDuration = true;
 		this.durationHeight = durationHeight;
 
+	}
+
+	public boolean isDuration() {
+		return this.isDuration;
+	}
+
+	public int getDurationHeight() {
+		return durationHeight;
 	}
 
 	public boolean isRecursive() {
