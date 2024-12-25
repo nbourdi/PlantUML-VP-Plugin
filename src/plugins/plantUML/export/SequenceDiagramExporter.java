@@ -122,8 +122,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractAnchor(IRelationship relationship) {
-		IModelElement source = (IModelElement) relationship.getFrom();
-		IModelElement target = (IModelElement) relationship.getTo();
+		IModelElement source = relationship.getFrom();
+		IModelElement target = relationship.getTo();
 		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
 		String sourceName = source.getName();
 		String targetName = target.getName();
@@ -229,7 +229,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 	private LifelineData extractLifeline(IInteractionLifeLine modelElement) {
 		String name = modelElement.getName();
-		LifelineData lifelineData = new LifelineData(name, null);
+		LifelineData lifelineData = new LifelineData(name);
 		lifelineData.setStereotypes(extractStereotypes(modelElement));
 		exportedLifelines.add(lifelineData);
 		lifelineMap.put((IInteractionLifeLine) modelElement, lifelineData);
@@ -238,7 +238,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 	private void extractInteractionActor(IInteractionActor modelElement) {
 		String name = modelElement.getName();
-		ActorData actorData = new ActorData(name, null);
+		ActorData actorData = new ActorData(name);
 		actorData.setStereotypes(extractStereotypes(modelElement));
 		exportedInteractionActors.add(actorData);
 	}

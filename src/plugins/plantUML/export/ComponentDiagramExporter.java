@@ -172,7 +172,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	private void extractPackage(IPackage packageModel) {
 		
 		if (!(packageModel.getParent() instanceof IPackage)) {
-			PackageData packageData = new PackageData(packageModel.getName(), packageModel.getDescription(), false);
+			PackageData packageData = new PackageData(packageModel.getName(), false);
+			packageData.setDescription(packageModel.getDescription());
 			IModelElement[] childElements = packageModel.toChildArray();
 			for (IModelElement childElement : childElements) {
 				if (childElement instanceof IClass) {
@@ -192,7 +193,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
-		PackageData packageData = new PackageData(packageModel.getName(), packageModel.getDescription(), true);
+		PackageData packageData = new PackageData(packageModel.getName(), true);
+		packageData.setDescription(packageModel.getDescription());
 		IModelElement[] childElements = packageModel.toChildArray();
 		for (IModelElement childElement : childElements) {
 			if (childElement instanceof IClass) {
@@ -212,7 +214,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	private void extractInterface(IClass interfaceModel, PackageData packageData) {
 		boolean isInPackage = (interfaceModel.getParent() instanceof IPackage);
 		
-		ClassData interfaceData = new ClassData(interfaceModel.getName(), interfaceModel.getDescription(), isInPackage);
+		ClassData interfaceData = new ClassData(interfaceModel.getName(), isInPackage);
+		interfaceData.setDescription(interfaceModel.getDescription());
 		interfaceData.setStereotypes(extractStereotypes(interfaceModel));
 		addSemanticsIfExist(interfaceModel, interfaceData);
 		
@@ -228,7 +231,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		boolean isInPackage = (componentModel.getParent() instanceof IPackage);
 		boolean isResident = (componentModel.getParent() instanceof IComponent);
 		
-		ComponentData componentData = new ComponentData(componentModel.getName(), componentModel.getDescription(), isInPackage);
+		ComponentData componentData = new ComponentData(componentModel.getName(), isInPackage);
+		componentData.setDescription(componentModel.getDescription());
 		componentData.setResident(isResident);
 		
 		componentData.setStereotypes(extractStereotypes(componentModel));

@@ -7,9 +7,9 @@ public class BaseWithSemanticsData {
 	private SemanticsData semantics;
 	// maybe even stereotypes?
 	
-	public BaseWithSemanticsData(String name, String description) {
+	public BaseWithSemanticsData(String name) {
 		this.setName(name);
-		this.setDescription(description);
+		//this.setDescription(description);
 		this.setSemantics(new SemanticsData());
 	}
 

@@ -151,7 +151,7 @@ public class SequenceDiagramImporter extends  DiagramImporter {
         ParticipantType participantType = participant.getType();
 
         if (participantType == ParticipantType.ACTOR) {
-            ActorData actorData = new ActorData(name, null);
+            ActorData actorData = new ActorData(name);
             String key = name + "|InteractionActor"; // TODO check if accurate type
 
             if (getSemanticsMap().containsKey(key)) {
@@ -163,7 +163,7 @@ public class SequenceDiagramImporter extends  DiagramImporter {
 
             actorDatas.add(actorData);
         } else {
-            LifelineData lifelineData = new LifelineData(name, null);
+            LifelineData lifelineData = new LifelineData(name);
             String key = name + "|InteractionLifeline"; // TODO check if accurate type
 
             if (getSemanticsMap().containsKey(key)) {

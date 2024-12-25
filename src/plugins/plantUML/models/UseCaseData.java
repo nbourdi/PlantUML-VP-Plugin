@@ -5,17 +5,17 @@ import java.util.jar.Attributes;
 
 import org.glassfish.grizzly.utils.StringFilter;
 
-public class UseCaseData {
+public class UseCaseData extends BaseWithSemanticsData {
 	private String name;
 	private String description;
 	private List<String> stereotypes;
 	private boolean isInPackage;
 	private boolean isBusiness;
+	private String Uid;
 	
 	
 	public UseCaseData(String name) {
-		this.name = name;
-		this.description = description;
+        super(name);
 	}
 	public String getName() {
 		return name;
@@ -55,4 +55,12 @@ public class UseCaseData {
 	public void setBusiness(boolean isBusiness) {
 		this.isBusiness = isBusiness;
 	}
+
+    public String getUid() {
+		return  Uid;
+    }
+
+    public void setUid(String uid) {
+        Uid = uid;
+    }
 }

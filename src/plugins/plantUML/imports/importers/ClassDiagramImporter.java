@@ -88,7 +88,7 @@ public class ClassDiagramImporter extends DiagramImporter {
                 packagedPackageDatas.add(extractGroup(subgroupEntity));
 
             String name = removeBrackets(groupEntity.getDisplay().toString());
-            packageData = new PackageData(groupEntity.getName(), null, packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
+            packageData = new PackageData(groupEntity.getName(), packageClassDatas, packagedPackageDatas, packageNaryDatas, false, false);
             packageData.setUid(groupEntity.getUid());
 
             String key = name + "|Package";
@@ -275,7 +275,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 	private NaryData extractNary(Entity entity) {
 
 		String name = removeBrackets(entity.getDisplay().toString());
-		NaryData naryData = new NaryData(entity.getName(), null, null, false);
+		NaryData naryData = new NaryData(entity.getName(), null,  false);
 		naryData.setUid(entity.getUid());
 
 		String key = name + "|NARY";
@@ -289,7 +289,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		String visibility = convertVisibility(entity.getVisibilityModifier());
 		String name = removeBrackets(entity.getDisplay().toString());
-		ClassData classData = new ClassData(name, false, visibility, false, null);
+		ClassData classData = new ClassData(name, false, visibility, false);
 		String key = name + "|Class";
 
 		boolean hasSemantics = getSemanticsMap().containsKey(key);

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,26 +21,21 @@ import com.vp.plugin.model.IProject;
 import com.vp.plugin.model.IReference;
 import com.vp.plugin.model.factory.IModelElementFactory;
 
-import javassist.expr.Instanceof;
-import net.atmp.CucaDiagram;
 import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.UmlDiagram;
 import net.sourceforge.plantuml.abel.Entity;
-import net.sourceforge.plantuml.argon2.model.Instance;
-import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
-import net.sourceforge.plantuml.compositediagram.CompositeDiagram;
 import net.sourceforge.plantuml.core.Diagram;
 import net.sourceforge.plantuml.decoration.symbol.USymbol;
 import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.jsondiagram.JsonDiagram;
 import net.sourceforge.plantuml.sequencediagram.SequenceDiagram;
 import net.sourceforge.plantuml.skin.UmlDiagramType;
-import net.sourceforge.plantuml.style.SName;
 import net.sourceforge.plantuml.syntax.SyntaxChecker;
 import net.sourceforge.plantuml.syntax.SyntaxResult;
 import plugins.plantUML.imports.creators.ClassDiagramCreator;
 import plugins.plantUML.imports.creators.ComponentDiagramCreator;
+import plugins.plantUML.imports.creators.DescriptionDiagramCreator;
 import plugins.plantUML.imports.creators.SequenceDiagramCreator;
 import plugins.plantUML.models.Reference;
 import plugins.plantUML.models.SemanticsData;
@@ -180,9 +174,7 @@ public class DiagramImportPipeline {
 						);
 				return;
 			}
-			
-			
-			
+
 			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
 			SourceStringReader reader = new SourceStringReader(source);
 
@@ -226,28 +218,69 @@ public class DiagramImportPipeline {
 				creator.createDiagram();
 				modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
 				break;
-				
-				
-			case DESCRIPTION:
-				
-				DescriptionDiagram descriptionDiagram = (DescriptionDiagram) diagram;
-				ComponentDiagramImporter componentDiagramImporter = new ComponentDiagramImporter(descriptionDiagram, semanticsMap);
-				componentDiagramImporter.extract();
-				
-				ComponentDiagramCreator componentDiagramCreator = new ComponentDiagramCreator(
-						diagramTitle,
-						componentDiagramImporter.getComponentDatas(),
-						componentDiagramImporter.getInterfaceDatas(),
-						componentDiagramImporter.getPackageDatas(),
-						componentDiagramImporter.getRelationshipDatas(), 
-						componentDiagramImporter.getNoteDatas()
-						);
-				
-				componentDiagramCreator.createDiagram();
-				modelSemanticsMap.putAll(componentDiagramCreator.getDiagramSemanticsMap());
-				
-				break;
-			case SEQUENCE:
+
+
+				case DESCRIPTION:
+					DescriptionDiagram descriptionDiagram = (DescriptionDiagram) diagram;
+
+					// type DESCRIPTION in puml is used for component, deployment and use case & their mixing
+					// Determine the specific type of diagram
+					String specificType = determineDiagramType(descriptionDiagram);
+
+					switch (specificType) {
+						case "usecase":
+							DescriptionDiagramImporter useCaseDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
+							useCaseDiagramImporter.extract();
+							DescriptionDiagramCreator useCaseDiagramCreator = new DescriptionDiagramCreator(
+									diagramTitle,
+									specificType,
+									useCaseDiagramImporter.getComponentDatas(),
+									useCaseDiagramImporter.getInterfaceDatas(),
+									useCaseDiagramImporter.getPackageDatas(),
+									useCaseDiagramImporter.getRelationshipDatas(),
+									useCaseDiagramImporter.getActorDatas(),
+									useCaseDiagramImporter.getUseCaseDatas(),
+									useCaseDiagramImporter.getNoteDatas()
+							);
+							useCaseDiagramCreator.createDiagram();
+							modelSemanticsMap.putAll(useCaseDiagramCreator.getDiagramSemanticsMap());
+							break;
+
+						case "component":
+							DescriptionDiagramImporter componentDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
+							componentDiagramImporter.extract();
+							ComponentDiagramCreator componentDiagramCreator = new ComponentDiagramCreator(
+									diagramTitle,
+									componentDiagramImporter.getComponentDatas(),
+									componentDiagramImporter.getInterfaceDatas(),
+									componentDiagramImporter.getPackageDatas(),
+									componentDiagramImporter.getRelationshipDatas(),
+									componentDiagramImporter.getNoteDatas()
+							);
+							componentDiagramCreator.createDiagram();
+							modelSemanticsMap.putAll(componentDiagramCreator.getDiagramSemanticsMap());
+							break;
+
+						case "deployment":
+//							DeploymentDiagramImporter deploymentDiagramImporter = new DeploymentDiagramImporter(descriptionDiagram, semanticsMap);
+//							deploymentDiagramImporter.extract();
+//							DeploymentDiagramCreator deploymentDiagramCreator = new DeploymentDiagramCreator(
+//									diagramTitle,
+//									deploymentDiagramImporter.getNodeDatas(),
+//									deploymentDiagramImporter.getArtifactDatas(),
+//									deploymentDiagramImporter.getRelationshipDatas(),
+//									deploymentDiagramImporter.getNoteDatas()
+//							);
+//							deploymentDiagramCreator.createDiagram();
+//							modelSemanticsMap.putAll(deploymentDiagramCreator.getDiagramSemanticsMap());
+//							break;
+
+						default:
+
+					}
+					break;
+
+				case SEQUENCE:
 
 				SequenceDiagram sequenceDiagram = (SequenceDiagram) diagram;
 				SequenceDiagramImporter sequenceDiagramImporter = new SequenceDiagramImporter(sequenceDiagram, semanticsMap);
@@ -265,24 +298,12 @@ public class DiagramImportPipeline {
 				sequenceDiagramCreator.createDiagram();
 				modelSemanticsMap.putAll(sequenceDiagramCreator.getDiagramSemanticsMap());
 
+
 			default:
 
-				//ApplicationManager.instance().getViewManager().showMessageDialog("Un");
-
-//                CucaDiagram diagramcuca = (UmlDiagram) diagram;
-//				Collection<Entity> leafs = diagramcuca.leafs();
-//				Collection<Entity> groups= diagramcuca.groups();
-//				for (Entity leafEntity : leafs) {
-//					USymbol symbol=  leafEntity.getUSymbol();
-//					if (symbol == diagramcuca.getSkinParam().actorStyle().toUSymbol()) {
-//						ApplicationManager.instance().getViewManager().showMessage("actor" + symbol.getSName());
-//					};
-//					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +leafEntity.getLeafType().toString());;
-//				}
-//				for (Entity groupEntity : groups) {
-//					ApplicationManager.instance().getViewManager().showMessage("leaftype :" +groupEntity.getGroupType().toString());;
-//				}
-//				break;
+				ApplicationManager.instance().getViewManager().showMessageDialog(
+						ApplicationManager.instance().getViewManager().getRootFrame(),
+						"Unsupported diagram type: " + umlDiagramType.name());
 			}
 
 		} catch (IOException e) {
@@ -292,6 +313,42 @@ public class DiagramImportPipeline {
 					);
 		}
 	}
+
+	private String determineDiagramType(DescriptionDiagram descriptionDiagram) {
+		int actorCount = 0;
+		int componentCount = 0;
+		int nodeCount = 0;
+
+		for (Entity leafEntity : descriptionDiagram.leafs()) {
+			USymbol symbol = leafEntity.getUSymbol();
+			if (symbol == null) continue;
+
+			switch (symbol.getSName()) {
+				case actor:
+					actorCount++;
+					break;
+				case component:
+					componentCount++;
+					break;
+				case node:
+				case artifact:
+					nodeCount++;
+					break;
+			}
+		}
+
+		if (actorCount > componentCount && actorCount > nodeCount) {
+			return "usecase";
+		} else if (componentCount > actorCount && componentCount > nodeCount) {
+			return "component";
+		} else if (nodeCount > actorCount && nodeCount > componentCount) {
+			return "deployment";
+		}
+
+		return "component"; // Default to Component Diagram if no clear majority
+	}
+
+
 
 	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData, IDiagramUIModel[] diagrams, IModelElement[] modelElements) {
 

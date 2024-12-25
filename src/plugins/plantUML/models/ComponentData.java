@@ -14,8 +14,8 @@ public class ComponentData extends BaseWithSemanticsData {
 	private boolean isResident;
 	private List<PortData> ports;
 
-	public ComponentData(String name, String description, boolean isInPackage) {
-		super(name, description);
+	public ComponentData(String name, boolean isInPackage) {
+		super(name);
 		this.isInPackage = isInPackage;
 		this.stereotypes = new ArrayList<>();
 		this.residents = new ArrayList<>();

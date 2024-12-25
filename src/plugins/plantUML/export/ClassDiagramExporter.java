@@ -99,7 +99,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);
 		ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), classModel.getVisibility(),
-				isInPackage, classModel.getDescription());
+				isInPackage);
+		classData.setDescription(classModel.getDescription());
 		classData.setStereotypes(extractStereotypes(classModel));
 		extractAttributes(classModel, classData);
 		extractOperations(classModel, classData);
@@ -114,7 +115,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 		boolean isInPackage = (naryModel.getParent() instanceof IPackage);
 		String name = naryModel.getName();
 		String id = naryModel.getId();
-		NaryData naryData = new NaryData(name, naryModel.getDescription(), id, isInPackage);
+		NaryData naryData = new NaryData(name, id, isInPackage);
+		naryData.setDescription(naryModel.getDescription());
 		addSemanticsIfExist(naryModel, naryData);
 		
 		if (packageData != null)
@@ -209,7 +211,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackage(IPackage packageModel) {
 
 		if (!(packageModel.getParent() instanceof IPackage)) {
-			PackageData packageData = new PackageData(packageModel.getName(), null, null, null, null, false, false);
+			PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false, false);
+			packageData.setDescription(packageModel.getDescription());
 			IModelElement[] childElements = packageModel.toChildArray();
 			for (IModelElement childElement : childElements) {
 				if (childElement instanceof IClass) {
@@ -230,7 +233,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
 		ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
 
-		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, null, true, false);
+		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true, false);
+		packageData.setDescription(packageModel.getDescription());
 		IModelElement[] childElements = packageModel.toChildArray();
 		for (IModelElement childElement : childElements) {
 			if (childElement instanceof IClass) {

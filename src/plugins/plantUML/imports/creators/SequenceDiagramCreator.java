@@ -16,6 +16,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class SequenceDiagramCreator extends  DiagramCreator {
 
@@ -25,6 +26,8 @@ public class SequenceDiagramCreator extends  DiagramCreator {
     List<SequenceRef> refDatas = new ArrayList<>();
     List<CombinedFragment> fragments = new ArrayList<>();
 
+    // in case numbering isn't provided in puml, assume numbering in order of declaration. Numbering is crucial for proper layout
+    int sequenceNumberCounter = 0;
     IInteractionDiagramUIModel sequenceDiagram = (IInteractionDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_INTERACTION_DIAGRAM);
     IFrame rootFrame = sequenceDiagram.getRootFrame(true);
 
@@ -106,7 +109,11 @@ public class SequenceDiagramCreator extends  DiagramCreator {
     private IMessage createMessage(MessageData messageData) {
         IMessage messageModel = IModelElementFactory.instance().createMessage();
         messageModel.setName(messageData.getName());
-        messageModel.setSequenceNumber(messageData.getSequenceNumber());
+        if (messageData.getSequenceNumber() != null) {
+            messageModel.setSequenceNumber(messageData.getSequenceNumber());
+        } else {
+            messageModel.setSequenceNumber(String.valueOf(sequenceNumberCounter + 1));
+        }
 
         String fromCode = messageData.getSourceID();
         String toCode = messageData.getTargetID();

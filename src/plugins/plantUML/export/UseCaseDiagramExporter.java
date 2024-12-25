@@ -43,7 +43,6 @@ import java.util.List;
 
 public class UseCaseDiagramExporter extends DiagramExporter {
 
-    private File file;
     private IDiagramUIModel diagram;
 
     public UseCaseDiagramExporter(IDiagramUIModel diagram) {
@@ -88,14 +87,8 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                 ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
             }
         }
-        List<NoteData> exportedNotes = getNotes(); // from base diagram exporter
+        exportedNotes = getNotes(); // from base diagram exporter
 
-        UseCaseWriter writer = new UseCaseWriter(exportedUseCases, relationshipDatas, exportedPackages, exportedActors, exportedNotes);
-        try {
-            writer.writeToFile(file);
-        } catch (IOException e) {
-            ApplicationManager.instance().getViewManager().showMessage("Failed to write PlantUML file: " + e.getMessage());
-        }
     }
 
 
@@ -115,7 +108,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 	private void extractActor(IActor modelElement, PackageData packageData) {
 		boolean isInPackage = (modelElement.getParent() instanceof IPackage);
     	String name = modelElement.getName();
-    	ActorData actorData = new ActorData(name, null);
+    	ActorData actorData = new ActorData(name);
     	actorData.setInPackage(isInPackage);
     	actorData.setStereotypes(extractStereotypes(modelElement));
     	exportedActors.add(actorData);
@@ -177,11 +170,10 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     }
 
 
-
 	private void extractPackage(IModelElement modelElement) {
         
         if (!(modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem)) {
-	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, null, false, modelElement instanceof ISystem);
+	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, false, modelElement instanceof ISystem);
 	        IModelElement[] childElements = modelElement.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IActor) {
@@ -201,7 +193,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 	private void extractPackagedPackage(IModelElement childElement, PackageData parent) {
         ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
         
-        PackageData packageData = new PackageData(childElement.getName(), null, null, null, null, true, childElement instanceof ISystem);
+        PackageData packageData = new PackageData(childElement.getName(), null, null, null, true, childElement instanceof ISystem);
         IModelElement[] childElements = childElement.toChildArray();
         for (IModelElement childElement1 : childElements) {
         	if (childElement1 instanceof IActor) {

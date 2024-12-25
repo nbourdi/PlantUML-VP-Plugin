@@ -7,8 +7,8 @@ public class NaryData extends BaseWithSemanticsData {
     private String alias;
     private String Uid;
     
-    public NaryData(String name, String description, String id, boolean isInPackage) {
-        super(name, description);
+    public NaryData(String name, String id, boolean isInPackage) {
+        super(name);
     	this.name = (name != null && !name.isEmpty()) ? name : null;
         this.id = id;
         this.isInPackage = isInPackage;

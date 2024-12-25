@@ -14,8 +14,8 @@ public class ClassData extends BaseWithSemanticsData {
     private String visibility;
     private String Uid;
 
-    public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage, String description) {
-    	super(name, description);
+    public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage) {
+    	super(name);
         this.setAbstract(isAbstract);
         this.visibility = visibility; 
         this.setAttributes(new ArrayList<>());
@@ -24,8 +24,8 @@ public class ClassData extends BaseWithSemanticsData {
         this.setInPackage(isInPackage);
     }
 
-    public ClassData(String name, String description, boolean isInPackage) { // interfaces for component
-    	super(name, description);
+    public ClassData(String name, boolean isInPackage) { // interfaces for component
+    	super(name);
     	this.setInPackage(isInPackage);
     	this.stereotypes = new ArrayList<>();
 	}

@@ -7,9 +7,10 @@ public class ActorData extends BaseWithSemanticsData {
 	private List<String> stereotypes;
 	private boolean isInPackage;
 	private boolean isBusiness;
+	private String Uid;
 	
-	public ActorData(String name, String description) {
-		super(name, description);
+	public ActorData(String name) {
+		super(name);
 	}
 
 
@@ -42,4 +43,11 @@ public class ActorData extends BaseWithSemanticsData {
 	}
 
 
+    public String getUid() {
+        return Uid;
+    }
+
+    public void setUid(String uid) {
+        Uid = uid;
+    }
 }

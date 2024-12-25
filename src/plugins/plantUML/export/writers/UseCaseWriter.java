@@ -87,7 +87,7 @@ public class UseCaseWriter extends PlantUMLWriter {
     		
     	}
     	
-    	packageString.append(indent + "}\n");
+    	packageString.append(indent).append("}\n");
 		return packageString.toString();
     }
 

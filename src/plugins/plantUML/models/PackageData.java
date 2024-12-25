@@ -14,13 +14,13 @@ public class PackageData extends BaseWithSemanticsData {
     private boolean isRectangle = false; // is System in reality, but systems are not a different type in puml , just a rectangle shape
     private String Uid;
 
-    public PackageData(String packageName, String description, boolean isSubpackage) {
-    	super(packageName, description);
+    public PackageData(String packageName, boolean isSubpackage) {
+    	super(packageName);
     	this.isSubpackage = isSubpackage;
     	
     }
-    public PackageData(String packageName, String description, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
-        super(packageName, description);
+    public PackageData(String packageName, List<ClassData> classes, List<PackageData> subPackages, List<NaryData> naries, boolean isSubpackage, boolean isRectangle) {
+        super(packageName);
         this.classes = classes != null ? classes : new ArrayList<>();
         this.subPackages = subPackages != null ? subPackages : new ArrayList<>();
         this.setNaries(naries != null ? naries : new ArrayList<>());

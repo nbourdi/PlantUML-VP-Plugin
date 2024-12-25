@@ -9,8 +9,8 @@ public class LifelineData extends BaseWithSemanticsData {
 	private boolean isInPackage;
 	private boolean isCreatedByMessage;
 
-	public LifelineData(String name, String description) {
-		super(name, description);
+	public LifelineData(String name) {
+		super(name);
 	}
 
 	public List<String> getStereotypes() {

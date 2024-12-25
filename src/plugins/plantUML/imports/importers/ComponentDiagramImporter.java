@@ -200,7 +200,7 @@ public class ComponentDiagramImporter extends DiagramImporter {
 
 		String name = removeBrackets(entity.getDisplay().toString());
 
-		ClassData interfaceData = new ClassData(name, null, false);
+		ClassData interfaceData = new ClassData(name, false);
 		String key = name + "|Class";
 
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
@@ -221,7 +221,7 @@ public class ComponentDiagramImporter extends DiagramImporter {
 	private ComponentData extractComponent(Entity entity) {
 		String name = removeBrackets(entity.getDisplay().toString());
 
-		ComponentData componentData = new ComponentData(name, null, false);
+		ComponentData componentData = new ComponentData(name, false);
 		String key = name + "|Component";
 
 		boolean hasSemantics = getSemanticsMap().containsKey(key);
@@ -283,7 +283,7 @@ public class ComponentDiagramImporter extends DiagramImporter {
 	private PackageData extractPackage(Entity groupEntity) {
 
 		String name = removeBrackets(groupEntity.getDisplay().toString());
-		PackageData packageData = new PackageData(groupEntity.getName(), null, false);
+		PackageData packageData = new PackageData(groupEntity.getName(), false);
 		packageData.setUid(groupEntity.getUid());
 
 		for (Entity packagedLeaf : groupEntity.leafs()) {
