@@ -219,63 +219,30 @@ public class DiagramImportPipeline {
 				modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
 				break;
 
+			case DESCRIPTION:
+				DescriptionDiagram descriptionDiagram = (DescriptionDiagram) diagram;
 
-				case DESCRIPTION:
-					DescriptionDiagram descriptionDiagram = (DescriptionDiagram) diagram;
+				// type DESCRIPTION in puml is used for component, deployment and use case & their mixing
+				// Determine the specific type of diagram
+				String specificType = determineDiagramType(descriptionDiagram);
 
-					// type DESCRIPTION in puml is used for component, deployment and use case & their mixing
-					// Determine the specific type of diagram
-					String specificType = determineDiagramType(descriptionDiagram);
-
-					switch (specificType) {
-						case "usecase":
-							DescriptionDiagramImporter useCaseDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
-							useCaseDiagramImporter.extract();
-							DescriptionDiagramCreator useCaseDiagramCreator = new DescriptionDiagramCreator(
-									diagramTitle,
-									specificType,
-									useCaseDiagramImporter.getComponentDatas(),
-									useCaseDiagramImporter.getInterfaceDatas(),
-									useCaseDiagramImporter.getPackageDatas(),
-									useCaseDiagramImporter.getRelationshipDatas(),
-									useCaseDiagramImporter.getActorDatas(),
-									useCaseDiagramImporter.getUseCaseDatas(),
-									useCaseDiagramImporter.getNoteDatas()
-							);
-							useCaseDiagramCreator.createDiagram();
-							modelSemanticsMap.putAll(useCaseDiagramCreator.getDiagramSemanticsMap());
-							break;
-
-						case "component":
-							DescriptionDiagramImporter componentDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
-							componentDiagramImporter.extract();
-							ComponentDiagramCreator componentDiagramCreator = new ComponentDiagramCreator(
-									diagramTitle,
-									componentDiagramImporter.getComponentDatas(),
-									componentDiagramImporter.getInterfaceDatas(),
-									componentDiagramImporter.getPackageDatas(),
-									componentDiagramImporter.getRelationshipDatas(),
-									componentDiagramImporter.getNoteDatas()
-							);
-							componentDiagramCreator.createDiagram();
-							modelSemanticsMap.putAll(componentDiagramCreator.getDiagramSemanticsMap());
-							break;
-
-						case "deployment":
-//							DeploymentDiagramImporter deploymentDiagramImporter = new DeploymentDiagramImporter(descriptionDiagram, semanticsMap);
-//							deploymentDiagramImporter.extract();
-//							DeploymentDiagramCreator deploymentDiagramCreator = new DeploymentDiagramCreator(
-//									diagramTitle,
-//									deploymentDiagramImporter.getNodeDatas(),
-//									deploymentDiagramImporter.getArtifactDatas(),
-//									deploymentDiagramImporter.getRelationshipDatas(),
-//									deploymentDiagramImporter.getNoteDatas()
-//							);
-//							deploymentDiagramCreator.createDiagram();
-//							modelSemanticsMap.putAll(deploymentDiagramCreator.getDiagramSemanticsMap());
-							break;
-					}
-					break;
+				DescriptionDiagramImporter descriptionDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
+				descriptionDiagramImporter.extract();
+				DescriptionDiagramCreator descriptionDiagramCreator = new DescriptionDiagramCreator(
+						diagramTitle,
+						specificType,
+						descriptionDiagramImporter.getComponentDatas(),
+						descriptionDiagramImporter.getInterfaceDatas(),
+						descriptionDiagramImporter.getPackageDatas(),
+						descriptionDiagramImporter.getRelationshipDatas(),
+						descriptionDiagramImporter.getActorDatas(),
+						descriptionDiagramImporter.getUseCaseDatas(),
+						descriptionDiagramImporter.getArtifactDatas(),
+						descriptionDiagramImporter.getNoteDatas()
+				);
+				descriptionDiagramCreator.createDiagram();
+				modelSemanticsMap.putAll(descriptionDiagramCreator.getDiagramSemanticsMap());
+				break;
 
 			case SEQUENCE:
 
@@ -312,37 +279,40 @@ public class DiagramImportPipeline {
 	}
 
 	private String determineDiagramType(DescriptionDiagram descriptionDiagram) {
-		int actorCount = 0;
-		int componentCount = 0;
-		int nodeCount = 0;
+		boolean hasNodeOrArtifact = false;
+		boolean hasUseCase = false;
+		boolean hasComponent = false;
 
 		for (Entity leafEntity : descriptionDiagram.leafs()) {
 			USymbol symbol = leafEntity.getUSymbol();
 			if (symbol == null) continue;
 
 			switch (symbol.getSName()) {
-				case actor:
-					actorCount++;
-					break;
-				case component:
-					componentCount++;
-					break;
 				case node:
 				case artifact:
-					nodeCount++;
+					hasNodeOrArtifact = true;
+					break;
+				case actor:
+					hasUseCase = true;
+					break;
+				case component:
+					hasComponent = true;
 					break;
 			}
 		}
 
-		if (actorCount > componentCount && actorCount > nodeCount) {
-			return "usecase";
-		} else if (componentCount > actorCount && componentCount > nodeCount) {
-			return "component";
-		} else if (nodeCount > actorCount && nodeCount > componentCount) {
-			return "deployment";
+		// Determine the diagram type based on the requirements
+		if (hasNodeOrArtifact) {
+			return "deployment"; // Deployment diagram takes precedence if there are nodes or artifacts
+		}
+		if (hasUseCase) {
+			return "usecase"; // Use case diagram if there's at least one use case
+		}
+		if (hasComponent) {
+			return "component"; // Component diagram if no nodes, artifacts, or use cases
 		}
 
-		return "component"; // Default to Component Diagram if no clear majority
+		return "component"; // Default to Component Diagram if no clear indicators
 	}
 
 

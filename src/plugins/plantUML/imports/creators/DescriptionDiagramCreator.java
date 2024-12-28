@@ -22,33 +22,27 @@ public class DescriptionDiagramCreator extends DiagramCreator {
     List<UseCaseData> useCaseDatas = new ArrayList<>();
     List<NoteData> noteDatas = new ArrayList<NoteData>();
     List<PackageData> packageDatas = new ArrayList<PackageData>();
+    List<ArtifactData> artifactDatas = new ArrayList<>();
 
-    String specificDiagramType;
-
-    // IComponentDiagramUIModel componentDiagram = (IComponentDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_COMPONENT_DIAGRAM);
-
-    public DescriptionDiagramCreator(String diagramTitle, String specificDiagramType, List<ComponentData> componentDatas, List<ClassData> interfaceDatas, List<PackageData> packageDatas, List<RelationshipData> relationshipDatas, List<ActorData> actorDatas, List<UseCaseData> useCaseData, List<NoteData> noteDatas) {
+    public DescriptionDiagramCreator(String diagramTitle, String specificDiagramType, List<ComponentData> componentDatas, List<ClassData> interfaceDatas, List<PackageData> packageDatas, List<RelationshipData> relationshipDatas, List<ActorData> actorDatas, List<UseCaseData> useCaseData, List<ArtifactData> artifactDatas, List<NoteData> noteDatas) {
         super(diagramTitle);
         this.componentDatas = componentDatas;
         this.interfaceDatas = interfaceDatas;
         this.packageDatas = packageDatas;
+        this.artifactDatas = artifactDatas;
         this.relationshipDatas = relationshipDatas;
         this.noteDatas = noteDatas;
-        this.specificDiagramType = specificDiagramType;
         this.actorDatas = actorDatas;
         this.useCaseDatas = useCaseData;
         switch (specificDiagramType) {
             case "usecase":
-                IUseCaseDiagramUIModel usecaseDiagram = (IUseCaseDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_USE_CASE_DIAGRAM);
-                diagram = usecaseDiagram;
+                diagram = diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_USE_CASE_DIAGRAM);
                 break;
             case "component":
-                IComponentDiagramUIModel componentDiagram = (IComponentDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_COMPONENT_DIAGRAM);
-                diagram = componentDiagram;
+                diagram = diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_COMPONENT_DIAGRAM);
                 break;
             case "deployment":
-                IDeploymentDiagramUIModel deploymentDiagram = (IDeploymentDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_DEPLOYMENT);
-                diagram = deploymentDiagram;
+                diagram = diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_DEPLOYMENT);
                 break;
         }
     }
@@ -60,11 +54,16 @@ public class DescriptionDiagramCreator extends DiagramCreator {
 
         // component diagram
         for (ComponentData componentData : componentDatas) {
-            IComponent componentModel = createComponent(componentData);
+            if (componentData.isNodeComponent()) createNode(componentData);
+           else createComponent(componentData);
         }
 
         for (ClassData interfaceData : interfaceDatas) {
             createInterface(interfaceData);
+        }
+
+        for (ArtifactData artifactData : artifactDatas) {
+            createArtifact(artifactData);
         }
 
         for (PackageData packageData : packageDatas) {
@@ -72,11 +71,11 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         }
 
         for (NoteData noteData : noteDatas) { // TODO:  clean up + possibly buggy?
-            INOTE noteModel = createNote(noteData);
+            createNote(noteData);
         }
 
         for (ActorData actorData : actorDatas) {
-            IActor actorModel = createActor(actorData);
+            createActor(actorData);
         }
 
         for (UseCaseData useCaseData : useCaseDatas) {
@@ -93,6 +92,79 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         ApplicationManager.instance().getDiagramManager().openDiagram(diagram);
     }
 
+    private INode createNode(ComponentData nodeData) {
+        INode nodeModel = IModelElementFactory.instance().createNode();
+        String entityId = nodeData.getUid();
+        elementMap.put(entityId, nodeModel);
+
+        checkAndSettleNameConflict(nodeData.getName(), "Node");
+
+        nodeModel.setName(nodeData.getName());
+        INodeUIModel nodeShape = (INodeUIModel) diagramManager.createDiagramElement(diagram, nodeModel);
+        shapeMap.put(nodeModel, nodeShape);
+
+        for (String stereotype : nodeData.getStereotypes()) {
+            nodeModel.addStereotype(stereotype);
+        }
+
+        for (PortData port : nodeData.getPorts()) {
+            IPort portModel = IModelElementFactory.instance().createPort();
+            elementMap.put(port.getUid(), portModel);
+            portModel.setName(port.getName());
+            IPortUIModel portShape = (IPortUIModel) diagramManager.createDiagramElement(diagram, portModel);
+            shapeMap.put(portModel, portShape);
+            nodeModel.addPort(portModel);
+            nodeShape.addChild(portShape);
+        }
+
+        for (ComponentData residentComponent : nodeData.getResidents()) {
+            if (residentComponent.isNodeComponent()) {
+                INode residentModel = createNode(residentComponent);
+                nodeModel.addNode(residentModel);
+                nodeShape.addChild((IShapeUIModel) shapeMap.get(residentModel));
+            } else {
+                IComponent residentModel = createComponent(residentComponent);
+                nodeModel.addComponent(residentModel);
+                nodeShape.addChild((IShapeUIModel) shapeMap.get(residentModel));
+            }
+        }
+
+        for (ClassData residentInterface : nodeData.getInterfaces()) {
+            IClass residentModel = createInterface(residentInterface);
+            nodeModel.addChild(residentModel);
+            nodeShape.addChild((IShapeUIModel) shapeMap.get(residentModel));
+        }
+
+        for (PackageData packageData : nodeData.getPackages()) {
+            IHasChildrenBaseModelElement packageModel = createPackage(packageData);
+            nodeModel.addChild(packageModel);
+            nodeShape.addChild((IShapeUIModel) shapeMap.get(packageModel));
+        }
+
+        for (ArtifactData artifactData : nodeData.getArtifacts()) {
+            IArtifact artifactModel = createArtifact(artifactData);
+            nodeModel.addChild(artifactModel);
+            nodeShape.addChild((IShapeUIModel) shapeMap.get(artifactModel));
+        }
+
+        putInSemanticsMap(nodeModel, nodeData);
+
+        nodeShape.fitSize();
+        return nodeModel;
+    }
+
+    private IArtifact createArtifact(ArtifactData artifactData) {
+        IArtifact artifactModel = IModelElementFactory.instance().createArtifact();
+        elementMap.put(artifactData.getUid(), artifactModel);
+        checkAndSettleNameConflict(artifactData.getName(), "Artifact");
+        artifactModel.setName(artifactData.getName());
+        IArtifactUIModel artifactShape = (IArtifactUIModel) diagramManager.createDiagramElement(diagram, artifactModel);
+        shapeMap.put(artifactModel, artifactShape);
+        putInSemanticsMap(artifactModel, artifactData);
+        artifactShape.fitSize();
+        return artifactModel;
+    }
+
     private IUseCase createUseCase(UseCaseData useCaseData) {
         IUseCase useCaseModel = IModelElementFactory.instance().createUseCase();
         elementMap.put(useCaseData.getUid(), useCaseModel);
@@ -107,6 +179,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
 
     private IActor createActor(ActorData actorData) {
         IActor actorModel = IModelElementFactory.instance().createActor();
+        if (actorData.isBusiness()) actorModel.setBusinessModel(true);
         elementMap.put(actorData.getUid(), actorModel);
         checkAndSettleNameConflict(actorData.getName(), "Actor");
         actorModel.setName(actorData.getName());
@@ -230,9 +303,6 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             packageShape = (IPackageUIModel) diagramManager.createDiagramElement(diagram, packageOrSystem);
             shapeMap.put(packageOrSystem, packageShape);
         }
-        // IPackage packageModel = IModelElementFactory.instance().createPackage();
-
-
 
         for (ClassData packagedInterfaceData : packageData.getClasses()) {
             IClass packagedInterfaceModel = createInterface(packagedInterfaceData);
@@ -262,6 +332,12 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             IUseCase packagedUseCase = createUseCase(useCaseData);
             packageOrSystem.addChild(packagedUseCase);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedUseCase));
+        }
+
+        for (ArtifactData artifactData : packageData.getArtifacts()) {
+            IArtifact packagedArtifact = createArtifact(artifactData);
+            packageOrSystem.addChild(packagedArtifact);
+            packageShape.addChild((IShapeUIModel) shapeMap.get(packagedArtifact));
         }
 
         putInSemanticsMap(packageOrSystem, packageData);
@@ -298,6 +374,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
     }
 
     private IComponent createComponent(ComponentData componentData) {
+
         IComponent componentModel = IModelElementFactory.instance().createComponent();
         String entityId = componentData.getUid();
         elementMap.put(entityId, componentModel);

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import cb.petal.UseCase;
+import com.teamdev.jxbrowser.deps.org.checkerframework.checker.units.qual.A;
 import com.vp.plugin.ApplicationManager;
 
 import net.sourceforge.plantuml.abel.Entity;
@@ -24,6 +25,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
     private List<NoteData> noteDatas = new ArrayList<NoteData>();
     private List<ClassData> interfaceDatas = new ArrayList<ClassData>();
     private List<ComponentData> componentDatas = new ArrayList<ComponentData>();
+    private List<ArtifactData> artifactDatas = new ArrayList<>();
 
     private List<ActorData> actorDatas = new ArrayList<>();
     private List<UseCaseData> useCaseDatas = new ArrayList<>();
@@ -45,21 +47,20 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
         for (Entity entity : descriptionDiagram.leafs()) {
             if (entity.getParentContainer().isRoot()) {
-                extractLeaf(entity, componentDatas, interfaceDatas, actorDatas, useCaseDatas);
+                extractLeaf(entity, componentDatas, interfaceDatas, actorDatas, useCaseDatas, artifactDatas);
             }
         }
 
         for (Link link : descriptionDiagram.getLinks()) {
-            ApplicationManager.instance().getViewManager().showMessage("53");
+            if (link.isInvis()) continue;
             RelationshipData relationship = extractRelationship(link);
             if(relationship != null) {
-                ApplicationManager.instance().getViewManager().showMessage("56");
                 relationshipDatas.add(relationship);
         }}
     }
 
     private RelationshipData extractRelationship(Link link) {
-        ApplicationManager.instance().getViewManager().showMessage("Extracting relationship from link");
+        ApplicationManager.instance().getViewManager().showMessage("Extracting relationship from link" + link.getLinkArg());
         String sourceID;
         String targetID;
 
@@ -155,9 +156,9 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         }
     }
 
-    private void extractLeaf(Entity entity, List<ComponentData> components, List<ClassData> interfaces, List<ActorData> actors, List<UseCaseData> usecases) {
+    private void extractLeaf(Entity entity, List<ComponentData> components, List<ClassData> interfaces, List<ActorData> actors, List<UseCaseData> usecases, List<ArtifactData> artifacts) {
 
-        // notes have null usymbols
+        // notes and use cases have null usymbols
         if (entity.getLeafType() == LeafType.NOTE) {
             noteDatas.add(extractNote(entity));
             return;
@@ -171,6 +172,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         SName sName = entity.getUSymbol().getSName();
         ApplicationManager.instance().getViewManager().showMessage("extracting leaf " + sName.toString() +" " + entity.getDisplay().toString());
         switch (sName) {
+            // TODO: packages, nodes.. when empty are considered leafs
             case component:
                 components.add(extractComponent(entity));
                 break;
@@ -179,16 +181,31 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 interfaces.add(extractInterface(entity));
                 break;
             case actor:
+            case business:
                 actors.add(extractActor(entity));
                 break;
             case usecase:
                 usecases.add(extractUseCase(entity));
                 break;
-
+            case artifact:
+                artifacts.add(extractArtifact(entity));
+                break;
             default:
                 break;
 
         }
+    }
+
+    private ArtifactData extractArtifact(Entity entity) {
+        String name = removeBrackets(entity.getDisplay().toString());
+        ArtifactData artifactData = new ArtifactData(name, false, false);
+        String key = name + "|Artifact";
+        boolean hasSemantics = getSemanticsMap().containsKey(key);
+        if (hasSemantics) artifactData.setSemantics(getSemanticsMap().get(key));
+
+        artifactData.setUid(entity.getUid());
+
+        return artifactData;
     }
 
     private UseCaseData extractUseCase(Entity entity) {
@@ -214,6 +231,11 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         ActorData actorData = new ActorData(name);
 
         String key = name + "|Actor";
+        if (entity.getUSymbol().getSName() == SName.business) {
+            actorData.setBusiness(true);
+            ApplicationManager.instance().getViewManager().showMessage("========== BUSINESS ACTOR");
+        }
+
         boolean hasSemantics = getSemanticsMap().containsKey(key);
 
         if (hasSemantics) actorData.setSemantics(getSemanticsMap().get(key));
@@ -244,8 +266,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         interfaceData.setUid(entity.getUid());
         return interfaceData;
     }
-
-
 
     private ComponentData extractComponent(Entity entity) {
         String name = removeBrackets(entity.getDisplay().toString());
@@ -278,7 +298,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 componentData.getPorts().add(portData);
             }
 
-            else extractLeaf(residentLeaf, componentData.getResidents(), componentData.getInterfaces(), null, null); // TODO : actors and use cases obvi shouldnt be here. sitched with null which might cause havoc
+            else extractLeaf(residentLeaf, componentData.getResidents(), componentData.getInterfaces(), null, null, componentData.getArtifacts()); // TODO : actors and use cases obvi shouldnt be here. sitched with null which might cause havoc
         }
 
         return componentData;
@@ -307,11 +327,51 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 PackageData rectangePakcageData = extractPackage(groupEntity);
                 rectangePakcageData.setRectangle(true);
                 packages.add(rectangePakcageData);
-
+                break;
+            case node:
+                ComponentData nodeData = extractNode(groupEntity);
+                nodeData.setNodeComponent(true);
+                components.add(nodeData);
+                break;
             default:
                 break;
         }
 
+    }
+
+    private ComponentData extractNode(Entity groupEntity) {
+        String name = removeBrackets(groupEntity.getDisplay().toString());
+
+        ComponentData nodeData = new ComponentData(name, false);
+        nodeData.setNodeComponent(true);
+        String key = name + "|Node";
+
+        boolean hasSemantics = getSemanticsMap().containsKey(key);
+        if (hasSemantics) nodeData.setSemantics(getSemanticsMap().get(key));
+
+        List<String> stereotypes = extractStereotypes(groupEntity, nodeData);
+
+        for (String stereotype : stereotypes) {
+            nodeData.addStereotype(stereotype);
+        }
+
+        nodeData.setUid(groupEntity.getUid());
+
+        for (Entity residentGroup : groupEntity.groups()) {
+            extractGroup(residentGroup, nodeData.getResidents(), nodeData.getPackages());
+        }
+
+        for (Entity residentLeaf : groupEntity.leafs()) {
+            // Ports need special handling since their getUSymbols return null for unknown reason
+            if (residentLeaf.getLeafType() == LeafType.PORTIN || residentLeaf.getLeafType() == LeafType.PORTOUT) {
+                String portName = removeBrackets(residentLeaf.getDisplay().toString());
+                PortData portData = new PortData(portName);
+                portData.setUid(residentLeaf.getUid());
+                nodeData.getPorts().add(portData);
+            }
+            else extractLeaf(residentLeaf, nodeData.getResidents(), nodeData.getInterfaces(), null, null, nodeData.getArtifacts()); // TODO : actors and use cases obvi shouldnt be here. sitched with null which might cause havoc
+        }
+        return nodeData;
     }
 
     private PackageData extractPackage(Entity groupEntity) {
@@ -321,7 +381,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         packageData.setUid(groupEntity.getUid());
 
         for (Entity packagedLeaf : groupEntity.leafs()) {
-            extractLeaf(packagedLeaf, packageData.getComponents(), packageData.getClasses(), packageData.getActors(), packageData.getUseCases());
+            extractLeaf(packagedLeaf, packageData.getComponents(), packageData.getClasses(), packageData.getActors(), packageData.getUseCases(), packageData.getArtifacts());
         }
 
         for (Entity subgroupEntity : groupEntity.groups()) {
@@ -362,5 +422,9 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
     public List<UseCaseData> getUseCaseDatas() {
         return useCaseDatas;
+    }
+
+    public List<ArtifactData> getArtifactDatas() {
+        return artifactDatas;
     }
 }
