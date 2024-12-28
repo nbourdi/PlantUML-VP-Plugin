@@ -68,7 +68,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         }
 
         for (PackageData packageData : packageDatas) {
-            IPackage packageModel = createPackage(packageData);
+            createPackage(packageData);
         }
 
         for (NoteData noteData : noteDatas) { // TODO:  clean up + possibly buggy?
@@ -84,6 +84,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         }
 
         for (RelationshipData relationshipData : relationshipDatas) {
+            ApplicationManager.instance().getViewManager().showMessage("Trying to create relationship");
             createRelationship(relationshipData);
         }
 
@@ -110,6 +111,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         checkAndSettleNameConflict(actorData.getName(), "Actor");
         actorModel.setName(actorData.getName());
         IActorUIModel actorShape = (IActorUIModel) diagramManager.createDiagramElement(diagram, actorModel);
+        actorShape.resetCaption();
         shapeMap.put(actorModel, actorShape);
         putInSemanticsMap(actorModel, actorData);
 
@@ -205,48 +207,65 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         }
     }
 
-    private IPackage createPackage(PackageData packageData) {
-        IPackage packageModel = IModelElementFactory.instance().createPackage();
-        elementMap.put(packageData.getUid(), packageModel);
+    private IHasChildrenBaseModelElement createPackage(PackageData packageData) {
 
-        checkAndSettleNameConflict(packageData.getName(), "Package");
+        IHasChildrenBaseModelElement packageOrSystem;
+        IShapeUIModel packageShape;
+        if (packageData.isRectangle()) {
+            packageOrSystem = IModelElementFactory.instance().createSystem();
+            elementMap.put(packageData.getUid(), packageOrSystem);
 
-        packageModel.setName(packageData.getName());
-        IPackageUIModel packageShape = (IPackageUIModel) diagramManager.createDiagramElement(diagram, packageModel);
-        shapeMap.put(packageModel, packageShape);
+            checkAndSettleNameConflict(packageData.getName(), "System");
+
+            packageOrSystem.setName(packageData.getName());
+            packageShape = (ISystemUIModel) diagramManager.createDiagramElement(diagram, packageOrSystem);
+            shapeMap.put(packageOrSystem, packageShape);
+        } else {
+            packageOrSystem = IModelElementFactory.instance().createPackage();
+            elementMap.put(packageData.getUid(), packageOrSystem);
+
+            checkAndSettleNameConflict(packageData.getName(), "Package");
+
+            packageOrSystem.setName(packageData.getName());
+            packageShape = (IPackageUIModel) diagramManager.createDiagramElement(diagram, packageOrSystem);
+            shapeMap.put(packageOrSystem, packageShape);
+        }
+        // IPackage packageModel = IModelElementFactory.instance().createPackage();
+
+
 
         for (ClassData packagedInterfaceData : packageData.getClasses()) {
             IClass packagedInterfaceModel = createInterface(packagedInterfaceData);
-            packageModel.addChild(packagedInterfaceModel);
+            packageOrSystem.addChild(packagedInterfaceModel);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedInterfaceModel));
         }
 
         for (ComponentData packagedComponentData : packageData.getComponents()) {
             IComponent packagedComponentModel = createComponent(packagedComponentData);
-            packageModel.addChild(packagedComponentModel);
+            packageOrSystem.addChild(packagedComponentModel);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedComponentModel));
         }
 
         for (PackageData subPackageData : packageData.getSubPackages()) {
-            IPackage subPackageModel = createPackage(subPackageData);
-            packageModel.addChild(subPackageModel);
+            IModelElement subPackageModel = createPackage(subPackageData);
+            packageOrSystem.addChild(subPackageModel);
             packageShape.addChild((IShapeUIModel) shapeMap.get(subPackageModel));
         }
 
         for (ActorData actorData : packageData.getActors()) {
             IActor packagedActorModel = createActor(actorData);
-            packageModel.addChild(packagedActorModel);
+            packageOrSystem.addChild(packagedActorModel);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedActorModel));
         }
 
         for (UseCaseData useCaseData : packageData.getUseCases()) {
             IUseCase packagedUseCase = createUseCase(useCaseData);
-            packageModel.addChild(packagedUseCase);
+            packageOrSystem.addChild(packagedUseCase);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedUseCase));
         }
 
-        putInSemanticsMap(packageModel, packageData);
-        return packageModel;
+        putInSemanticsMap(packageOrSystem, packageData);
+        return packageOrSystem;
     }
 
     private IClass createInterface(ClassData interfaceData) {
@@ -316,7 +335,7 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         }
 
         for (PackageData packageData : componentData.getPackages()) {
-            IPackage packageModel = createPackage(packageData);
+            IModelElement packageModel = createPackage(packageData);
             componentModel.addChild(packageModel);
             componentShape.addChild((IShapeUIModel) shapeMap.get(packageModel));
         }

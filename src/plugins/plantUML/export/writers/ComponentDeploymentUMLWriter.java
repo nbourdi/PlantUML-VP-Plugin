@@ -6,24 +6,22 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import plugins.plantUML.models.ClassData;
-import plugins.plantUML.models.ComponentData;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.PackageData;
-import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
-public class ComponentUMLWriter extends PlantUMLWriter {
+public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 
 	private List<ComponentData> components;
 	private List<ClassData> interfaces;
 	private List<PackageData> packages;
 	private List<RelationshipData> relationships;
+	private List<ArtifactData> artifacts;
 
-	public ComponentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<PackageData> packages, List<RelationshipData> relationships) {
+	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships) {
 		super(notes);
 		this.components = components;
 		this.interfaces = interfaces;
+		this.artifacts = artifacts;
 		this.packages = packages;
 		this.relationships = relationships;
 	}
@@ -44,6 +42,11 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 				plantUMLContent.append(writeInterface(interfaceData, ""));
 		}
 
+		for (ArtifactData artifactData : artifacts) {
+			if(!artifactData.isInPackage() && !artifactData.isInNode())
+				plantUMLContent.append(writeArtifact(artifactData, ""));
+		}
+
 		for (PackageData packageData : packages) {
 			if(!packageData.isSubpackage())
 				plantUMLContent.append(writePackage(packageData, ""));
@@ -61,7 +64,15 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 			writer.write(plantUMLContent.toString());
 		}
 	}
-	
+
+	private String writeArtifact(ArtifactData artifactData, String indent) {
+		StringBuilder artifactString = new StringBuilder();
+		String name = formatName(artifactData.getName());
+
+		artifactString.append(indent).append("artifact ").append(name).append(" as ").append(formatAlias(artifactData.getName())).append("\n");
+		return artifactString.toString();
+	}
+
 	private String writeRelationship(RelationshipData relationship) {
 		
 		return relationship.toExportFormat();
@@ -77,6 +88,9 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 			packageString.append(writeInterface(interfaceData, indent + "\t"));
 		}
 
+		for (ArtifactData artifactData : packageData.getArtifacts()) {
+			packageString.append(writeArtifact(artifactData, indent + "\t"));
+		}
 		for (ComponentData componentData : packageData.getComponents()) {
 			packageString.append(writeComponent(componentData, indent + "\t"));
 		}
@@ -85,7 +99,7 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 			packageString.append(writePackage(subPackage, indent + "\t"));
 		}
 
-		packageString.append(indent + "}\n");
+		packageString.append(indent).append("}\n");
 		return packageString.toString();
 	}
 
@@ -93,9 +107,14 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 		StringBuilder interfaceString = new StringBuilder();
 		String name = formatName(interfaceData.getName());
 		interfaceString.append(indent);
-		interfaceString.append("() ").append(name); // as?
-		if (!interfaceData.getStereotypes().isEmpty()) {
-			String stereotypesString = interfaceData.getStereotypes().stream()
+		interfaceString.append("() ").append(name).append(" as ").append(formatAlias(interfaceData.getName()));
+
+		List<String> filteredStereotypes = interfaceData.getStereotypes().stream()
+				.filter(stereotype -> !"interface".equalsIgnoreCase(stereotype)) // Skip "interface"
+				.collect(Collectors.toList());
+
+		if (!filteredStereotypes.isEmpty()) {
+			String stereotypesString = filteredStereotypes.stream()
 					.map(stereotype -> "<<" + stereotype + ">>")
 					.collect(Collectors.joining(", "));
 			interfaceString.append(" ").append(stereotypesString);
@@ -104,14 +123,21 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 		return interfaceString.toString();
 	}
 
+
 	private String writeComponent(ComponentData componentData, String indent) {
 		StringBuilder componentString = new StringBuilder();
 		String name = formatName(componentData.getName()) ;
 
 
-		componentString.append(indent).append("component ");
+		componentString.append(indent);
 
-		componentString.append("[").append(name).append("]");	// TODO: "as" may be needed
+		if (componentData.isNodeComponent()) {
+			componentString.append("node ");
+		} else {
+			componentString.append("component ");
+		}
+		componentString.append(name).append(" as ").append(formatAlias(componentData.getName()));
+
 		if (!componentData.getStereotypes().isEmpty()) {
 			String stereotypesString = componentData.getStereotypes().stream()
 					.filter(stereotype -> !"component".equals(stereotype)) // Exclude "component", VP auto applies it to every use case for some reason
@@ -121,16 +147,22 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 				componentString.append(" ").append(stereotypesString);
 			}
 		}
-
 		// resident components & ports
 		List<ComponentData> residents = componentData.getResidents();
 		List<PortData> ports = componentData.getPorts();
+		List<ArtifactData> artifacts = componentData.getArtifacts();
 
 		componentString.append(" {\n");
 
 		if (residents != null && !residents.isEmpty()) {
 			for (ComponentData resident : residents) {
 				componentString.append(writeComponent(resident, indent + "\t"));
+			}
+		}
+
+		if (artifacts != null && !artifacts.isEmpty()) {
+			for (ArtifactData artifact : artifacts) {
+				componentString.append(writeArtifact(artifact, indent + "\t"));
 			}
 		}
 		
@@ -140,17 +172,14 @@ public class ComponentUMLWriter extends PlantUMLWriter {
 				String alias = port.getAlias();
 				String portName = port.getName();
 				
-				componentString.append(indent + "\t");
+				componentString.append(indent).append("\t");
 				componentString.append("port ")
-					.append("\"").append(portName).append("\"")
-	    		    .append(" as " + alias + "\n");
+                        .append("\"").append(portName).append("\"").append(" as ").append(alias).append("\n");
 			}
 		}
 		
-		componentString.append(indent + "}");
+		componentString.append(indent).append("}");
 		componentString.append("\n");
 		return componentString.toString();
 	}
-
-
 }

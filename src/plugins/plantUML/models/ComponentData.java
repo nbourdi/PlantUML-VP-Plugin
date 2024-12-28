@@ -13,6 +13,9 @@ public class ComponentData extends BaseWithSemanticsData {
 	private List<PackageData> packages;
 	private boolean isResident;
 	private List<PortData> ports;
+	private boolean isNodeComponent; // components and nodes are basically the same.
+	private List<ArtifactData> artifacts;
+
 
 	public ComponentData(String name, boolean isInPackage) {
 		super(name);
@@ -22,6 +25,7 @@ public class ComponentData extends BaseWithSemanticsData {
 		this.interfaces = new ArrayList<>();
 		this.packages = new ArrayList<>();
 		this.ports = new ArrayList<>();
+		this.artifacts = new ArrayList<>();
 	}
 
 	public List<String> getStereotypes() {
@@ -42,6 +46,10 @@ public class ComponentData extends BaseWithSemanticsData {
 
 	public void setInPackage(boolean isInPackage) {
 		this.isInPackage = isInPackage;
+	}
+
+	public List<ArtifactData> getArtifacts() {
+		return artifacts;
 	}
 
 	public String getUid() {
@@ -72,7 +80,15 @@ public class ComponentData extends BaseWithSemanticsData {
 		return ports;
 	}
 
-	public static class PortData {
+    public boolean isNodeComponent() {
+        return isNodeComponent;
+    }
+
+    public void setNodeComponent(boolean nodeComponent) {
+        isNodeComponent = nodeComponent;
+    }
+
+    public static class PortData {
 		private String name;
 		private String id;
 		private String alias;

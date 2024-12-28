@@ -4,7 +4,6 @@ import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
 import com.vp.plugin.diagram.*;
 import com.vp.plugin.diagram.connector.IMessageUIModel;
-import com.vp.plugin.diagram.shape.ICombinedFragmentUIModel;
 import com.vp.plugin.diagram.shape.IInteractionActorUIModel;
 import com.vp.plugin.diagram.shape.IInteractionLifeLineUIModel;
 import com.vp.plugin.diagram.shape.IInteractionOccurrenceUIModel;
@@ -16,7 +15,9 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+
+import static com.vp.plugin.model.factory.IModelElementFactory.MODEL_TYPE_CLASS;
+import static com.vp.plugin.model.factory.IModelElementFactory.MODEL_TYPE_COMPONENT;
 
 public class SequenceDiagramCreator extends  DiagramCreator {
 
@@ -73,7 +74,6 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         sequenceDiagram.setAutoExtendActivations(true);
         diagramManager.openDiagram(sequenceDiagram);
         diagramManager.layout(sequenceDiagram, DiagramManager.LAYOUT_AUTO);
-//        diagramManager.autoLayout(sequenceDiagram);
         IDiagramElement[] iDiagramElements = sequenceDiagram.toDiagramElementArray();
 
         for (IDiagramElement diagramElement : iDiagramElements) {
@@ -210,7 +210,15 @@ public class SequenceDiagramCreator extends  DiagramCreator {
     private IInteractionLifeLine createLifeline(LifelineData lifelineData) {
         IInteractionLifeLine lifelineModel = IModelElementFactory.instance().createInteractionLifeLine();
         rootFrame.addChild(lifelineModel);
-        checkAndSettleNameConflict(lifelineData.getName(), "InteractionLifeline");
+        // checkAndSettleNameConflict(lifelineData.getName(), "InteractionLifeline"); lifelines have no conflict
+        // TODO: in components and classes search for the classifier name.
+
+        IModelElement[] allComponentsAndClasses = project.toAllLevelModelElementArray( new String[]{MODEL_TYPE_COMPONENT, MODEL_TYPE_CLASS} );
+        for (IModelElement componentOrClass : allComponentsAndClasses) {
+            if (componentOrClass.getName().equals(lifelineData.getName())) {
+                lifelineModel.setBaseClassifier(componentOrClass);
+            }
+        }
 
         lifelineModel.setName(lifelineData.getName());
 

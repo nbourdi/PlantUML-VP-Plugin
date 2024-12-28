@@ -10,6 +10,7 @@ public class PackageData extends BaseWithSemanticsData {
     private List<ActorData> actors = new ArrayList<>();
     private List<UseCaseData> usecases = new ArrayList<>();
     private List<ComponentData> components = new ArrayList<ComponentData>();
+	private List<ArtifactData> artifacts = new ArrayList<>();
     private boolean isSubpackage;
     private boolean isRectangle = false; // is System in reality, but systems are not a different type in puml , just a rectangle shape
     private String Uid;
@@ -72,6 +73,10 @@ public class PackageData extends BaseWithSemanticsData {
 		return this.isRectangle;
 	}
 
+	public void setRectangle(boolean rectangle) {
+		isRectangle = rectangle;
+	}
+
 	public String getUid() {
 		return Uid;
 	}
@@ -87,4 +92,7 @@ public class PackageData extends BaseWithSemanticsData {
 		this.components = components;
 	}
 
+	public List<ArtifactData> getArtifacts() {
+		return artifacts;
+	}
 }

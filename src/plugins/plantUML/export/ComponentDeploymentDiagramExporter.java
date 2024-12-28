@@ -8,42 +8,26 @@ import java.util.List;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
-import com.vp.plugin.model.IAssociation;
-import com.vp.plugin.model.IAssociationClass;
-import com.vp.plugin.model.IAssociationEnd;
-import com.vp.plugin.model.IClass;
-import com.vp.plugin.model.IComponent;
-import com.vp.plugin.model.IModelElement;
-import com.vp.plugin.model.INARY;
-import com.vp.plugin.model.INOTE;
-import com.vp.plugin.model.IPackage;
-import com.vp.plugin.model.IPort;
-import com.vp.plugin.model.IRelationship;
-import com.vp.vpuml.plugin.umlpluginmodel.ModelElement;
+import com.vp.plugin.model.*;
 
-import plugins.plantUML.models.AssociationData;
-import plugins.plantUML.models.ClassData;
-import plugins.plantUML.models.ComponentData;
-import plugins.plantUML.models.NaryData;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.PackageData;
-import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
-public class ComponentDiagramExporter extends DiagramExporter {
+public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	
 	private IDiagramUIModel diagram;
 	
 	List<ComponentData> exportedComponents = new ArrayList<>();
 	List<ClassData> exportedInterfaces = new ArrayList<ClassData>();
 	List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
+	List<ArtifactData> exportedArtifacts = new ArrayList<>();
 	
 	List<NoteData> exportedNotes = new ArrayList<>();
 
 	List<PackageData> exportedPackages = new ArrayList<PackageData>();
 	List<PortData> allExportedPorts = new ArrayList<>();  
 
-	public ComponentDiagramExporter(IDiagramUIModel diagram) throws IOException {
+	public ComponentDeploymentDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
 	}
 	
@@ -65,11 +49,19 @@ public class ComponentDiagramExporter extends DiagramExporter {
 				} else if (modelElement instanceof IClass) { // interfaces are classes with stereotype "Interface"
 					if (!(modelElement.getParent() instanceof IPackage))
 						extractInterface((IClass) modelElement, null);
-				
+				} else if (modelElement instanceof INode) {
+					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof INode))
+						extractNode((INode) modelElement, null, null);
+				} else if (modelElement instanceof IArtifact) {
+					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof INode))
+						extractArtifact((IArtifact) modelElement, null, null);
 				} else if (modelElement instanceof IPackage) {
 					extractPackage((IPackage) modelElement);
 				} else if (modelElement instanceof INOTE) {
 					this.extractNote((INOTE) modelElement);
+
+
+
 				} else if (modelElement instanceof IRelationship) {
 					
 				} else if (modelElement instanceof IPort) {
@@ -100,7 +92,73 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		exportedNotes = getNotes(); // from base diagram exporter
 
 	}
-	
+
+	private void extractArtifact(IArtifact artifactModel, PackageData packageData, ComponentData nodeData) {
+		boolean isInPackage = (artifactModel.getParent() instanceof IPackage);
+		boolean isInNode = (artifactModel.getParent() instanceof INode);
+
+		ArtifactData artifactData = new ArtifactData(artifactModel.getName(), isInPackage, isInNode);
+		artifactData.setDescription(artifactModel.getDescription());
+		addSemanticsIfExist(artifactModel, artifactData);
+
+		exportedArtifacts.add(artifactData);
+		if (packageData != null)
+			packageData.getArtifacts().add(artifactData);
+		if (nodeData != null)
+			nodeData.getArtifacts().add(artifactData);
+	}
+
+	private void extractNode(INode nodeModel, PackageData packageData, ComponentData parentNodeData) { // TODO might treat it as componentdata? do they not hold the same models?
+		boolean isInPackage = (nodeModel.getParent() instanceof IPackage);
+		boolean isResident = (nodeModel.getParent() instanceof IComponent) || (nodeModel.getParent() instanceof INode);
+
+		ComponentData nodeData = new ComponentData(nodeModel.getName(), isInPackage);
+		nodeData.setNodeComponent(true);
+
+		nodeData.setDescription(nodeModel.getDescription());
+		nodeData.setResident(isResident);
+
+
+		nodeData.setStereotypes(extractStereotypes(nodeModel));
+
+		Iterator nodeIterator = nodeModel.nodeIterator();
+		while (nodeIterator.hasNext()) {
+			INode nestedNodeModel = (INode) nodeIterator.next();
+			extractNode(nestedNodeModel, null, nodeData);
+		}
+
+		Iterator artifactIterator = nodeModel.artifactIterator();
+		while (artifactIterator.hasNext()) {
+			IArtifact residentArtifactModel = (IArtifact) artifactIterator.next();
+			extractArtifact(residentArtifactModel, null, nodeData);
+		}
+
+		Iterator componentIterator = nodeModel.componentIterator();
+		while (componentIterator.hasNext()) {
+			IComponent residentComponentModel = (IComponent) componentIterator.next();
+			extractComponent(residentComponentModel, null, nodeData);
+		}
+
+
+		Iterator portIterator =  nodeModel.portIterator();
+		while (portIterator.hasNext()) {
+			IPort portModel = (IPort) portIterator.next();
+			PortData portData = new PortData(portModel.getName());
+			portData.setId(portModel.getId());
+
+			nodeData.getPorts().add(portData);
+			allExportedPorts.add(portData);
+		}
+
+		addSemanticsIfExist(nodeModel, nodeData);
+
+		exportedComponents.add(nodeData);
+		if (packageData != null)
+			packageData.getComponents().add(nodeData);
+		if (parentNodeData != null)
+			parentNodeData.getResidents().add(nodeData);
+	}
+
 	private String getPortAliasById(String portID) {
 		for (PortData portData : allExportedPorts) {
 			if (portData.getId().equals(portID)) {
@@ -111,8 +169,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	}
 	
 	private void extractRelationship(IRelationship relationship) {
-		IModelElement source = (IModelElement) relationship.getFrom();
-		IModelElement target = (IModelElement) relationship.getTo();
+		IModelElement source = relationship.getFrom();
+		IModelElement target = relationship.getTo();
 		
 		// Checking if the relationship ends are exported (could be unsupported types)
 		if (!allExportedElements.contains(source) || !allExportedElements.contains(target)) {
@@ -123,16 +181,18 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		String targetName = target.getName();
 
 		if (source instanceof IPort) {
-			sourceName = getPortAliasById(((IPort) source).getId());
+			sourceName = getPortAliasById(source.getId());
 		} else if (source instanceof INOTE) {
-			sourceName = getNoteAliasById(((INOTE) source).getId());
+			sourceName = getNoteAliasById(source.getId());
 		} 
 		if (target instanceof IPort) {
-			targetName = getPortAliasById(((IPort) target).getId());
+			targetName = getPortAliasById(target.getId());
 		} else if (target instanceof INOTE) {
-			targetName = getNoteAliasById(((INOTE) target).getId());
-		} 
-
+			targetName = getNoteAliasById(target.getId());
+		}
+		ApplicationManager.instance().getViewManager()
+				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
+		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 		if (relationship instanceof IAssociation) {
 			IAssociation association = (IAssociation) relationship;
 
@@ -156,9 +216,7 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		}
 		
 
-		ApplicationManager.instance().getViewManager()
-				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
-		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
+
 
 		if (sourceName == null || targetName == null) {
 			ApplicationManager.instance().getViewManager()
@@ -179,17 +237,18 @@ public class ComponentDiagramExporter extends DiagramExporter {
 				if (childElement instanceof IClass) {
 					extractInterface((IClass) childElement, packageData);
 				} else if (childElement instanceof IComponent) {
-					extractComponent((IComponent) childElement, packageData, null); // idk
+					extractComponent((IComponent) childElement, packageData, null);
+				} else if (childElement instanceof INode) {
+					extractNode((INode) childElement, packageData, null);
 				} else if (childElement instanceof IPackage) {
-					PackageData parent = packageData;
-					extractPackagedPackage((IPackage) childElement, parent);
-
+                    extractPackagedPackage((IPackage) childElement, packageData);
+				} else if (childElement instanceof IArtifact) {
+					extractArtifact((IArtifact) childElement, packageData, null);
 				}
 			}
 			addSemanticsIfExist(packageModel, packageData);
 			exportedPackages.add(packageData);
 		}
-		
 	}
 
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
@@ -201,6 +260,8 @@ public class ComponentDiagramExporter extends DiagramExporter {
 				extractInterface((IClass) childElement, packageData);
 			} else if (childElement instanceof IComponent) {
 				extractComponent((IComponent) childElement, packageData, null);
+			} else if (childElement instanceof INode) {
+				extractNode((INode) childElement, packageData, null);
 			} else if (childElement instanceof IPackage) {
 				extractPackagedPackage((IPackage) childElement, packageData);
 
@@ -223,13 +284,11 @@ public class ComponentDiagramExporter extends DiagramExporter {
 		if (packageData != null)
 			packageData.getClasses().add(interfaceData);
 	}
-	
-	
 
 	private void extractComponent(IComponent componentModel, PackageData packageData, ComponentData parentComponentData) {
 		
 		boolean isInPackage = (componentModel.getParent() instanceof IPackage);
-		boolean isResident = (componentModel.getParent() instanceof IComponent);
+		boolean isResident = (componentModel.getParent() instanceof IComponent) || (componentModel.getParent() instanceof INode) ;
 		
 		ComponentData componentData = new ComponentData(componentModel.getName(), isInPackage);
 		componentData.setDescription(componentModel.getDescription());
@@ -262,7 +321,6 @@ public class ComponentDiagramExporter extends DiagramExporter {
 			parentComponentData.getResidents().add(componentData);
 	}
 	
-	
 	public List<ComponentData> getExportedComponents() {
 		return exportedComponents;
 	}
@@ -276,5 +334,9 @@ public class ComponentDiagramExporter extends DiagramExporter {
 	}
 	public List<RelationshipData> getRelationshipDatas() {
 		return relationshipDatas;
+	}
+
+	public List<ArtifactData> getExportedArtifacts() {
+		return exportedArtifacts;
 	}
 }

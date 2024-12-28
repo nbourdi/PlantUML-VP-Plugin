@@ -273,14 +273,11 @@ public class DiagramImportPipeline {
 //							);
 //							deploymentDiagramCreator.createDiagram();
 //							modelSemanticsMap.putAll(deploymentDiagramCreator.getDiagramSemanticsMap());
-//							break;
-
-						default:
-
+							break;
 					}
 					break;
 
-				case SEQUENCE:
+			case SEQUENCE:
 
 				SequenceDiagram sequenceDiagram = (SequenceDiagram) diagram;
 				SequenceDiagramImporter sequenceDiagramImporter = new SequenceDiagramImporter(sequenceDiagram, semanticsMap);
@@ -297,7 +294,7 @@ public class DiagramImportPipeline {
 
 				sequenceDiagramCreator.createDiagram();
 				modelSemanticsMap.putAll(sequenceDiagramCreator.getDiagramSemanticsMap());
-
+				break;
 
 			default:
 

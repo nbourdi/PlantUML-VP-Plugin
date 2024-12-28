@@ -3,7 +3,7 @@ import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 
 import plugins.plantUML.export.writers.ClassUMLWriter;
-import plugins.plantUML.export.writers.ComponentUMLWriter;
+import plugins.plantUML.export.writers.ComponentDeploymentUMLWriter;
 import plugins.plantUML.export.writers.PlantJSONWriter;
 import plugins.plantUML.export.writers.SequenceUMLWriter;
 import plugins.plantUML.export.writers.UseCaseWriter;
@@ -32,7 +32,6 @@ public class DiagramExportPipeline {
 		String diagramType = diagram.getType();
 		String diagramTitle = diagram.getName();
 		File outputFile = createOutputFile(diagramTitle, "uml");
-		// File jsonFile = createOutputFile(diagramTitle, "json");
 
 		try {
 			switch (diagramType) {
@@ -49,28 +48,26 @@ public class DiagramExportPipeline {
 				classWriter.writeToFile(outputFile);
 
 				if (cde.getExportedSemantics() != null && !cde.getExportedSemantics().isEmpty()) {
-
 					projectSemanticsDatas.addAll(cde.getExportedSemantics());
-					//                        	File jsonFile = createOutputFile(diagramTitle, "json");
-					//                        	PlantJSONWriter.writeToFile(jsonFile, cde.getExportedSemantics());
 				}
 
 				break;
 
 			case "ComponentDiagram":
-				ComponentDiagramExporter comde = new ComponentDiagramExporter(diagram);
+			case "DeploymentDiagram":
+				ComponentDeploymentDiagramExporter comde = new ComponentDeploymentDiagramExporter(diagram);
 				comde.extract();
-				ComponentUMLWriter componentWriter = new ComponentUMLWriter(
+				ComponentDeploymentUMLWriter componentWriter = new ComponentDeploymentUMLWriter(
 						comde.getNotes(), 
 						comde.getExportedComponents(), 
-						comde.getExportedInterfaces(), 
+						comde.getExportedInterfaces(),
+						comde.getExportedArtifacts(),
 						comde.getExportedPackages(),
 						comde.getRelationshipDatas()
 						);
 				componentWriter.writeToFile(outputFile);
 
 				if (comde.getExportedSemantics() != null && !comde.getExportedSemantics().isEmpty()) {
-
 					projectSemanticsDatas.addAll(comde.getExportedSemantics());
 				}
 				break;
@@ -88,13 +85,13 @@ public class DiagramExportPipeline {
 						seqde.getExportedAnchors()
 						);
 				sequenceWriter.writeToFile(outputFile);
-//
-//				if (seqde.getExportedSemantics() != null && !seqde.getExportedSemantics().isEmpty()) {
-//
-//					projectSemanticsDatas.addAll(seqde.getExportedSemantics());
-//				}
+
+				if (seqde.getExportedSemantics() != null && !seqde.getExportedSemantics().isEmpty()) {
+					projectSemanticsDatas.addAll(seqde.getExportedSemantics());
+				}
 				
 				break;
+
 			case "UseCaseDiagram":
 				UseCaseDiagramExporter ucde = new UseCaseDiagramExporter(diagram);
 				ucde.extract();
@@ -106,7 +103,10 @@ public class DiagramExportPipeline {
 						ucde.getNotes()
 						);
 				useCaseWriter.writeToFile(outputFile);
+				if (ucde.getExportedSemantics() != null && !ucde.getExportedSemantics().isEmpty()) {
 
+					projectSemanticsDatas.addAll(ucde.getExportedSemantics());
+				}
 				break;
 
 			default:

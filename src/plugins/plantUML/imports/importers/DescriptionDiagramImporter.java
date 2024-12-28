@@ -34,7 +34,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         this.descriptionDiagram = descriptionDiagram;
     }
 
-
     public void extract() {
 
         for (Entity groupEntity : descriptionDiagram.groups()) {
@@ -51,14 +50,16 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         }
 
         for (Link link : descriptionDiagram.getLinks()) {
+            ApplicationManager.instance().getViewManager().showMessage("53");
             RelationshipData relationship = extractRelationship(link);
-            if(relationship != null)
+            if(relationship != null) {
+                ApplicationManager.instance().getViewManager().showMessage("56");
                 relationshipDatas.add(relationship);
-
-        }
+        }}
     }
 
     private RelationshipData extractRelationship(Link link) {
+        ApplicationManager.instance().getViewManager().showMessage("Extracting relationship from link");
         String sourceID;
         String targetID;
 
@@ -86,6 +87,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         String toEndMultiplicity = link.getLinkArg().getQuantifier2();
         String fromEndAggregation = "";
         if (lineStyle.contains("NORMAL")) {
+            ApplicationManager.instance().getViewManager().showMessage("LINESTYLE === IN NORMAL STYLE, DECOR: " + decor);
             // association, containment, composition, agregation are solid line links
 
             if (decor == "COMPOSITION") {
@@ -202,7 +204,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         for (String stereotype : stereotypes) {
             useCaseData.addStereotype(stereotype);
         }
-
+        useCaseData.setUid(entity.getUid());
         return useCaseData;
     }
 
@@ -219,7 +221,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         for (String stereotype : stereotypes) {
             actorData.addStereotype(stereotype);
         }
-
+        actorData.setUid(entity.getUid());
         return actorData;
     }
 
@@ -302,7 +304,10 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
                 break;
             case rectangle:
-                //TODO system
+                PackageData rectangePakcageData = extractPackage(groupEntity);
+                rectangePakcageData.setRectangle(true);
+                packages.add(rectangePakcageData);
+
             default:
                 break;
         }

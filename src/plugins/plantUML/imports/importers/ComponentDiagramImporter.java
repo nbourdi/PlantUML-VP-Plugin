@@ -52,16 +52,12 @@ public class ComponentDiagramImporter extends DiagramImporter {
 		for (Entity groupEntity : componentDiagram.groups()) { 
 
 			if (groupEntity.getParentContainer().isRoot()) {
-				ApplicationManager.instance().getViewManager()
-				.showMessage("entity par groups in root : " +groupEntity.getName());
 				extractGroup(groupEntity, componentDatas, packageDatas);
 			}
 		}
 
 		for (Entity entity : componentDiagram.leafs()) {
 			if (entity.getParentContainer().isRoot()) {
-				ApplicationManager.instance().getViewManager()
-				.showMessage("entity leafs in root : " +entity.getName());
 				extractLeaf(entity, componentDatas, interfaceDatas);
 			}
 		}
