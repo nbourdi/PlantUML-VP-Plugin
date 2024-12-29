@@ -9,19 +9,14 @@ import java.util.Map;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
+import com.vp.plugin.diagram.IClassDiagramUIModel;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.shape.INoteUIModel;
-import com.vp.plugin.model.IHasChildrenBaseModelElement;
-import com.vp.plugin.model.IModelElement;
-import com.vp.plugin.model.INOTE;
-import com.vp.plugin.model.IPackage;
-import com.vp.plugin.model.IProject;
+import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
 
-import plugins.plantUML.models.BaseWithSemanticsData;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.SemanticsData;
+import plugins.plantUML.models.*;
 import v.ajp.ig;
 
 public abstract class DiagramCreator {
@@ -29,21 +24,15 @@ public abstract class DiagramCreator {
 	DiagramManager diagramManager = ApplicationManager.instance().getDiagramManager();
 	private String diagramTitle;
 	Map<IHasChildrenBaseModelElement, SemanticsData> diagramSemanticsMap = new HashMap<IHasChildrenBaseModelElement, SemanticsData>(); // to pass that back to the pipeline to update the master map
-	
 	IProject project = ApplicationManager.instance().getProjectManager().getProject();
-	
 	IModelElement[] allModelElements = project.toAllLevelModelElementArray();
-	
 	Map<String, List<IModelElement>> allModelsMap = new HashMap<>();
-	
-	// IPackage package1 = IModelElementFactory.instance().createPackage();
 	
 	protected Map<String, IModelElement> elementMap = new HashMap<>(); // map of entity IDs to modelelements. needed for links
 	protected Map<IModelElement, IDiagramElement> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
 	
 	protected IDiagramUIModel diagram;
-		
-	
+
 	public DiagramCreator(String diagramTitle) {
 		this.setDiagramTitle(diagramTitle);	
 		
@@ -52,12 +41,7 @@ public abstract class DiagramCreator {
 			allModelsMap.putIfAbsent(key, new ArrayList<>());
 		    allModelsMap.get(key).add(projectModelElement);
 		}
-		// alt approach
-		// TODO: this need be moved up to importer
-		// package1.setName("testing plugin package3");
 	}
-	
-	public abstract void createDiagram();
 	
 	protected void checkAndSettleNameConflict(String name, String type) {
 		String key = name + "|" + type; 
@@ -66,22 +50,16 @@ public abstract class DiagramCreator {
 		if (conflictingElements == null || conflictingElements.isEmpty()) {
 			return;
 		}
-		else {
-			for (IModelElement conflictingElement : conflictingElements) {
-				LocalDateTime now = LocalDateTime.now();
-				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-				String formattedDateTime = now.format(formatter);
+		for (IModelElement conflictingElement : conflictingElements) {
+			LocalDateTime now = LocalDateTime.now();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+			String formattedDateTime = now.format(formatter);
 
-				conflictingElement.setName(name + "_renamed_on_import_" + formattedDateTime);
-				ApplicationManager.instance().getViewManager().
-					showMessage("Warning: the modelElement \""+ name + "\" of type " + type + " was renamed to " + conflictingElement.getName() +
-							" due to import of conflicting plantuml element.");
-				// alternative approach with packages
-				// package1.addChild(conflictingElement);				
-			}
-			
-			return;
-		}
+			conflictingElement.setName(name + "_renamed_on_import_" + formattedDateTime);
+			ApplicationManager.instance().getViewManager().
+				showMessage("Warning: the modelElement \""+ name + "\" of type " + type + " was renamed to " + conflictingElement.getName() +
+						" due to import of conflicting plantuml element.");
+        }
 	}
 
 	protected INOTE createNote(NoteData noteData) {	
@@ -111,4 +89,74 @@ public abstract class DiagramCreator {
 		return diagramSemanticsMap;
 	}
 
+	void createRelationship(RelationshipData relationshipData) {
+		String fromID = relationshipData.getSourceID();
+		String toID = relationshipData.getTargetID();
+		IModelElement fromModelElement = elementMap.get(fromID);
+		IModelElement toModelElement = elementMap.get(toID);
+
+		if (fromModelElement == null || toModelElement == null) {
+			ApplicationManager.instance().getViewManager()
+					.showMessage("Warning: a relationship was skipped because one of its ends was not a previously imported model element.");
+			return;
+		}
+
+		if (relationshipData instanceof AssociationData) {
+			createAssociation((AssociationData) relationshipData, fromModelElement, toModelElement);
+			return;
+		}
+
+		IRelationship relationshipElement;
+		switch (relationshipData.getType()) {
+			case "Generalization":
+				relationshipElement = IModelElementFactory.instance().createGeneralization();
+				break;
+			case "Realization":
+				relationshipElement = IModelElementFactory.instance().createRealization();
+				break;
+			case "Dependency":
+				relationshipElement = IModelElementFactory.instance().createDependency();
+				break;
+			case "Anchor":
+				relationshipElement = IModelElementFactory.instance().createAnchor();
+				break;
+			case "Containment":
+				diagramManager.createConnector(diagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT,
+						shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
+				return; // No further configuration for Containment
+			default:
+				ApplicationManager.instance().getViewManager()
+						.showMessage("Warning: unsupported type " + relationshipData.getType() + " of relationship was skipped.");
+				return;
+		}
+
+		relationshipElement.setFrom(fromModelElement);
+		relationshipElement.setTo(toModelElement);
+
+		if (!"NULL".equals(relationshipData.getName())) {
+			relationshipElement.setName(relationshipData.getName());
+		}
+
+		diagramManager.createConnector(diagram, relationshipElement, shapeMap.get(fromModelElement),
+				shapeMap.get(toModelElement), null);
+	}
+
+	private void createAssociation(AssociationData associationData, IModelElement from, IModelElement to) {
+		IAssociation association = IModelElementFactory.instance().createAssociation();
+		association.setFrom(from);
+		association.setTo(to);
+		if ("Aggregation".equals(associationData.getType())) {
+			((IAssociationEnd) association.getFromEnd()).setAggregationKind(IAssociationEnd.AGGREGATION_KIND_AGGREGATION);
+		} else if ("Composition".equals(associationData.getType())) {
+			((IAssociationEnd) association.getFromEnd()).setAggregationKind(IAssociationEnd.AGGREGATION_KIND_COMPOSITED);
+		}
+		((IAssociationEnd) association.getFromEnd()).setMultiplicity(associationData.getFromEndMultiplicity());
+		((IAssociationEnd) association.getToEnd()).setMultiplicity(associationData.getToEndMultiplicity());
+
+		diagramManager.createConnector(diagram, association, shapeMap.get(from), shapeMap.get(to), null);
+
+		if (!"NULL".equals(associationData.getName())) {
+			association.setName(associationData.getName());
+		}
+	}
 }

@@ -7,26 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.poi.poifs.storage.ListManagedBlock;
-
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
-import com.vp.plugin.diagram.IShapeTypeConstants;
-import com.vp.plugin.diagram.shape.ICombinedFragmentUIModel;
-import com.vp.plugin.model.IAnchor;
-import com.vp.plugin.model.ICombinedFragment;
-import com.vp.plugin.model.IInteractionActor;
-import com.vp.plugin.model.IInteractionLifeLine;
-import com.vp.plugin.model.IInteractionOccurrence;
-import com.vp.plugin.model.IInteractionOperand;
-import com.vp.plugin.model.IMessage;
-import com.vp.plugin.model.IModelElement;
-import com.vp.plugin.model.INARY;
-import com.vp.plugin.model.INOTE;
-import com.vp.plugin.model.IRelationship;
+import com.vp.plugin.model.*;
 
-import javassist.expr.NewArray;
 import plugins.plantUML.models.ActorData;
 import plugins.plantUML.models.CombinedFragment;
 import plugins.plantUML.models.CombinedFragment.Operand;
@@ -183,21 +168,11 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	}
 
 	private MessageData extractMessage(IMessage messageModel) {
-
-		String name = messageModel.getName();
-
-		String sequenceNumber = messageModel.getSequenceNumber();
-
 		IModelElement source = messageModel.getFrom();
 		IModelElement target = messageModel.getTo();
-		ApplicationManager.instance().getViewManager().showMessage("rel type? " + messageModel.getModelType());
 
 		String sourceName = (source == null) ? "[" : source.getName();
 		String targetName = (target == null) ? "]" : target.getName();
-
-		ApplicationManager.instance().getViewManager()
-		.showMessage("Relationship from: " + sourceName + " to: " + targetName);
-		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + messageModel.getModelType());
 
 		MessageData messageData = new MessageData(sourceName, targetName, "Message", messageModel.getName());
 
@@ -209,31 +184,41 @@ public class SequenceDiagramExporter extends DiagramExporter {
 			int durationHeight = messageModel.getDurationHeight();
 			messageData.setDuration(durationHeight);
 		} else if (messageModel.getType() == IMessage.TYPE_RECURSIVE_MESSAGE) {
-			// recursive is like self but with an extra activation 
 			messageData.setRecursive(true);
 		}
 
 		IModelElement actionType = messageModel.getActionType();
 		if (actionType != null) {
-
 			if (actionType.getName().equals("Return"))
 				messageData.setReply(true);
 			else if (actionType.getName().equals("Destroy")) {
 				messageData.setDestroy(true);
+			} else if (actionType.getName().equals("Call")) {
+				IModelElement operation = ((IActionTypeCall) actionType).getOperation();
+				if (operation != null) messageData.setName(operation.getName() + "()");
 			}
 		}
 
-		messageData.setSequenceNumber(sequenceNumber);
+		messageData.setSequenceNumber(messageModel.getSequenceNumber());
 		return messageData;
 	}
 
-	private LifelineData extractLifeline(IInteractionLifeLine modelElement) {
-		String name = modelElement.getName();
+	private void extractLifeline(IInteractionLifeLine lifelifeModel) {
+		String name = lifelifeModel.getName();
+
 		LifelineData lifelineData = new LifelineData(name);
-		lifelineData.setStereotypes(extractStereotypes(modelElement));
+		IModelElement classifierModel = lifelifeModel.getBaseClassifierAsModel();
+		// Add the classifier's name after colon, if exists
+		if (classifierModel != null) {
+			// Cant put it in the name because then we have issues with the names in the relationships, maybe do a comment?
+//			name = name.concat(" : " + classifierModel.getName());
+			lifelineData.setClassifier(classifierModel.getName());
+		}
+
+
+		lifelineData.setStereotypes(extractStereotypes(lifelifeModel));
 		exportedLifelines.add(lifelineData);
-		lifelineMap.put((IInteractionLifeLine) modelElement, lifelineData);
-		return lifelineData;
+		lifelineMap.put(lifelifeModel, lifelineData);
 	}
 
 	private void extractInteractionActor(IInteractionActor modelElement) {
@@ -241,10 +226,6 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		ActorData actorData = new ActorData(name);
 		actorData.setStereotypes(extractStereotypes(modelElement));
 		exportedInteractionActors.add(actorData);
-	}
-
-	public List<NoteData> getExportedNotes() {
-		return exportedNotes;
 	}
 
 	public List<ActorData> getExportedInteractionActors() {

@@ -6,8 +6,8 @@ import java.util.List;
 public class LifelineData extends BaseWithSemanticsData {
 
 	private List<String> stereotypes = new ArrayList<String>();
-	private boolean isInPackage;
 	private boolean isCreatedByMessage;
+	private String classifier;
 
 	public LifelineData(String name) {
 		super(name);
@@ -25,14 +25,6 @@ public class LifelineData extends BaseWithSemanticsData {
 		getStereotypes().add(stereotype);
 	}
 
-	public boolean isInPackage() {
-		return isInPackage;
-	}
-
-	public void setInPackage(boolean isInPackage) {
-		this.isInPackage = isInPackage;
-	}
-
 	public boolean isCreatedByMessage() {
 		return isCreatedByMessage;
 	}
@@ -41,4 +33,11 @@ public class LifelineData extends BaseWithSemanticsData {
 		this.isCreatedByMessage = isCreatedByMessage;
 	}
 
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public void setClassifier(String classifier) {
+        this.classifier = classifier;
+    }
 }

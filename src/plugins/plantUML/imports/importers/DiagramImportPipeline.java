@@ -34,7 +34,6 @@ import net.sourceforge.plantuml.skin.UmlDiagramType;
 import net.sourceforge.plantuml.syntax.SyntaxChecker;
 import net.sourceforge.plantuml.syntax.SyntaxResult;
 import plugins.plantUML.imports.creators.ClassDiagramCreator;
-import plugins.plantUML.imports.creators.ComponentDiagramCreator;
 import plugins.plantUML.imports.creators.DescriptionDiagramCreator;
 import plugins.plantUML.imports.creators.SequenceDiagramCreator;
 import plugins.plantUML.models.Reference;
@@ -138,7 +137,6 @@ public class DiagramImportPipeline {
 		} catch (IOException e) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(
 					ApplicationManager.instance().getViewManager().getRootFrame(), "Error parsing SemanticsData JSON: " + e.getMessage());
-			e.printStackTrace();
 		}
 	}
 
@@ -178,7 +176,6 @@ public class DiagramImportPipeline {
 			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
 			SourceStringReader reader = new SourceStringReader(source);
 
-
 			Diagram diagram = reader.getBlocks().get(0).getDiagram();
 			UmlDiagramType umlDiagramType; 
 			
@@ -186,8 +183,7 @@ public class DiagramImportPipeline {
 				UmlDiagram umlDiagram = (UmlDiagram) diagram;
 				umlDiagramType = umlDiagram.getUmlDiagramType();
 			} catch (ClassCastException e) {
-				ApplicationManager.instance().getViewManager().showMessageDialog(
-						ApplicationManager.instance().getViewManager().getRootFrame(),
+				ApplicationManager.instance().getViewManager().showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),
 						"Non-UML diagrams are not supported."
 						);
 				return;
@@ -206,16 +202,13 @@ public class DiagramImportPipeline {
 				ClassDiagramImporter classDiagramImporter = new ClassDiagramImporter(classDiagram, semanticsMap);
 				classDiagramImporter.extract();
 
-				ClassDiagramCreator creator = new ClassDiagramCreator(
-						diagramTitle,
-						classDiagramImporter.getClassDatas(),
+				ClassDiagramCreator creator = new ClassDiagramCreator(diagramTitle);
+				creator.createDiagram(classDiagramImporter.getClassDatas(),
 						classDiagramImporter.getPackageDatas(),
 						classDiagramImporter.getNaryDatas(),
 						classDiagramImporter.getRelationshipDatas(),
 						classDiagramImporter.getNoteDatas(),
-						classDiagramImporter.getAssociationPoints()
-						);
-				creator.createDiagram();
+						classDiagramImporter.getAssociationPoints());
 				modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
 				break;
 
@@ -230,8 +223,9 @@ public class DiagramImportPipeline {
 				descriptionDiagramImporter.extract();
 				DescriptionDiagramCreator descriptionDiagramCreator = new DescriptionDiagramCreator(
 						diagramTitle,
-						specificType,
-						descriptionDiagramImporter.getComponentDatas(),
+						specificType
+				);
+				descriptionDiagramCreator.createDiagram(descriptionDiagramImporter.getComponentDatas(),
 						descriptionDiagramImporter.getInterfaceDatas(),
 						descriptionDiagramImporter.getPackageDatas(),
 						descriptionDiagramImporter.getRelationshipDatas(),
@@ -240,7 +234,6 @@ public class DiagramImportPipeline {
 						descriptionDiagramImporter.getArtifactDatas(),
 						descriptionDiagramImporter.getNoteDatas()
 				);
-				descriptionDiagramCreator.createDiagram();
 				modelSemanticsMap.putAll(descriptionDiagramCreator.getDiagramSemanticsMap());
 				break;
 
@@ -251,15 +244,15 @@ public class DiagramImportPipeline {
 				sequenceDiagramImporter.extract();
 
 				SequenceDiagramCreator sequenceDiagramCreator = new SequenceDiagramCreator(
-						diagramTitle,
+						diagramTitle
+				);
+
+				sequenceDiagramCreator.createDiagram(
 						sequenceDiagramImporter.getLifelineDatas(),
 						sequenceDiagramImporter.getActorDatas(),
 						sequenceDiagramImporter.getMessageDatas(),
 						sequenceDiagramImporter.getRefDatas(),
-						sequenceDiagramImporter.getCombinedFragments()
-				);
-
-				sequenceDiagramCreator.createDiagram();
+						sequenceDiagramImporter.getCombinedFragments());
 				modelSemanticsMap.putAll(sequenceDiagramCreator.getDiagramSemanticsMap());
 				break;
 
@@ -314,8 +307,6 @@ public class DiagramImportPipeline {
 
 		return "component"; // Default to Component Diagram if no clear indicators
 	}
-
-
 
 	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData, IDiagramUIModel[] diagrams, IModelElement[] modelElements) {
 

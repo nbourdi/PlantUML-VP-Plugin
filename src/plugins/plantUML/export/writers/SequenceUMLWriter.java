@@ -57,7 +57,7 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 			plantUMLContent.append(writeMessage(messageData, ""));
 		}
 		for (CombinedFragment fragment : fragments) {
-			plantUMLContent.append(writeFragment(fragment, ""));
+			plantUMLContent.append(writeFragment(fragment));
 		}
 
 		for (InteractionRef ref : refs) {
@@ -69,7 +69,6 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		for (RelationshipData anchor : anchors) {
 			plantUMLContent.append(anchor.toExportFormat());
 		}
-		
 
 		plantUMLContent.append("@enduml");
 		try (FileWriter writer = new FileWriter(file)) {
@@ -91,39 +90,35 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		return refString.toString();
 	}
 
-	private String writeFragment(CombinedFragment fragment, String indent) {
-
+	private String writeFragment(CombinedFragment fragment) {
 		StringBuilder fragmentString = new StringBuilder();
 
 		String fragmentType = fragment.getType();
 		if (fragmentType.equals("alt") || fragmentType.equals("opt") || fragmentType.equals("loop") ||
 		    fragmentType.equals("par") || fragmentType.equals("break") || fragmentType.equals("critical")) {
 		    
-		    fragmentString.append(indent).append(fragmentType).append("\n\n");
+		    fragmentString.append(fragmentType).append("\n\n");
 
 		    List<Operand> operands = fragment.getOperands();
 		    boolean isFirstOperand = true; 
 
 		    for (Operand operand : operands) {
 		        if (!isFirstOperand) {
-		            fragmentString.append(indent).append("else\n\n");
+		            fragmentString.append("else\n\n");
 		        }
 
 		        for (MessageData messageData : operand.getMessages()) {
-		            fragmentString.append(writeMessage(messageData, indent + "\t"));
+		            fragmentString.append(writeMessage(messageData, "\t"));
 		        }
 
 		        isFirstOperand = false; 
 		    }
 
-		    fragmentString.append(indent).append("end\n");
+		    fragmentString.append("end\n");
 		} else {
 			ApplicationManager.instance().getViewManager().showMessage("Combined fragments of type " + fragmentType + " have no PlantUML equivalent");
 			return "";
 		}
-
-
-
 		return fragmentString.toString();
 	}
 
@@ -164,8 +159,11 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 				lifelineString.append(" ").append(stereotypesString);
 			}
 		}
-
 		lifelineString.append("\n");
+		if (lifelineData.getClassifier() != null && !lifelineData.getClassifier().isEmpty()) {
+			lifelineString.append("note over ").append(formatName(name)).append(" : ").append("Classifier: ").append(lifelineData.getClassifier());
+			lifelineString.append("\n");
+		}
 		return lifelineString.toString();
 	}
 

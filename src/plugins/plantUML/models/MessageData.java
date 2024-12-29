@@ -4,7 +4,6 @@ package plugins.plantUML.models;
 public class MessageData extends RelationshipData {
 
 	private String sequenceNumber;
-	private String actionType;
 	private boolean isReply;
 	private boolean isCreate;
 	private boolean isDestroy;
@@ -12,6 +11,8 @@ public class MessageData extends RelationshipData {
 	private LifelineData createdLifeline;
 	private boolean isDuration;
 	private int durationHeight;
+	private boolean isLost;
+	private boolean isFound;
 
 	public MessageData(String source, String target, String type, String name) {
 		super(source, target, type, name);
@@ -53,14 +54,6 @@ public class MessageData extends RelationshipData {
 
 	public void setSequenceNumber(String sequenceNumber) {
 		this.sequenceNumber = sequenceNumber;
-	}
-
-	public String getActionType() {
-		return actionType;
-	}
-
-	public void setActionType(String actionType) {
-		this.actionType = actionType;
 	}
 
 	public boolean isReply() {
@@ -122,4 +115,19 @@ public class MessageData extends RelationshipData {
 		this.isRecursive = isRecursive;
 	}
 
+    public boolean isLost() {
+        return isLost;
+    }
+
+    public void setLost(boolean lost) {
+        isLost = lost;
+    }
+
+    public boolean isFound() {
+        return isFound;
+    }
+
+    public void setFound(boolean found) {
+        isFound = found;
+    }
 }

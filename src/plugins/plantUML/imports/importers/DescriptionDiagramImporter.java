@@ -60,7 +60,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
     }
 
     private RelationshipData extractRelationship(Link link) {
-        ApplicationManager.instance().getViewManager().showMessage("Extracting relationship from link" + link.getLinkArg());
         String sourceID;
         String targetID;
 
@@ -88,7 +87,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         String toEndMultiplicity = link.getLinkArg().getQuantifier2();
         String fromEndAggregation = "";
         if (lineStyle.contains("NORMAL")) {
-            ApplicationManager.instance().getViewManager().showMessage("LINESTYLE === IN NORMAL STYLE, DECOR: " + decor);
             // association, containment, composition, agregation are solid line links
 
             if (decor == "COMPOSITION") {
@@ -114,8 +112,8 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             // DASHED
             switch (decor) {
                 case "EXTENDS": // |>
+                    isReverse = true;
                     relationshipType = "Realization";
-
                     break;
                 case "ARROW": // > , abstraction and all stereotypes + dependency stereotypes all look the same...
                     relationshipType = "Dependency";
@@ -131,7 +129,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             }
         }
 
-        if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
+        if (isReverse) {
             sourceID = link.getEntity1().getUid();
             targetID = link.getEntity2().getUid();
         } else {
@@ -139,7 +137,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             targetID = link.getEntity1().getUid();
         }
 
-        if(relationshipType == "") return null; // TODO: temp fix.
+        if(relationshipType.isEmpty()) return null; // TODO: temp fix.
 
         if (isAssoc) {
             AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
@@ -167,7 +165,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             usecases.add(extractUseCase(entity));
             return;
         }
-        // ideally leafTypes would be more specific than they are for component, workaround by getting SNames fromUSymbols
+        // ideally leafTypes would be more specific than they are for component, workaround by getting SNames from USymbols
 
         SName sName = entity.getUSymbol().getSName();
         ApplicationManager.instance().getViewManager().showMessage("extracting leaf " + sName.toString() +" " + entity.getDisplay().toString());
@@ -289,7 +287,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         }
 
         for (Entity residentLeaf : entity.leafs()) {
-
             // Ports need special handling since their getUSymbols return null for unknown reason
             if (residentLeaf.getLeafType() == LeafType.PORTIN || residentLeaf.getLeafType() == LeafType.PORTOUT) {
                 String portName = removeBrackets(residentLeaf.getDisplay().toString());
@@ -300,7 +297,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
             else extractLeaf(residentLeaf, componentData.getResidents(), componentData.getInterfaces(), null, null, componentData.getArtifacts()); // TODO : actors and use cases obvi shouldnt be here. sitched with null which might cause havoc
         }
-
         return componentData;
     }
 

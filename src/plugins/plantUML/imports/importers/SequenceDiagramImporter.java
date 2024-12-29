@@ -99,14 +99,14 @@ public class SequenceDiagramImporter extends  DiagramImporter {
         String relationshipType = "Message";
         String labelWithoutNumbering = removeBrackets(message.getLabel().toString()) ;
         String sequenceNumber = message.getMessageNumber();
+        source = message.getParticipant1().getCode();
+        target = message.getParticipant2().getCode();
+
+        messageData = new MessageData(source, target, relationshipType, labelWithoutNumbering);
+        messageData.setSourceID(source);
+        messageData.setTargetID(target);
 
         if (message instanceof Message) {
-            source = message.getParticipant1().getCode();
-            target = message.getParticipant2().getCode();
-
-            messageData = new MessageData(source, target, relationshipType, labelWithoutNumbering);
-            messageData.setSourceID(source);
-            messageData.setTargetID(target);
             messageData.setSequenceNumber(sequenceNumber);
 
             if (message.getArrowConfiguration().isDotted()) messageData.setReply(true);
@@ -117,16 +117,19 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             if (message.getArrowConfiguration().getInclination2() != 0) {
                 messageData.setDuration(message.getArrowConfiguration().getInclination2());
             }
-
         } else if (message instanceof  MessageExo) {
-            switch (((MessageExo) message).getType()) {
+
+            switch (((MessageExo) message).getType()) { // Todo
                 case TO_LEFT:
+                case TO_RIGHT:
+                    ApplicationManager.instance().getViewManager().showMessage("LOST MESSAGE FOUND");
+                    messageData.setLost(true);
                     break;
                 case FROM_LEFT:
-                    break;
-                case TO_RIGHT:
-                    break;
                 case FROM_RIGHT:
+
+                    ApplicationManager.instance().getViewManager().showMessage("FOUND MESSAGE FOUND");
+                    messageData.setFound(true);
                     break;
             }
         }

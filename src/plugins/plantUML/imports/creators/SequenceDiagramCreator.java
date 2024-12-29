@@ -7,6 +7,7 @@ import com.vp.plugin.diagram.connector.IMessageUIModel;
 import com.vp.plugin.diagram.shape.IInteractionActorUIModel;
 import com.vp.plugin.diagram.shape.IInteractionLifeLineUIModel;
 import com.vp.plugin.diagram.shape.IInteractionOccurrenceUIModel;
+import com.vp.plugin.diagram.shape.ILostFoundMessageEndShapeUIModel;
 import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
 import plugins.plantUML.models.*;
@@ -21,54 +22,26 @@ import static com.vp.plugin.model.factory.IModelElementFactory.MODEL_TYPE_COMPON
 
 public class SequenceDiagramCreator extends  DiagramCreator {
 
-    List<LifelineData> lifelineDatas = new ArrayList<>();
-    List<ActorData> actorDatas = new ArrayList<>();
-    List<MessageData> messageDatas = new ArrayList<>();
-    List<SequenceRef> refDatas = new ArrayList<>();
-    List<CombinedFragment> fragments = new ArrayList<>();
-
-    // in case numbering isn't provided in puml, assume numbering in order of declaration. Numbering is crucial for proper layout
+    // In case numbering isn't explicit in Puml, assume numbering in order of declaration.
+    // Numbering is crucial for proper layout
     int sequenceNumberCounter = 0;
     IInteractionDiagramUIModel sequenceDiagram = (IInteractionDiagramUIModel) diagramManager.createDiagram(DiagramManager.DIAGRAM_TYPE_INTERACTION_DIAGRAM);
     IFrame rootFrame = sequenceDiagram.getRootFrame(true);
 
-    public SequenceDiagramCreator(String diagramTitle, List<LifelineData> lifelineDatas,
-                                  List<ActorData> actorDatas, List<MessageData> messageDatas, List<SequenceRef> refDatas, List<CombinedFragment> fragments) {
+    public SequenceDiagramCreator(String diagramTitle) {
         super(diagramTitle);
-        this.lifelineDatas = lifelineDatas;
-        this.actorDatas = actorDatas;
-        this.messageDatas = messageDatas;
-        this.refDatas = refDatas;
-        this.fragments = fragments;
     }
 
-    @Override
-    public void createDiagram() {
+    public void createDiagram(List<LifelineData> lifelineDatas, List<ActorData> actorDatas, List<MessageData> messageDatas, List<SequenceRef> refDatas, List<CombinedFragment> fragments) {
 
         sequenceDiagram.setName(getDiagramTitle());
         sequenceDiagram.setAutoExtendActivations(true);
 
-
-        for (LifelineData lifelineData : lifelineDatas) {
-            IInteractionLifeLine lifelineModel = createLifeline(lifelineData);
-        }
-
-        for (ActorData actorData : actorDatas) {
-            IInteractionActor actorModel = createActor(actorData);
-        }
-
-
-        for (MessageData messageData : messageDatas) {
-            IMessage messageModel = createMessage(messageData);
-        }
-
-        for (SequenceRef refData : refDatas) {
-            createRef(refData);
-        }
-
-        for (CombinedFragment fragment : fragments) {
-            createFragment(fragment);
-        }
+        lifelineDatas.forEach(this::createLifeline);
+        actorDatas.forEach(this::createActor);
+        messageDatas.forEach(this::createMessage);
+        refDatas.forEach(this::createRef);
+        fragments.forEach(this::createFragment);
 
         ApplicationManager.instance().getDiagramManager().openDiagram(sequenceDiagram);
         sequenceDiagram.setAutoExtendActivations(true);
@@ -97,64 +70,49 @@ public class SequenceDiagramCreator extends  DiagramCreator {
             IModelElement lifelineOrActorModel = elementMap.get(coverLifelineCode);
             refModel.addCoveredLifeLine(lifelineOrActorModel);
         }
-        ApplicationManager.instance().getViewManager().showMessage("refShape creation");
         IInteractionOccurrenceUIModel refShape = (IInteractionOccurrenceUIModel) diagramManager.createDiagramElement(sequenceDiagram, refModel);
         for (IModelElement coveredModel : refModel.toCoveredLifeLineArray()) {
-            ApplicationManager.instance().getViewManager().showMessage("covering shapes");
             refShape.addChild((IShapeUIModel) shapeMap.get(coveredModel));
         }
         refShape.fitSize();
      }
 
-    private IMessage createMessage(MessageData messageData) {
+    private void createMessage(MessageData messageData) {
+
         IMessage messageModel = IModelElementFactory.instance().createMessage();
         messageModel.setName(messageData.getName());
-        if (messageData.getSequenceNumber() != null) {
-            messageModel.setSequenceNumber(messageData.getSequenceNumber());
-        } else {
-            messageModel.setSequenceNumber(String.valueOf(sequenceNumberCounter + 1));
-        }
+        if (messageData.getSequenceNumber() != null) messageModel.setSequenceNumber(messageData.getSequenceNumber());
+        else messageModel.setSequenceNumber(String.valueOf(sequenceNumberCounter++));
 
         String fromCode = messageData.getSourceID();
         String toCode = messageData.getTargetID();
-
         IModelElement fromElement = elementMap.get(fromCode);
         IModelElement toElement = elementMap.get(toCode);
-
-//        if (fromElement instanceof IInteractionLifeLine) {
-//            IActivation fromActivation;
-//            if ((((IInteractionLifeLine) fromElement).toActivationArray()) == null) {
-//                fromActivation = IModelElementFactory.instance().createActivation();
-//                ((IInteractionLifeLine) fromElement).addActivation(fromActivation);
-//            } else {
-//                ApplicationManager.instance().getViewManager().showMessage("ACTIVATION ARRAY NOT NULL");
-//                fromActivation = ((IInteractionLifeLine) fromElement).getActivationByIndex(0);
-//            }
-//            messageModel.setFromActivation(fromActivation);
-//        }
-//
-//        if (toElement instanceof IInteractionLifeLine) {
-//            IActivation toActivation;
-//            if ((((IInteractionLifeLine) toElement).toActivationArray()) == null) {
-//                toActivation = IModelElementFactory.instance().createActivation();
-//                ((IInteractionLifeLine) toElement).addActivation(toActivation);
-//            } else {
-//                ApplicationManager.instance().getViewManager().showMessage("ACTIVATION ARRAY NOT NULL");
-//                toActivation = ((IInteractionLifeLine) toElement).getActivationByIndex(0);
-//            }
-//            messageModel.setToActivation(toActivation);
-//        }
-
-        messageModel.setFrom(fromElement);
+        checkForCallOperation(toElement, messageModel, messageData);
+        if (messageData.isLost()) {
+            messageModel.setFrom(fromElement);
+            ILostFoundMessageEndShapeUIModel foundShape = (ILostFoundMessageEndShapeUIModel) sequenceDiagram.createDiagramElement(IInteractionDiagramUIModel.SHAPETYPE_LOST_FOUND_MESSAGE_END);
+            diagramManager.createConnector(sequenceDiagram, messageModel, foundShape, shapeMap.get(messageModel.getTo()), null);
+            return;
+        }
         messageModel.setTo(toElement);
+        if (messageData.isFound()) {
+            ILostFoundMessageEndShapeUIModel lostShape = (ILostFoundMessageEndShapeUIModel) sequenceDiagram.createDiagramElement(IInteractionDiagramUIModel.SHAPETYPE_LOST_FOUND_MESSAGE_END);
+            diagramManager.createConnector(sequenceDiagram, messageModel, shapeMap.get(messageModel.getFrom()), lostShape, null);
+            return;
+        }
+        messageModel.setFrom(fromElement);
+        handleActionTypes(messageData, messageModel);
+        diagramManager.createConnector(sequenceDiagram, messageModel, shapeMap.get(messageModel.getFrom()), shapeMap.get(messageModel.getTo()),null);
+    }
 
+    private void handleActionTypes(MessageData messageData, IMessage messageModel) {
         if (messageData.isCreate()) {
-            ApplicationManager.instance().getViewManager().showMessage("messageData is create");
             messageModel.setType(IMessage.TYPE_CREATE_MESSAGE);
             messageModel.setActionType(IModelElementFactory.instance().createActionTypeCreate());
-        } else if (messageData.isReply()) messageModel.setActionType(IModelElementFactory.instance().createActionTypeReturn());
+        } else if (messageData.isReply())
+            messageModel.setActionType(IModelElementFactory.instance().createActionTypeReturn());
         else if (messageData.isDestroy()) {
-            ApplicationManager.instance().getViewManager().showMessage("RECOGNIZED AS DESTROY");
             messageModel.setActionType(IModelElementFactory.instance().createActionTypeDestroy());
         }
         else if (messageData.isRecursive()) {
@@ -164,35 +122,43 @@ public class SequenceDiagramCreator extends  DiagramCreator {
             messageModel.setType(IMessage.TYPE_DURATION_MESSAGE);
             messageModel.setDurationHeight(messageData.getDurationHeight());
         }
-
-        Point[] points = null;
-        if (fromCode.equals(toCode)) {
-            int lifelineXCoord = shapeMap.get(messageModel.getFrom()).getX(); // X position of the lifeline
-            int lifelineYCoord = shapeMap.get(messageModel.getFrom()).getY(); // Starting Y position
-
-            int offsetX = 25; // Horizontal offset (width of rectangle)
-            int offsetY = 25; // Vertical offset (height of rectangle)
-
-            Point start = new Point(lifelineXCoord, lifelineYCoord);                       // Starting point
-            Point corner1 = new Point(lifelineXCoord + offsetX, lifelineYCoord);           // Top-right corner
-            Point corner2 = new Point(lifelineXCoord + offsetX, lifelineYCoord + offsetY); // Bottom-right corner
-            Point end = new Point(lifelineXCoord, lifelineYCoord + offsetY);               // Bottom-left corner
-            points = new Point[] { start, corner1, corner2, end }; // Rectangular self-message points
-            System.out.println(Arrays.toString(points)); ;
-            messageModel.setType(IMessage.TYPE_SELF_MESSAGE);
-        }
-
-        IMessageUIModel messageShape = (IMessageUIModel) diagramManager.createConnector(
-                sequenceDiagram,
-                messageModel,
-                shapeMap.get(messageModel.getFrom()), // Same lifeline as "from"
-                shapeMap.get(messageModel.getTo()),
-                null
-        );
-        return messageModel;
     }
 
-    private IInteractionActor createActor(ActorData actorData) {
+    private void checkForCallOperation(IModelElement toElement, IMessage messageModel, MessageData messageData) {
+        // If the message is being sent to a lifeline with a base classifier, search in the classifier's operations for a possible call to them.
+        if (toElement instanceof IInteractionLifeLine) {
+            IModelElement baseClassifierModel = ((IInteractionLifeLine) toElement).getBaseClassifierAsModel();
+
+            if (baseClassifierModel != null) {
+                IActionTypeCall callAction = findMatchingOperation(baseClassifierModel, messageData.getName());
+                if (callAction != null) {
+                    messageModel.setActionType(callAction);
+                    messageModel.setName(""); // Unset the label for the message as it will be set by the operation name
+                }
+            }
+        }
+    }
+
+    private IActionTypeCall findMatchingOperation(IModelElement baseClassifierModel, String operationName) {
+        List<IOperation> operations = new ArrayList<>();
+
+        if (baseClassifierModel instanceof IComponent) {
+            operations.addAll(Arrays.asList(((IComponent) baseClassifierModel).toOperationArray()));
+        } else if (baseClassifierModel instanceof IClass) {
+            operations.addAll(Arrays.asList(((IClass) baseClassifierModel).toOperationArray()));
+        }
+
+        for (IOperation operation : operations) {
+            if (operation.getName().equals(operationName)) {
+                IActionTypeCall callAction = IModelElementFactory.instance().createActionTypeCall();
+                callAction.setOperation(operation);
+                return callAction;
+            }
+        }
+        return null; // No matching operation found
+    }
+
+    private void createActor(ActorData actorData) {
 
         IInteractionActor actorModel = IModelElementFactory.instance().createInteractionActor();
         rootFrame.addChild(actorModel);
@@ -204,32 +170,38 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         IInteractionActorUIModel actorShape = (IInteractionActorUIModel) diagramManager.createDiagramElement(sequenceDiagram, actorModel);
         shapeMap.put(actorModel, actorShape);
         actorShape.setY(50);
-        return actorModel;
     }
 
-    private IInteractionLifeLine createLifeline(LifelineData lifelineData) {
+    private void createLifeline(LifelineData lifelineData) {
         IInteractionLifeLine lifelineModel = IModelElementFactory.instance().createInteractionLifeLine();
         rootFrame.addChild(lifelineModel);
-        // checkAndSettleNameConflict(lifelineData.getName(), "InteractionLifeline"); lifelines have no conflict
-        // TODO: in components and classes search for the classifier name.
 
-        IModelElement[] allComponentsAndClasses = project.toAllLevelModelElementArray( new String[]{MODEL_TYPE_COMPONENT, MODEL_TYPE_CLASS} );
-        for (IModelElement componentOrClass : allComponentsAndClasses) {
-            if (componentOrClass.getName().equals(lifelineData.getName())) {
-                lifelineModel.setBaseClassifier(componentOrClass);
-            }
+        /*
+         * Lifelines can have Base Classifiers (components or classes)
+         * If the name of the Puml participant matches a component or class we assign the element as the classifier
+         */
+        IModelElement[] allComponentsAndClasses = project.toAllLevelModelElementArray(new String[]{MODEL_TYPE_COMPONENT, MODEL_TYPE_CLASS});
+        IModelElement baseClassifier = Arrays.stream(allComponentsAndClasses)
+                .filter(element -> element instanceof IComponent && element.getName().equals(lifelineData.getName()))
+                .findFirst()
+                .orElseGet(() ->
+                        Arrays.stream(allComponentsAndClasses)
+                                .filter(element -> element instanceof IClass && element.getName().equals(lifelineData.getName()))
+                                .findFirst()
+                                .orElse(null)
+                );
+
+        if (baseClassifier != null) {
+            lifelineModel.setBaseClassifier(baseClassifier);
         }
 
         lifelineModel.setName(lifelineData.getName());
-
         elementMap.put(lifelineModel.getName(), lifelineModel);
         putInSemanticsMap(lifelineModel, lifelineData);
-
         lifelineData.getStereotypes().forEach(lifelineModel::addStereotype);
 
         IInteractionLifeLineUIModel lifelineShape = (IInteractionLifeLineUIModel) diagramManager.createDiagramElement(sequenceDiagram, lifelineModel);
         shapeMap.put(lifelineModel, lifelineShape);
-        lifelineShape.setY(50);
-        return lifelineModel;
+        lifelineShape.setY(50); // avoiding lifelines stuck at the very top
     }
 }
