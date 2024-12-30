@@ -16,21 +16,24 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private List<PackageData> packages;
 	private List<RelationshipData> relationships;
 	private List<ArtifactData> artifacts;
+	private List<FieldAndOperationInfo> jsonInfo;
 
-	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships) {
+	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships, List<FieldAndOperationInfo> jsonInfo) {
 		super(notes);
 		this.components = components;
 		this.interfaces = interfaces;
 		this.artifacts = artifacts;
 		this.packages = packages;
 		this.relationships = relationships;
+		this.jsonInfo = jsonInfo;
 	}
 
 	@Override
 	public void writeToFile(File file) throws IOException {
 		StringBuilder plantUMLContent = new StringBuilder("@startuml\n");
 
-
+		// Allowmixing parameter to allow for embedded json
+		plantUMLContent.append("allowmixing\n");
 
 		for (ComponentData componentData : components) {
 			if(!componentData.isInPackage() && !componentData.isResident())  
@@ -52,12 +55,13 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 				plantUMLContent.append(writePackage(packageData, ""));
 		}
 
-
 		plantUMLContent.append(writeNotes());
 
 		for (RelationshipData relationship : relationships) {
 			plantUMLContent.append(writeRelationship(relationship));
 		}
+		if (!jsonInfo.isEmpty())
+			plantUMLContent.append(PlantJSONWriter.writeEmbeddedComponentInfo(jsonInfo));
 
 		plantUMLContent.append("@enduml");
 		try (FileWriter writer = new FileWriter(file)) {

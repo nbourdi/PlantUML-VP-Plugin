@@ -65,9 +65,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
             IModelElement modelElement = diagramElement.getModelElement();
 
             if (modelElement != null) {
-//                ApplicationManager.instance().getViewManager().showMessage("NAME: " + modelElement.getName());
-//                ApplicationManager.instance().getViewManager().showMessage("type: " + modelElement.getModelType());
-
+//
                 if (modelElement instanceof IActor) {
                     extractActor((IActor) modelElement, null);
                 } else if (modelElement instanceof IUseCase) {
@@ -98,8 +96,10 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     	boolean isBusiness = modelElement.isBusinessModel();
 		UseCaseData useCaseData = new UseCaseData(name);
 		useCaseData.setInPackage(isInPackage);
+        useCaseData.setDescription(modelElement.getDescription());
 		useCaseData.setStereotypes(extractStereotypes(modelElement));
 		useCaseData.setBusiness(isBusiness);
+        addSemanticsIfExist(modelElement, useCaseData);
 		exportedUseCases.add(useCaseData);
 		if (packageData != null) packageData.getUseCases().add(useCaseData);
 	}
@@ -110,24 +110,26 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     	String name = modelElement.getName();
     	ActorData actorData = new ActorData(name);
     	actorData.setInPackage(isInPackage);
+        actorData.setDescription(modelElement.getDescription());
     	actorData.setStereotypes(extractStereotypes(modelElement));
+        addSemanticsIfExist(modelElement, actorData);
     	exportedActors.add(actorData);
     	if (packageData != null) packageData.getActors().add(actorData);
 	}
 
 
     private void extractRelationship(IRelationship relationship) {
-        IModelElement source = (IModelElement) relationship.getFrom();
-        IModelElement target = (IModelElement) relationship.getTo();
+        IModelElement source = relationship.getFrom();
+        IModelElement target = relationship.getTo();
         
         String sourceName = source.getName();
         String targetName = target.getName();
 
         if (source instanceof INOTE) {
-            sourceName = getNoteAliasById(((INOTE) source).getId());
+            sourceName = getNoteAliasById(source.getId());
         }
         if (target instanceof INOTE) {
-            targetName = getNoteAliasById(((INOTE) target).getId());
+            targetName = getNoteAliasById(target.getId());
         }
         
         if (relationship instanceof IAssociation) {
@@ -146,26 +148,15 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                     relationship.getName(),
                     fromEndMultiplicity,
                     toEndMultiplicity,
-                    // fromEnd.getNavigable() == 0, 
                     toEnd.getNavigable() == 0, 
                     fromEnd.getAggregationKind()
-                   // toEnd.getAggregationKind()
             );
 
             relationshipDatas.add(associationData);
         	return;
         }
 
-        ApplicationManager.instance().getViewManager().showMessage("Relationship from: " + sourceName + " to: " + targetName);
-        ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
-        ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
-
-        RelationshipData relationshipData = new RelationshipData(
-                sourceName,
-                targetName,
-                relationship.getModelType(),
-                relationship.getName()
-        );
+        RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(), relationship.getName());
         relationshipDatas.add(relationshipData);
     }
 
@@ -174,18 +165,19 @@ public class UseCaseDiagramExporter extends DiagramExporter {
         
         if (!(modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem)) {
 	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, false, modelElement instanceof ISystem);
-	        IModelElement[] childElements = modelElement.toChildArray();
+            packageData.setDescription(modelElement.getDescription());
+            IModelElement[] childElements = modelElement.toChildArray();
 	        for (IModelElement childElement : childElements) {
 	            if (childElement instanceof IActor) {
 	               extractActor((IActor) childElement, packageData);
 	            } else if (childElement instanceof IUseCase) {
 	            	extractUseCase((IUseCase) childElement, packageData);
 	            } else if (childElement instanceof IPackage || childElement instanceof ISystem) {
-	            	PackageData parent = packageData;
-	                extractPackagedPackage(childElement, parent);
+                    extractPackagedPackage(childElement, packageData);
 	                
 	            }
 	        }
+            addSemanticsIfExist(modelElement, packageData);
 	        exportedPackages.add(packageData);
         }
     }
@@ -194,6 +186,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
         ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
         
         PackageData packageData = new PackageData(childElement.getName(), null, null, null, true, childElement instanceof ISystem);
+        packageData.setDescription(childElement.getDescription());
         IModelElement[] childElements = childElement.toChildArray();
         for (IModelElement childElement1 : childElements) {
         	if (childElement1 instanceof IActor) {
@@ -204,6 +197,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                 extractPackagedPackage(childElement1, packageData);
             }
         }
+        addSemanticsIfExist(childElement, packageData);
         parent.getSubPackages().add(packageData);
         exportedPackages.add(packageData);
     }

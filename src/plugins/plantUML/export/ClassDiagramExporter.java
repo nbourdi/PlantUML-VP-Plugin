@@ -8,18 +8,8 @@ import java.util.List;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
-import com.vp.plugin.model.IAssociation;
-import com.vp.plugin.model.IAssociationClass;
-import com.vp.plugin.model.IAssociationEnd;
-import com.vp.plugin.model.IAttribute;
-import com.vp.plugin.model.IClass;
-import com.vp.plugin.model.IModelElement;
-import com.vp.plugin.model.INARY;
-import com.vp.plugin.model.INOTE;
-import com.vp.plugin.model.IOperation;
-import com.vp.plugin.model.IPackage;
-import com.vp.plugin.model.IParameter;
-import com.vp.plugin.model.IRelationship;
+import com.vp.plugin.diagram.connector.IContainmentUIModel;
+import com.vp.plugin.model.*;
 
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
@@ -41,7 +31,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	List<NaryData> exportedNary = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
 
-	private List<NaryData> allExportedNary = new ArrayList<>();
+	private final List<NaryData> allExportedNary = new ArrayList<>();
 
 	public ClassDiagramExporter(IDiagramUIModel diagram) {
 		this.diagram = diagram;
@@ -82,19 +72,23 @@ public class ClassDiagramExporter extends DiagramExporter {
 		}
 
 		for (IDiagramElement diagramElement : allElements) {
+			if (diagramElement instanceof IContainmentUIModel) {
+				extractContainment((IContainmentUIModel) diagramElement);
+			}
 			IModelElement modelElement = diagramElement.getModelElement();
 
 			if (modelElement != null) {
-
-				if (modelElement instanceof IRelationship /*&&  !(modelElement instanceof IAssociationClass) */) {
+				if (modelElement instanceof IRelationship) {
 					extractRelationship((IRelationship) modelElement);
-				} 
+				}
 			}
 		}
 		
 		exportedNotes = getNotes(); // from base diagram exporter
 
 	}
+
+
 
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);
@@ -135,22 +129,32 @@ public class ClassDiagramExporter extends DiagramExporter {
 		return null;
 	}
 
+	private void extractContainment(IContainmentUIModel relationship) {
+		IModelElement source = relationship.getFromShape().getModelElement();
+		IModelElement target = relationship.getToShape().getModelElement();
+		ApplicationManager.instance().getViewManager().showMessage("CONTAINMENT EXTRACTING");
+		String sourceName = source.getName();
+		String targetName = target.getName();
+		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, "Containment", "");
+		relationshipDatas.add(relationshipData);
+	}
+
 	private void extractRelationship(IRelationship relationship) {
-		IModelElement source = (IModelElement) relationship.getFrom();
-		IModelElement target = (IModelElement) relationship.getTo();
+		IModelElement source = relationship.getFrom();
+		IModelElement target = relationship.getTo();
 		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
 		if (source instanceof INARY) {
-			sourceName = getNaryAliasById(((INARY) source).getId());
+			sourceName = getNaryAliasById(source.getId());
 		} else if (source instanceof INOTE) {
-			sourceName = getNoteAliasById(((INOTE) source).getId());
+			sourceName = getNoteAliasById(source.getId());
 		} 
 		if (target instanceof INARY) {
-			targetName = getNaryAliasById(((INARY) target).getId());
+			targetName = getNaryAliasById(target.getId());
 		} else if (target instanceof INOTE) {
-			targetName = getNoteAliasById(((INOTE) target).getId());
+			targetName = getNoteAliasById(target.getId());
 		} 
 
 		if (relationship instanceof IAssociation) {
@@ -189,11 +193,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 				String associationTo = association.getTo().getName();
 				targetName = "(" + associationFrom + ", " + associationTo + ")";
 			}
-			
-			ApplicationManager.instance().getViewManager().showMessage("In associationClass block with getFrom: " + sourceName + " target: " +targetName);
-			
 		}
-		
 
 		ApplicationManager.instance().getViewManager()
 				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
@@ -203,8 +203,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
 		}
-		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),
-				relationship.getName());
+		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(), relationship.getName());
 		relationshipDatas.add(relationshipData);
 	}
 
@@ -220,9 +219,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 				} else if (childElement instanceof INARY) {
 					extractNary((INARY) childElement, packageData);
 				} else if (childElement instanceof IPackage) {
-					PackageData parent = packageData;
-					extractPackagedPackage((IPackage) childElement, parent);
-
+                    extractPackagedPackage((IPackage) childElement, packageData);
 				}
 			}
 			addSemanticsIfExist(packageModel, packageData);
@@ -245,6 +242,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 				extractPackagedPackage((IPackage) childElement, packageData);
 			}
 		}
+		addSemanticsIfExist(packageModel, packageData);
 		parent.getSubPackages().add(packageData);
 		exportedPackages.add(packageData);
 	}
@@ -274,7 +272,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 						parameter.getDefaultValueAsString());
 				op.addParameter(paramData);
 			}
-
 			classData.addOperation(op);
 		}
 	}
@@ -295,12 +292,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 		return exportedNary;
 	}
 
-	public List<NoteData> getExportedNotes() {
-		return exportedNotes;
-	}
 	private String formatAlias(String name) {
 			return name.replaceAll("[^a-zA-Z0-9]", "_");
 	}
-
-
 }

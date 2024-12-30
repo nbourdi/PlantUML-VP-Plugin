@@ -52,17 +52,20 @@ public class DiagramImportPipeline {
 	// no null references or subdiagrams are left hanging or unimported.
 	// For that, collect and update this map from every diagram import
 	Map<IHasChildrenBaseModelElement, SemanticsData> modelSemanticsMap = new HashMap<IHasChildrenBaseModelElement, SemanticsData>();
-
 	public void importMultipleFiles(List<File> files) {
 		List<File> jsonFiles = new ArrayList<>();
 		List<File> otherFiles = new ArrayList<>();
+		List<File> sequenceDiagramFiles = new ArrayList<>();
 
 		for (File file : files) {
 			try {
 				String source = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
 				SourceStringReader reader = new SourceStringReader(source);
+
 				if (reader.getBlocks().get(0).getDiagram() instanceof JsonDiagram) {
 					jsonFiles.add(file);
+				} else if (reader.getBlocks().get(0).getDiagram() instanceof SequenceDiagram) {
+					sequenceDiagramFiles.add(file);
 				} else {
 					otherFiles.add(file);
 				}
@@ -70,39 +73,45 @@ public class DiagramImportPipeline {
 				ApplicationManager.instance().getViewManager().showMessageDialog(
 						ApplicationManager.instance().getViewManager().getRootFrame(),
 						"Error reading file: " + file.getName() + "\n" + e.getMessage()
-						);
+				);
 			} catch (Exception e) {
 				ApplicationManager.instance().getViewManager().showMessageDialog(
 						ApplicationManager.instance().getViewManager().getRootFrame(),
 						"Error processing file: " + file.getName() + "\n" + e.getMessage()
-						);
+				);
 			}
 		}
 
 		if (jsonFiles.size() > 1) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(
 					ApplicationManager.instance().getViewManager().getRootFrame(),
-					"Error: Cannot process more than one json diagram file.");
+					"Error: Cannot process more than one JSON diagram file."
+			);
 			return;
 		}
 
 		if (!jsonFiles.isEmpty()) {
 			File jsonFile = jsonFiles.get(0);
-
-			// Import JSON semantics file FIRST. This way we can know ahead of time what semanticsData to add to the BaseWithSemanticsDatas.
+			// Import JSON semantics file FIRST
 			try {
 				String source = new String(Files.readAllBytes(jsonFiles.get(0).toPath()), StandardCharsets.UTF_8);
 				importSemantics(source);
 			} catch (IOException e) {
 				ApplicationManager.instance().getViewManager().showMessageDialog(
 						ApplicationManager.instance().getViewManager().getRootFrame(),
-						"Error importing JSON diagram: " + jsonFile.getName() + "\n" + e.getMessage());
+						"Error importing JSON diagram: " + jsonFile.getName() + "\n" + e.getMessage()
+				);
 			}
 		}
 
-		// Import other diagrams
+		// Import other diagrams first (excluding sequence diagrams)
 		for (File otherFile : otherFiles) {
 			importFromSource(otherFile);
+		}
+
+		// Import sequence diagrams last : Ensuring that all candidate lifeline classifiers are already imported
+		for (File sequenceFile : sequenceDiagramFiles) {
+			importFromSource(sequenceFile);
 		}
 
 		IDiagramUIModel[] diagrams = project.toDiagramArray();
@@ -115,6 +124,7 @@ public class DiagramImportPipeline {
 			setModelElementSemantics(modelElement, semanticsData, diagrams, allModelElements);
 		}
 	}
+
 	private void importSemantics(String source) {
 
 		String jsonContent = extractJsonContent(source);

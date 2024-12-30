@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
 
+import com.vp.plugin.model.factory.IModelElementFactory;
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
@@ -21,11 +23,10 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	List<ClassData> exportedInterfaces = new ArrayList<ClassData>();
 	List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
 	List<ArtifactData> exportedArtifacts = new ArrayList<>();
-	
 	List<NoteData> exportedNotes = new ArrayList<>();
-
 	List<PackageData> exportedPackages = new ArrayList<PackageData>();
-	List<PortData> allExportedPorts = new ArrayList<>();  
+	List<PortData> allExportedPorts = new ArrayList<>();
+	List<FieldAndOperationInfo> fieldAndOperationInfo = new ArrayList<>();
 
 	public ComponentDeploymentDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
@@ -33,65 +34,54 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	
 	@Override
 	public void extract() {
-		
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
+		List<IRelationship> deferredRelationships = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
 			IModelElement modelElement = diagramElement.getModelElement();
 
-			if (modelElement != null) {
-				
-				// Add the model element as exported beforehand, remove later if unsupported 
-				allExportedElements.add(modelElement);
-				if (modelElement instanceof IComponent) {
-					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof IComponent))
-						extractComponent((IComponent) modelElement, null, null);
-				} else if (modelElement instanceof IClass) { // interfaces are classes with stereotype "Interface"
-					if (!(modelElement.getParent() instanceof IPackage))
-						extractInterface((IClass) modelElement, null);
-				} else if (modelElement instanceof INode) {
-					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof INode))
-						extractNode((INode) modelElement, null, null);
-				} else if (modelElement instanceof IArtifact) {
-					if (!(modelElement.getParent() instanceof IPackage) && !(modelElement.getParent() instanceof INode))
-						extractArtifact((IArtifact) modelElement, null, null);
-				} else if (modelElement instanceof IPackage) {
-					extractPackage((IPackage) modelElement);
-				} else if (modelElement instanceof INOTE) {
-					this.extractNote((INOTE) modelElement);
+			if (modelElement == null) continue;
 
+			allExportedElements.add(modelElement); // Add the model element initially
 
-
-				} else if (modelElement instanceof IRelationship) {
-					
-				} else if (modelElement instanceof IPort) {
-					
-					//  just to not  show the message
-				} else {
-					allExportedElements.remove(modelElement);
-					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
-							+ modelElement.getName() +" is of unsupported type and will not be processed ... ");
-				}
-			} else {
-				ApplicationManager.instance().getViewManager()
-						.showMessage("Warning: modelElement is null for a diagram element.");
+			if (modelElement instanceof IRelationship) {
+				deferredRelationships.add((IRelationship) modelElement); // Defer relationships
+			} else if (modelElement instanceof IPort) {
+				// Skip ports without warnings
+			} else if (!processSupportedElement(modelElement)) {
+				allExportedElements.remove(modelElement);
+				ApplicationManager.instance().getViewManager().showMessage(
+						"Warning: diagram element " + modelElement.getName() + " is of unsupported type and will not be processed ..."
+				);
 			}
 		}
 
-		for (IDiagramElement diagramElement : allElements) {
-			IModelElement modelElement = diagramElement.getModelElement();
+		deferredRelationships.forEach(this::extractRelationship);
 
-			if (modelElement != null) {
-
-				if (modelElement instanceof IRelationship /*&&  !(modelElement instanceof IAssociationClass) */) {
-					extractRelationship((IRelationship) modelElement);
-				} 
-			}
-		}
-		
-		exportedNotes = getNotes(); // from base diagram exporter
-
+		exportedNotes = getNotes(); // Get notes from base diagram exporter
 	}
+
+	private boolean processSupportedElement(IModelElement element) {
+		ApplicationManager.instance().getViewManager().showMessage("parent? " + element.getParent().getName());
+		if (element instanceof IComponent) {
+			if (isRootLevel(element)) extractComponent((IComponent) element, null, null);
+		} else if (element instanceof IClass) {
+			if (isRootLevel(element)) extractInterface((IClass) element, null);
+		} else if (element instanceof INode) {
+			if (isRootLevel(element)) extractNode((INode) element, null, null);
+		} else if (element instanceof IArtifact) {
+			if (isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
+		} else if (element instanceof IPackage) {
+			extractPackage((IPackage) element);
+		} else if (element instanceof INOTE) {
+			extractNote((INOTE) element);
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+
 
 	private void extractArtifact(IArtifact artifactModel, PackageData packageData, ComponentData nodeData) {
 		boolean isInPackage = (artifactModel.getParent() instanceof IPackage);
@@ -117,8 +107,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 		nodeData.setDescription(nodeModel.getDescription());
 		nodeData.setResident(isResident);
-
-
 		nodeData.setStereotypes(extractStereotypes(nodeModel));
 
 		Iterator nodeIterator = nodeModel.nodeIterator();
@@ -138,7 +126,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			IComponent residentComponentModel = (IComponent) componentIterator.next();
 			extractComponent(residentComponentModel, null, nodeData);
 		}
-
 
 		Iterator portIterator =  nodeModel.portIterator();
 		while (portIterator.hasNext()) {
@@ -267,6 +254,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 			}
 		}
+		addSemanticsIfExist(packageModel, packageData);
 		parent.getSubPackages().add(packageData);
 		exportedPackages.add(packageData);
 		
@@ -278,6 +266,13 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		ClassData interfaceData = new ClassData(interfaceModel.getName(), isInPackage);
 		interfaceData.setDescription(interfaceModel.getDescription());
 		interfaceData.setStereotypes(extractStereotypes(interfaceModel));
+
+		addSemantics(
+				"Interface",
+				interfaceData.getName(),
+				interfaceModel::attributeIterator,
+				interfaceModel::operationIterator
+		);
 		addSemanticsIfExist(interfaceModel, interfaceData);
 		
 		exportedInterfaces.add(interfaceData);
@@ -311,7 +306,8 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			componentData.getPorts().add(portData);
 			allExportedPorts.add(portData);
 		}
-		
+
+		addSemantics("Component", componentData.getName(), componentModel::attributeIterator, componentModel::operationIterator);
 		addSemanticsIfExist(componentModel, componentData);
 		
 		exportedComponents.add(componentData);
@@ -320,7 +316,60 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		if (parentComponentData != null)
 			parentComponentData.getResidents().add(componentData);
 	}
-	
+
+
+	private void addSemantics(
+			String elementType,
+			String elementName,
+			Supplier<Iterator> attributeIteratorSupplier,
+			Supplier<Iterator> operationIteratorSupplier
+	) {
+		List<OperationData> operations = extractOperations(operationIteratorSupplier);
+		List<AttributeData> attributes = extractAttributes(attributeIteratorSupplier);
+
+		if (!operations.isEmpty() || !attributes.isEmpty()) {
+			FieldAndOperationInfo semantics = new FieldAndOperationInfo();
+			semantics.setElementType(elementType);
+			semantics.setElementName(elementName);
+			semantics.setAttributes(attributes);
+			semantics.setOperations(operations);
+			fieldAndOperationInfo.add(semantics);
+		}
+	}
+
+	private List<AttributeData> extractAttributes(Supplier<Iterator> attributeIteratorSupplier) {
+		List<AttributeData> attributes = new ArrayList<>();
+		Iterator attributeIter = attributeIteratorSupplier.get();
+		while (attributeIter.hasNext()) {
+			IAttribute attribute = (IAttribute) attributeIter.next();
+			AttributeData attr = new AttributeData(attribute.getVisibility(), attribute.getName(),
+					attribute.getTypeAsString(), attribute.getInitialValueAsString(), attribute.getScope());
+
+			attributes.add(attr);
+		}
+		return attributes;
+	}
+
+	private List<OperationData> extractOperations(Supplier<Iterator> operationIteratorSupplier) {
+		List<OperationData> operations = new ArrayList<>();
+		Iterator operationIter = operationIteratorSupplier.get();
+		while (operationIter.hasNext()) {
+			IOperation operation = (IOperation) operationIter.next();
+			OperationData op = new OperationData(operation.getVisibility(), operation.getName(),
+					operation.getReturnTypeAsString(), operation.isAbstract(), null, operation.getScope());
+
+			Iterator paramIterator = operation.parameterIterator();
+			while (paramIterator.hasNext()) {
+				IParameter parameter = (IParameter) paramIterator.next();
+				OperationData.Parameter paramData = new OperationData.Parameter(parameter.getName(),
+						parameter.getTypeAsString(), parameter.getDefaultValueAsString());
+				op.addParameter(paramData);
+			}
+			operations.add(op);
+		}
+		return operations;
+	}
+
 	public List<ComponentData> getExportedComponents() {
 		return exportedComponents;
 	}
@@ -338,5 +387,9 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 	public List<ArtifactData> getExportedArtifacts() {
 		return exportedArtifacts;
+	}
+
+	public List<FieldAndOperationInfo> getFieldAndOperationInfo() {
+		return fieldAndOperationInfo;
 	}
 }

@@ -15,16 +15,16 @@ public class RelationshipData {
 		this.name = name != null ? name : "";
 	}
 
-	protected String formatName(String name) { // TODO: duplicate code..
-		/*
-		 * Spaces and other non-letter characters are not supported as names for
-		 * plantUML
-		 */
-		if (!name.matches("[a-zA-Z0-9]+")) {
-			return "\"" + name + "\"";
-		}
-		return name;
-	}
+//	protected String formatName(String name) { // TODO: duplicate code..
+//		/*
+//		 * Spaces and other non-letter characters are not supported as names for
+//		 * plantUML
+//		 */
+//		if (!name.matches("[a-zA-Z0-9]+")) {
+//			return "\"" + name + "\"";
+//		}
+//		return name;
+//	}
 
 	protected String formatAlias(String name) {
 		return name.replaceAll("[^a-zA-Z0-9]", "_");
@@ -65,7 +65,7 @@ public class RelationshipData {
 			label = "<<Include>> \n ";
 			break;
 		case "Containment":
-			symbol = "}--";
+			symbol = "+--";
 			break;
 		}
 

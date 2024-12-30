@@ -14,7 +14,7 @@ public class SemanticsData {
 	private List<Reference> references = new ArrayList<Reference>();
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	private List<SubDiagramData> subDiagrams = new ArrayList<SubDiagramData>();
+	private List<SubDiagramData> subDiagrams = new ArrayList<>();
 	
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	private String description;

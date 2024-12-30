@@ -34,7 +34,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	List<RelationshipData> exportedAnchors = new ArrayList<>();
 
 	Map<IInteractionLifeLine, LifelineData> lifelineMap = new HashMap<IInteractionLifeLine, LifelineData>();
-	private final Set<IMessage> processedMessages = new HashSet<>(); // New Set to track processed messages
+	private final Set<IMessage> processedMessages = new HashSet<>(); // Set to track processed messages
 
 
 
@@ -94,9 +94,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		}
 
 		for (IMessage modelElement : iMessages) {
-
 			if (!processedMessages.contains(modelElement)) { // Check if message is already processed
-				exportedMessages.add(extractMessage((IMessage) modelElement));
+				exportedMessages.add(extractMessage(modelElement));
 			}
 		}
 		exportedNotes = getNotes(); // from base diagram exporter
@@ -130,7 +129,6 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	}
 
 	private void extracRef(IInteractionOccurrence refModel) {
-
 		if(refModel.getRefersTo() == null) {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("A ref referring to nothing was skipped.");
@@ -147,13 +145,11 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractFragment(ICombinedFragment fragmentModel) {
-
 		CombinedFragment fragment = new CombinedFragment(fragmentModel.getInteractionOperator()); 
 
 		for(IInteractionOperand childOperand : fragmentModel.toOperandArray()) {
 
 			Operand operand = new Operand();
-
 			if (childOperand.toMessageArray() != null) {
 				for (IMessage message : childOperand.toMessageArray()) {
 
@@ -161,7 +157,6 @@ public class SequenceDiagramExporter extends DiagramExporter {
 					processedMessages.add(message); // Mark message as processed, avoid duplication 
 				}
 			}
-
 			fragment.getOperands().add(operand);
 		}
 		exportedFragments.add(fragment);
@@ -207,8 +202,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		String name = lifelifeModel.getName();
 
 		LifelineData lifelineData = new LifelineData(name);
+		lifelineData.setDescription(lifelifeModel.getDescription());
 		IModelElement classifierModel = lifelifeModel.getBaseClassifierAsModel();
-		// Add the classifier's name after colon, if exists
 		if (classifierModel != null) {
 			// Cant put it in the name because then we have issues with the names in the relationships, maybe do a comment?
 //			name = name.concat(" : " + classifierModel.getName());
@@ -217,6 +212,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 
 		lifelineData.setStereotypes(extractStereotypes(lifelifeModel));
+		addSemanticsIfExist(lifelifeModel, lifelineData);
 		exportedLifelines.add(lifelineData);
 		lifelineMap.put(lifelifeModel, lifelineData);
 	}
@@ -225,6 +221,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		String name = modelElement.getName();
 		ActorData actorData = new ActorData(name);
 		actorData.setStereotypes(extractStereotypes(modelElement));
+		actorData.setDescription(modelElement.getDescription());
+		addSemanticsIfExist(modelElement,actorData);
 		exportedInteractionActors.add(actorData);
 	}
 

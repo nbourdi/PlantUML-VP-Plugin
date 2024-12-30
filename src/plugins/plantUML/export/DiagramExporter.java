@@ -37,8 +37,8 @@ public abstract class DiagramExporter {
 		String description = modelElement.getDescription();
 
 		// Include semantics only if there is at least 1 of the 3 elements
-		if ((extractedReferences != null && !extractedReferences.isEmpty()) ||
-				(extractedSubdiagrams != null && !extractedSubdiagrams.isEmpty()) ||
+		if ((!extractedReferences.isEmpty()) ||
+				(!extractedSubdiagrams.isEmpty()) ||
 				(description != null && !description.isEmpty())) {
 
 			SemanticsData semanticsData = new SemanticsData();
@@ -152,8 +152,12 @@ public abstract class DiagramExporter {
 
 		if (semantics != null) {
 			modelData.setSemantics(extractSemantics(modelElement));
-			getExportedSemantics().add(modelData.getSemantics());
+			exportedSemantics.add(modelData.getSemantics());
 		}
+	}
+
+	protected boolean isRootLevel(IModelElement element) {
+		return (element.getParent() == null);
 	}
 
 	public List<NoteData> getNotes() {
@@ -164,7 +168,4 @@ public abstract class DiagramExporter {
 		return exportedSemantics;
 	}
 
-	public void setExportedSemantics(List<SemanticsData> exportedSemantics) {
-		this.exportedSemantics = exportedSemantics;
-	}
 }
