@@ -167,5 +167,4 @@ public abstract class DiagramExporter {
 	public List<SemanticsData> getExportedSemantics() {
 		return exportedSemantics;
 	}
-
 }
