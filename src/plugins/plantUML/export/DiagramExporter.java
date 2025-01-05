@@ -58,14 +58,10 @@ public abstract class DiagramExporter {
 
 	private List<Reference> extractReferences(IHasChildrenBaseModelElement modelElement) { 
 		List<Reference> exportedReferences = new ArrayList<Reference>();
-		// ApplicationManager.instance().getViewManager().showMessage("========= References::");
 		Iterator referenceIter = modelElement.referenceIterator();
 		while (referenceIter.hasNext()) {
 			IReference reference = (IReference) referenceIter.next();
-			// ApplicationManager.instance().getViewManager().showMessage(reference.getUrl() + " " + reference.getType());
-
 			Reference referenceData = null;
-
 			try {
 				switch (reference.getType()) {
 				case IReference.TYPE_DIAGRAM:

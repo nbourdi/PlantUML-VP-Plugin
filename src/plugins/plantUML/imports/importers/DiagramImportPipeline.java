@@ -24,6 +24,7 @@ import com.vp.plugin.model.factory.IModelElementFactory;
 import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.UmlDiagram;
 import net.sourceforge.plantuml.abel.Entity;
+import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
 import net.sourceforge.plantuml.core.Diagram;
 import net.sourceforge.plantuml.decoration.symbol.USymbol;
@@ -170,16 +171,16 @@ public class DiagramImportPipeline {
 			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
 
 			if (result.isError()) {
-				// If there are syntax errors, display line at fault
+				// Display syntax errors
 				StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
 				for (String error : result.getErrors()) {
 					errorMessage.append(" - ").append(error)
-					.append("\nAt line: ").append(result.getLineLocation().getPosition());
+							.append("\nAt line: ").append(result.getLineLocation().getPosition());
 				}
 				ApplicationManager.instance().getViewManager().showMessageDialog(
 						ApplicationManager.instance().getViewManager().getRootFrame(),
 						errorMessage.toString()
-						);
+				);
 				return;
 			}
 
@@ -187,101 +188,110 @@ public class DiagramImportPipeline {
 			SourceStringReader reader = new SourceStringReader(source);
 
 			Diagram diagram = reader.getBlocks().get(0).getDiagram();
-			UmlDiagramType umlDiagramType; 
-			
+			UmlDiagramType umlDiagramType;
+
 			try {
 				UmlDiagram umlDiagram = (UmlDiagram) diagram;
 				umlDiagramType = umlDiagram.getUmlDiagramType();
+
+				/*
+				 * Check for the keyword "component" to reclassify as DESCRIPTION.
+				 * Components are allowed in Puml class diagrams and auto classifier prioritizes
+				 * "class" assumption over description but components aren't in VP class.
+				 */
+				if (umlDiagramType == UmlDiagramType.CLASS && source.contains("component")) {
+					umlDiagramType = UmlDiagramType.DESCRIPTION;
+				}
 			} catch (ClassCastException e) {
-				ApplicationManager.instance().getViewManager().showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),
+				ApplicationManager.instance().getViewManager().showMessageDialog(
+						ApplicationManager.instance().getViewManager().getRootFrame(),
 						"Non-UML diagrams are not supported."
-						);
+				);
 				return;
 			}
-			
+
 			String diagramTitle = sourceFile.getName();
 			if (diagramTitle.contains(".")) {
 				diagramTitle = diagramTitle.substring(0, diagramTitle.lastIndexOf('.'));
 			}
-			
+
 			switch (umlDiagramType) {
-			case CLASS:
+				case CLASS:
+					handleClassDiagram((ClassDiagram) diagram, diagramTitle);
+					break;
 
-				ClassDiagram classDiagram = (ClassDiagram) diagram;
+				case DESCRIPTION:
+					// Again, to tackle unwanted auto classification as "Class", cast to
+					// ClassDiagram and DescriptionDiagram superclass AbstractEntityDiagram instead of DescriptionDiagram.
+					handleDescriptionDiagram((AbstractEntityDiagram) diagram, diagramTitle);
+					break;
 
-				ClassDiagramImporter classDiagramImporter = new ClassDiagramImporter(classDiagram, semanticsMap);
-				classDiagramImporter.extract();
+				case SEQUENCE:
+					handleSequenceDiagram((SequenceDiagram) diagram, diagramTitle);
+					break;
 
-				ClassDiagramCreator creator = new ClassDiagramCreator(diagramTitle);
-				creator.createDiagram(classDiagramImporter.getClassDatas(),
-						classDiagramImporter.getPackageDatas(),
-						classDiagramImporter.getNaryDatas(),
-						classDiagramImporter.getRelationshipDatas(),
-						classDiagramImporter.getNoteDatas(),
-						classDiagramImporter.getAssociationPoints());
-				modelSemanticsMap.putAll(creator.getDiagramSemanticsMap()); // update the projectmap with the new diagram
-				break;
-
-			case DESCRIPTION:
-				DescriptionDiagram descriptionDiagram = (DescriptionDiagram) diagram;
-
-				// type DESCRIPTION in puml is used for component, deployment and use case & their mixing
-				// Determine the specific type of diagram
-				String specificType = determineDiagramType(descriptionDiagram);
-
-				DescriptionDiagramImporter descriptionDiagramImporter = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
-				descriptionDiagramImporter.extract();
-				DescriptionDiagramCreator descriptionDiagramCreator = new DescriptionDiagramCreator(
-						diagramTitle,
-						specificType
-				);
-				descriptionDiagramCreator.createDiagram(descriptionDiagramImporter.getComponentDatas(),
-						descriptionDiagramImporter.getInterfaceDatas(),
-						descriptionDiagramImporter.getPackageDatas(),
-						descriptionDiagramImporter.getRelationshipDatas(),
-						descriptionDiagramImporter.getActorDatas(),
-						descriptionDiagramImporter.getUseCaseDatas(),
-						descriptionDiagramImporter.getArtifactDatas(),
-						descriptionDiagramImporter.getNoteDatas()
-				);
-				modelSemanticsMap.putAll(descriptionDiagramCreator.getDiagramSemanticsMap());
-				break;
-
-			case SEQUENCE:
-
-				SequenceDiagram sequenceDiagram = (SequenceDiagram) diagram;
-				SequenceDiagramImporter sequenceDiagramImporter = new SequenceDiagramImporter(sequenceDiagram, semanticsMap);
-				sequenceDiagramImporter.extract();
-
-				SequenceDiagramCreator sequenceDiagramCreator = new SequenceDiagramCreator(
-						diagramTitle
-				);
-
-				sequenceDiagramCreator.createDiagram(
-						sequenceDiagramImporter.getLifelineDatas(),
-						sequenceDiagramImporter.getActorDatas(),
-						sequenceDiagramImporter.getMessageDatas(),
-						sequenceDiagramImporter.getRefDatas(),
-						sequenceDiagramImporter.getCombinedFragments());
-				modelSemanticsMap.putAll(sequenceDiagramCreator.getDiagramSemanticsMap());
-				break;
-
-			default:
-
-				ApplicationManager.instance().getViewManager().showMessageDialog(
-						ApplicationManager.instance().getViewManager().getRootFrame(),
-						"Unsupported diagram type: " + umlDiagramType.name());
+				default:
+					ApplicationManager.instance().getViewManager().showMessageDialog(
+							ApplicationManager.instance().getViewManager().getRootFrame(),
+							"Unsupported diagram type: " + umlDiagramType.name());
 			}
 
 		} catch (IOException e) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(
 					ApplicationManager.instance().getViewManager().getRootFrame(),
 					"Error reading source: " + e.getMessage()
-					);
+			);
 		}
 	}
 
-	private String determineDiagramType(DescriptionDiagram descriptionDiagram) {
+	private void handleClassDiagram(ClassDiagram classDiagram, String diagramTitle) {
+		ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram, semanticsMap);
+		importer.extract();
+
+		ClassDiagramCreator creator = new ClassDiagramCreator(diagramTitle);
+		creator.createDiagram(importer.getClassDatas(),
+				importer.getPackageDatas(),
+				importer.getNaryDatas(),
+				importer.getRelationshipDatas(),
+				importer.getNoteDatas(),
+				importer.getAssociationPoints());
+		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+	}
+
+	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle) {
+		String specificType = determineDiagramType(descriptionDiagram);
+
+		DescriptionDiagramImporter importer = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
+		importer.extract();
+
+		DescriptionDiagramCreator creator = new DescriptionDiagramCreator(diagramTitle, specificType);
+		creator.createDiagram(importer.getComponentDatas(),
+				importer.getInterfaceDatas(),
+				importer.getPackageDatas(),
+				importer.getRelationshipDatas(),
+				importer.getActorDatas(),
+				importer.getUseCaseDatas(),
+				importer.getArtifactDatas(),
+				importer.getNoteDatas());
+		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+	}
+
+	private void handleSequenceDiagram(SequenceDiagram sequenceDiagram, String diagramTitle) {
+		SequenceDiagramImporter importer = new SequenceDiagramImporter(sequenceDiagram, semanticsMap);
+		importer.extract();
+
+		SequenceDiagramCreator creator = new SequenceDiagramCreator(diagramTitle);
+		creator.createDiagram(importer.getLifelineDatas(),
+				importer.getActorDatas(),
+				importer.getMessageDatas(),
+				importer.getRefDatas(),
+				importer.getCombinedFragments(),
+				importer.getNoteDatas());
+		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+	}
+
+
+	private String determineDiagramType(AbstractEntityDiagram descriptionDiagram) {
 		boolean hasNodeOrArtifact = false;
 		boolean hasUseCase = false;
 		boolean hasComponent = false;
@@ -304,7 +314,6 @@ public class DiagramImportPipeline {
 			}
 		}
 
-		// Determine the diagram type based on the requirements
 		if (hasNodeOrArtifact) {
 			return "deployment"; // Deployment diagram takes precedence if there are nodes or artifacts
 		}
@@ -315,7 +324,7 @@ public class DiagramImportPipeline {
 			return "component"; // Component diagram if no nodes, artifacts, or use cases
 		}
 
-		return "component"; // Default to Component Diagram if no clear indicators
+		return "component"; // Default to Component Diagram if not clear
 	}
 
 	private void setModelElementSemantics(IHasChildrenBaseModelElement modelElement, SemanticsData semanticsData, IDiagramUIModel[] diagrams, IModelElement[] modelElements) {

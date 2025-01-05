@@ -14,6 +14,7 @@ public class SequenceDiagramImporter extends  DiagramImporter {
     private List<LifelineData> lifelineDatas = new ArrayList<>();
     private List<MessageData> messageDatas = new ArrayList<>();
     private List<SequenceRef> refDatas = new ArrayList<>();
+    private List<NoteData> noteDatas = new ArrayList<>();
 
     private Deque<CombinedFragment> fragmentStack = new ArrayDeque<>();
     private List<CombinedFragment> combinedFragments = new ArrayList<>();
@@ -35,6 +36,7 @@ public class SequenceDiagramImporter extends  DiagramImporter {
         for (Event event : sequenceDiagram.events()) {
             extractEvent(event);
         }
+
     }
 
     private void extractEvent(Event event) {
@@ -43,7 +45,9 @@ public class SequenceDiagramImporter extends  DiagramImporter {
         } else if (event instanceof Grouping) { // fragments
             extractGrouping((Grouping) event);
         } else if (event instanceof LifeEvent) { // activate, deactivate, create
-
+            ApplicationManager.instance().getViewManager().showMessage("LifeEvent");
+        } else if (event instanceof Note) {
+            extractNoteEvent((Note) event); // In Sequence notes are events, can't use the entity method like with the other diagrams.
         } else if (event instanceof Reference) { // ref over
             SequenceRef ref = new SequenceRef();
             List<Participant> participants = ((Reference) event).getParticipant();
@@ -54,6 +58,21 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             ref.setLabel(label);
             refDatas.add(ref);
         }
+    }
+
+    private void extractNoteEvent(Note note) {
+        ApplicationManager.instance().getViewManager().showMessage("extracting event note display, part, part2  " + note.getDisplay() + " , " + note.getParticipant().getCode() + " , " );
+
+        String noteContent = removeBrackets(note.getDisplay().toString()) ;
+        NoteData noteData = new NoteData("note", noteContent, null);
+        if (note.getParticipant() != null) {
+            noteData.getParticipants().add(note.getParticipant().getCode());
+        }
+        if (note.getParticipant2() != null) {
+            noteData.getParticipants().add(note.getParticipant2().getCode());
+        }
+        noteDatas.add(noteData);
+
     }
 
     private void extractGrouping(Grouping grouping) {
@@ -222,5 +241,9 @@ public class SequenceDiagramImporter extends  DiagramImporter {
 
     public List<CombinedFragment> getCombinedFragments() {
         return combinedFragments;
+    }
+
+    public List<NoteData> getNoteDatas() {
+        return noteDatas;
     }
 }

@@ -4,21 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import cb.petal.UseCase;
-import com.teamdev.jxbrowser.deps.org.checkerframework.checker.units.qual.A;
 import com.vp.plugin.ApplicationManager;
 
 import net.sourceforge.plantuml.abel.Entity;
+import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
 import net.sourceforge.plantuml.abel.Link;
+import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
 import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.style.SName;
+import org.pushingpixels.flamingo.api.common.AbstractFileViewPanel;
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
 public class DescriptionDiagramImporter extends DiagramImporter {
 
-    private DescriptionDiagram descriptionDiagram;
+    private AbstractEntityDiagram descriptionDiagram;
 
     private List<PackageData> packageDatas = new ArrayList<PackageData>();
     private List<RelationshipData> relationshipDatas = new ArrayList<RelationshipData>();
@@ -31,7 +32,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
     private List<UseCaseData> useCaseDatas = new ArrayList<>();
 
 
-    public DescriptionDiagramImporter(DescriptionDiagram descriptionDiagram, Map<String, SemanticsData> semanticsMap) {
+    public DescriptionDiagramImporter(AbstractEntityDiagram descriptionDiagram, Map<String, SemanticsData> semanticsMap) {
         super(semanticsMap);
         this.descriptionDiagram = descriptionDiagram;
     }
@@ -305,9 +306,25 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
 
     private void extractGroup(Entity groupEntity, List<ComponentData> components, List<PackageData> packages) {
+
+        /*
+        * When dealing with an unwanted ClassDiagram classification where components are present,
+        * "class" packages have GroupType PACKAGE and null USymbols.
+        * Components are also PACKAGE GroupTypes in ClassDiagram but with not-null USymbols.
+        * Therefore this check is done to support the "miss"-classified component diagrams...
+         */
+
+        if (groupEntity.getUSymbol() == null) {
+            if (groupEntity.getGroupType() == GroupType.PACKAGE) {
+                PackageData packageData = extractPackage(groupEntity);
+                packages.add(packageData);
+                return;
+            }
+            ApplicationManager.instance().getViewManager().showMessage("Warning: USymbol is null for a group...");
+            return;
+        }
         SName sName = groupEntity.getUSymbol().getSName();
 
-        ApplicationManager.instance().getViewManager().showMessage("usymbol " + sName.toString());
         switch (sName) {
             case component:
                 ComponentData componentWithResidents = extractComponent(groupEntity);

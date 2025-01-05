@@ -36,8 +36,6 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	Map<IInteractionLifeLine, LifelineData> lifelineMap = new HashMap<IInteractionLifeLine, LifelineData>();
 	private final Set<IMessage> processedMessages = new HashSet<>(); // Set to track processed messages
 
-
-
 	public SequenceDiagramExporter(IDiagramUIModel diagram) {
 		this.diagram = diagram;
 	}
@@ -46,63 +44,54 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	public void extract() {
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
-		// hold messages and fragments until all basic elements are exported
-		List<IMessage> iMessages = new ArrayList<IMessage>();
-		List<ICombinedFragment> iCombinedFragments = new ArrayList<ICombinedFragment>();
-		List<IAnchor> iAnchors = new ArrayList<IAnchor>();
+		List<IMessage> iMessages = new ArrayList<>();
+		List<ICombinedFragment> iCombinedFragments = new ArrayList<>();
+		List<IAnchor> iAnchors = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
 			IModelElement modelElement = diagramElement.getModelElement();
 
-			if (modelElement != null) {
-
-				// Add the model element as exported preemptively, remove later if unsupported
-				allExportedElements.add(modelElement);
-				if (modelElement instanceof IInteractionActor) {
-					extractInteractionActor((IInteractionActor) modelElement);
-
-				} else if (modelElement instanceof IInteractionLifeLine) {
-					extractLifeline((IInteractionLifeLine) modelElement);
-
-				} else if (modelElement instanceof IInteractionOccurrence) {
-					extracRef((IInteractionOccurrence) modelElement);
-				} else if (modelElement instanceof INOTE) {
-					this.extractNote((INOTE) modelElement);
-				} else if (modelElement instanceof IMessage) {
-					iMessages.add((IMessage) modelElement);
-				} else if (modelElement instanceof ICombinedFragment) {
-					iCombinedFragments.add((ICombinedFragment) modelElement);
-				} else if (modelElement instanceof IAnchor) {
-					iAnchors.add((IAnchor) modelElement);
-				}
-
-				else {
-					allExportedElements.remove(modelElement);
-					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
-							+ modelElement.getName() + " is of unsupported type and will not be processed ... ");
-				}
-			} else {
+			if (modelElement == null) {
 				ApplicationManager.instance().getViewManager()
-				.showMessage("Warning: modelElement is null for a diagram element.");
+						.showMessage("Warning: modelElement is null for a diagram element.");
+				continue;
+			}
+			// Add to exported elements preemptively
+			allExportedElements.add(modelElement);
+
+			if (modelElement instanceof IInteractionActor) {
+				extractInteractionActor((IInteractionActor) modelElement);
+			} else if (modelElement instanceof IInteractionLifeLine) {
+				extractLifeline((IInteractionLifeLine) modelElement);
+			} else if (modelElement instanceof IInteractionOccurrence) {
+				extracRef((IInteractionOccurrence) modelElement);
+			} else if (modelElement instanceof INOTE) {
+				extractNote((INOTE) modelElement);
+			} else if (modelElement instanceof IMessage) {
+				iMessages.add((IMessage) modelElement); // Defer processing messages
+			} else if (modelElement instanceof ICombinedFragment) {
+				iCombinedFragments.add((ICombinedFragment) modelElement); // Defer processing fragments
+			} else if (modelElement instanceof IAnchor) {
+				iAnchors.add((IAnchor) modelElement); // Defer processing anchors
+			} else {
+				allExportedElements.remove(modelElement);
+				ApplicationManager.instance().getViewManager().showMessage(
+						"Warning: diagram element " + modelElement.getName()
+								+ " is of unsupported type and will not be processed ..."
+				);
 			}
 		}
 
-		for (ICombinedFragment modelElement : iCombinedFragments) {
-			if (modelElement != null) {
-				extractFragment(modelElement);
+		iCombinedFragments.forEach(this::extractFragment);
+
+		for (IMessage message : iMessages) {
+			if (!processedMessages.contains(message)) { // Check if message is already processed
+				exportedMessages.add(extractMessage(message));
 			}
 		}
 
-		for (IMessage modelElement : iMessages) {
-			if (!processedMessages.contains(modelElement)) { // Check if message is already processed
-				exportedMessages.add(extractMessage(modelElement));
-			}
-		}
-		exportedNotes = getNotes(); // from base diagram exporter
-
-		for (IAnchor anchor : iAnchors) {
-			extractAnchor(anchor);
-		}
+		exportedNotes = getNotes();
+		iAnchors.forEach(this::extractAnchor);
 	}
 
 	private void extractAnchor(IRelationship relationship) {
@@ -205,8 +194,6 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		lifelineData.setDescription(lifelifeModel.getDescription());
 		IModelElement classifierModel = lifelifeModel.getBaseClassifierAsModel();
 		if (classifierModel != null) {
-			// Cant put it in the name because then we have issues with the names in the relationships, maybe do a comment?
-//			name = name.concat(" : " + classifierModel.getName());
 			lifelineData.setClassifier(classifierModel.getName());
 		}
 

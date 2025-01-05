@@ -17,7 +17,6 @@ import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
 
 import plugins.plantUML.models.*;
-import v.ajp.ig;
 
 public abstract class DiagramCreator {
 	
@@ -62,14 +61,23 @@ public abstract class DiagramCreator {
         }
 	}
 
-	protected INOTE createNote(NoteData noteData) {	
+	protected void createNote(NoteData noteData) {
 		INOTE noteModel = IModelElementFactory.instance().createNOTE();
 		noteModel.setName(noteData.getName());
 		noteModel.setDescription(noteData.getContent());
 		INoteUIModel noteShape = (INoteUIModel) diagramManager.createDiagramElement(diagram, noteModel);
 		elementMap.put(noteData.getUid(), noteModel);
 		shapeMap.put(noteModel, noteShape);
-		return noteModel;
+
+		// sequence case::
+		if (noteData.getParticipants() != null && !noteData.getParticipants().isEmpty()) {
+			for(String participantCode : noteData.getParticipants()) {
+				IAnchor anchor = IModelElementFactory.instance().createAnchor();
+                IModelElement toElement = elementMap.get(participantCode);
+				diagramManager.createConnector(diagram, anchor, shapeMap.get(noteModel),
+						shapeMap.get(toElement), null);
+			}
+		}
 	}
 
 	protected void putInSemanticsMap(IHasChildrenBaseModelElement modelElement, BaseWithSemanticsData modelData)  {

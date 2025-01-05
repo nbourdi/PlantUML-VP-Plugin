@@ -1,6 +1,5 @@
 package plugins.plantUML.export;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -39,35 +38,41 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 	@Override
 	public void extract() {
-
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
+
+		List<IRelationship> deferredRelationships = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
 			IModelElement modelElement = diagramElement.getModelElement();
 
-			if (modelElement != null) {
-				// Add the model element as exported beforehand, remove later if unsupported 
-				allExportedElements.add(modelElement);
-				if (modelElement instanceof IClass) {
-					if (!(modelElement.getParent() instanceof IPackage))
-						extractClass((IClass) modelElement, null);
-				} else if (modelElement instanceof IPackage) {
-					extractPackage((IPackage) modelElement);
-				} else if (modelElement instanceof INARY) {
-					if (!(modelElement.getParent() instanceof IPackage))
-						extractNary((INARY) modelElement, null);
-				} else if (modelElement instanceof INOTE) {
-					this.extractNote((INOTE) modelElement);
-				} else if (modelElement instanceof IRelationship) {
-					//  just to not  show the message
-				} else {
-					allExportedElements.remove(modelElement);
-					ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element "
-							+ modelElement.getName() +" is of unsupported type and will not be processed ... ");
-				}
-			} else {
+			if (modelElement == null) {
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: modelElement is null for a diagram element.");
+				continue;
+			}
+
+			// Add to exported elements list
+			allExportedElements.add(modelElement);
+
+			if (modelElement instanceof IClass) {
+				if (isRootLevel(modelElement)) {
+					extractClass((IClass) modelElement, null);
+				}
+			} else if (modelElement instanceof IPackage) {
+				extractPackage((IPackage) modelElement);
+			} else if (modelElement instanceof INARY) {
+				if (isRootLevel(modelElement)) {
+					extractNary((INARY) modelElement, null);
+				}
+			} else if (modelElement instanceof INOTE) {
+				extractNote((INOTE) modelElement);
+			} else if (modelElement instanceof IRelationship) {
+				deferredRelationships.add((IRelationship) modelElement); // Defer relationships
+			} else {
+				allExportedElements.remove(modelElement);
+				ApplicationManager.instance().getViewManager()
+						.showMessage("Warning: diagram element " + modelElement.getName()
+								+ " is of unsupported type and will not be processed ... ");
 			}
 		}
 
@@ -75,20 +80,14 @@ public class ClassDiagramExporter extends DiagramExporter {
 			if (diagramElement instanceof IContainmentUIModel) {
 				extractContainment((IContainmentUIModel) diagramElement);
 			}
-			IModelElement modelElement = diagramElement.getModelElement();
-
-			if (modelElement != null) {
-				if (modelElement instanceof IRelationship) {
-					extractRelationship((IRelationship) modelElement);
-				}
-			}
 		}
-		
-		exportedNotes = getNotes(); // from base diagram exporter
 
+		for (IRelationship relationship : deferredRelationships) {
+			extractRelationship(relationship);
+		}
+
+		exportedNotes = getNotes();
 	}
-
-
 
 	private void extractClass(IClass classModel, PackageData packageData) {
 		boolean isInPackage = (classModel.getParent() instanceof IPackage);

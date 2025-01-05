@@ -1,17 +1,22 @@
 package plugins.plantUML.models;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NoteData {
     private String name;
     private String content;
     private String id;
     private String alias;
     private String Uid;
+    private List<String> participants; // for seq
 
     public NoteData(String name, String content, String id) {
         this.name = (name != null && !name.isEmpty()) ? name : null;
         this.content = content;
         this.id = id;
         this.alias = generateAlias();
+        this.participants = new ArrayList<>();
     }
 
     private String generateAlias() {
@@ -48,4 +53,12 @@ public class NoteData {
 	public void setUid(String uid) {
 		Uid = uid;
 	}
+
+    public List<String> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(List<String> participants) {
+        this.participants = participants;
+    }
 }

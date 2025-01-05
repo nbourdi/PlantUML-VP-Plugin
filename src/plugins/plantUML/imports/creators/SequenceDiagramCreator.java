@@ -30,9 +30,10 @@ public class SequenceDiagramCreator extends  DiagramCreator {
 
     public SequenceDiagramCreator(String diagramTitle) {
         super(diagramTitle);
+        diagram = sequenceDiagram;
     }
 
-    public void createDiagram(List<LifelineData> lifelineDatas, List<ActorData> actorDatas, List<MessageData> messageDatas, List<SequenceRef> refDatas, List<CombinedFragment> fragments) {
+    public void createDiagram(List<LifelineData> lifelineDatas, List<ActorData> actorDatas, List<MessageData> messageDatas, List<SequenceRef> refDatas, List<CombinedFragment> fragments, List<NoteData> noteDatas) {
 
         sequenceDiagram.setName(getDiagramTitle());
         sequenceDiagram.setAutoExtendActivations(true);
@@ -42,6 +43,7 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         messageDatas.forEach(this::createMessage);
         refDatas.forEach(this::createRef);
         fragments.forEach(this::createFragment);
+        noteDatas.forEach(this::createNote);
 
         ApplicationManager.instance().getDiagramManager().openDiagram(sequenceDiagram);
         sequenceDiagram.setAutoExtendActivations(true);

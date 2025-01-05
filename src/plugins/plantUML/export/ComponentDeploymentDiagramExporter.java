@@ -11,7 +11,6 @@ import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
 
-import com.vp.plugin.model.factory.IModelElementFactory;
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
@@ -62,7 +61,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	}
 
 	private boolean processSupportedElement(IModelElement element) {
-		ApplicationManager.instance().getViewManager().showMessage("parent? " + element.getParent().getName());
 		if (element instanceof IComponent) {
 			if (isRootLevel(element)) extractComponent((IComponent) element, null, null);
 		} else if (element instanceof IClass) {
@@ -80,8 +78,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		}
 		return true;
 	}
-
-
 
 	private void extractArtifact(IArtifact artifactModel, PackageData packageData, ComponentData nodeData) {
 		boolean isInPackage = (artifactModel.getParent() instanceof IPackage);
