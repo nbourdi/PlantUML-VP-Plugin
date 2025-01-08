@@ -8,10 +8,11 @@ public class LifelineData extends BaseWithSemanticsData {
 	private List<String> stereotypes = new ArrayList<String>();
 	private boolean isCreatedByMessage;
 	private String classifier;
+	private String alias;
 
 	public LifelineData(String name) {
 		super(name);
-	}
+    }
 
 	public List<String> getStereotypes() {
 		return stereotypes;
@@ -39,5 +40,13 @@ public class LifelineData extends BaseWithSemanticsData {
 
     public void setClassifier(String classifier) {
         this.classifier = classifier;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 }

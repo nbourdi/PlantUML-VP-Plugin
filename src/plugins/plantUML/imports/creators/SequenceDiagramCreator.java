@@ -166,7 +166,7 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         rootFrame.addChild(actorModel);
         checkAndSettleNameConflict(actorData.getName(), "InteractionActor");
         actorModel.setName(actorData.getName());
-        elementMap.put(actorData.getName(), actorModel);
+        elementMap.put(actorData.getUid(), actorModel);
 
         putInSemanticsMap(actorModel, actorData);
         IInteractionActorUIModel actorShape = (IInteractionActorUIModel) diagramManager.createDiagramElement(sequenceDiagram, actorModel);
@@ -198,7 +198,7 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         }
 
         lifelineModel.setName(lifelineData.getName());
-        elementMap.put(lifelineModel.getName(), lifelineModel);
+        elementMap.put(lifelineData.getAlias(), lifelineModel);
         putInSemanticsMap(lifelineModel, lifelineData);
         lifelineData.getStereotypes().forEach(lifelineModel::addStereotype);
 

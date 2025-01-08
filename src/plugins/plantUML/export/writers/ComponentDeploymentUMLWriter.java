@@ -131,7 +131,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private String writeComponent(ComponentData componentData, String indent) {
 		StringBuilder componentString = new StringBuilder();
 		String name = formatName(componentData.getName()) ;
-
+		String aliasDeclaration = formatAlias(componentData.getName()).equals(componentData.getName()) ? "" : (" as " + formatAlias(componentData.getName()));
 
 		componentString.append(indent);
 
@@ -140,7 +140,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		} else {
 			componentString.append("component ");
 		}
-		componentString.append(name).append(" as ").append(formatAlias(componentData.getName()));
+		componentString.append(name).append(aliasDeclaration);
 
 		if (!componentData.getStereotypes().isEmpty()) {
 			String stereotypesString = componentData.getStereotypes().stream()

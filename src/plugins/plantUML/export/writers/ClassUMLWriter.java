@@ -23,8 +23,6 @@ public class ClassUMLWriter extends PlantUMLWriter {
     private List<ClassData> classes;
     private List<RelationshipData> relationships;
     private List<NaryData> naries;
-    
-
 
     public ClassUMLWriter(List<ClassData> classes, List<RelationshipData> relationships, List<PackageData> packages, List<NaryData> naries, List<NoteData> notes) {
     	super(notes);
@@ -99,7 +97,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
     		
     	}
     	
-    	packageString.append(indent + "}\n");
+    	packageString.append(indent).append("}\n");
 		return packageString.toString();
     	
     }
@@ -143,13 +141,11 @@ public class ClassUMLWriter extends PlantUMLWriter {
 
     	classString.append(" {\n");
 
-
-
         // Attributes
         for (AttributeData attribute : classData.getAttributes()) {
         	String visibilityChar = writeVisibility(attribute.getVisibility());
         	
-        	classString.append(indent + "\t").append(visibilityChar + " ");
+        	classString.append(indent).append("\t").append(visibilityChar).append(" ");
         	if (attribute.isStatic()) classString.append("{static} ");
         	classString.append(attribute.getName());
         	
@@ -166,7 +162,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
         for (OperationData operation : classData.getOperations()) {
             String visibilityChar = writeVisibility(operation.getVisibility());
 
-            classString.append(indent + "\t").append(visibilityChar);
+            classString.append(indent).append("\t").append(visibilityChar);
             
             if (operation.isAbstract()) classString.append("{abstract} ");
             

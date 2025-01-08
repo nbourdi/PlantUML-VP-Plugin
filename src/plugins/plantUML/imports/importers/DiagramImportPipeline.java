@@ -349,7 +349,6 @@ public class DiagramImportPipeline {
 		}
 
 		Map<String, IModelElement> modelElementLookup = new HashMap<>();
-		// TODO: sos, this doesnt account for type, just puts name, need fix + not all packages
 		for (IModelElement projectModelElement : modelElements) {
 			modelElementLookup.put(projectModelElement.getName() + "|" +projectModelElement.getModelType(), projectModelElement);
 		}
@@ -364,7 +363,6 @@ public class DiagramImportPipeline {
 				referenceModel.setUrlAsDiagram(diagramLookup.get(reference.getName()));
 				referenceModel.setType(IReference.TYPE_DIAGRAM);
 				referenceModel.setName(reference.getName());
-				// referenceModel.setUrl(reference.getName());
 				break;
 			case "url":
 				referenceModel.setType(IReference.TYPE_URL);
@@ -384,9 +382,6 @@ public class DiagramImportPipeline {
 				break;
 			case "model_element":
 				referenceModel.setUrlAsModel(modelElementLookup.get(reference.getName()+ "|" + reference.getModelType()));
-
-				ApplicationManager.instance().getViewManager().showMessage("reference.getName() " +reference.getName() + " referencemodel url " + referenceModel.getUrl() + " res of lookup " );
-
 				referenceModel.setType(IReference.TYPE_MODEL_ELEMENT);
 				referenceModel.setName(reference.getName());
 				break;

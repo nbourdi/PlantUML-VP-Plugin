@@ -64,7 +64,8 @@ public class PlantUMLImportController implements VPActionController {
                 public boolean accept(File file) {
                     return file.isDirectory() || 
                            file.getName().toLowerCase().endsWith(".txt") || 
-                           file.getName().toLowerCase().endsWith(".puml");
+                           file.getName().toLowerCase().endsWith(".puml") ||
+                            file.getName().toLowerCase().endsWith(".plantuml");
                 }
             });
 
@@ -83,7 +84,7 @@ public class PlantUMLImportController implements VPActionController {
             if (userSelection == JFileChooser.APPROVE_OPTION) {
                 File folder = folderChooser.getSelectedFile();
                 File[] files = folder.listFiles((dir, name) -> 
-                    name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".puml")
+                    name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".puml") || name.toLowerCase().endsWith(".plantuml")
                 );
 
                 if (files != null && files.length > 0) {

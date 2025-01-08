@@ -72,7 +72,6 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             noteData.getParticipants().add(note.getParticipant2().getCode());
         }
         noteDatas.add(noteData);
-
     }
 
     private void extractGrouping(Grouping grouping) {
@@ -157,7 +156,6 @@ public class SequenceDiagramImporter extends  DiagramImporter {
         if (!fragmentStack.isEmpty() && !fragmentStack.peek().getOperands().isEmpty()) {
             CombinedFragment fragment = fragmentStack.peek();
             CombinedFragment.Operand currentOperand = fragment.getOperands().get(fragment.getOperands().size() - 1);
-
             currentOperand.getMessages().add(messageData);
 
         }
@@ -168,13 +166,14 @@ public class SequenceDiagramImporter extends  DiagramImporter {
 
     private void extractParticipant(Participant participant) {
         // Extract name and type of participant
-        String name = participant.getCode();
-       // String name = participant.getDisplay(false).toString();
+        String alias = participant.getCode();
+        String name = removeBrackets(participant.getDisplay(false).toString());
         ParticipantType participantType = participant.getType();
 
         if (participantType == ParticipantType.ACTOR) {
             ActorData actorData = new ActorData(name);
-            String key = name + "|InteractionActor"; // TODO check if accurate type
+            actorData.setUid(alias);
+            String key = name + "|InteractionActor";
 
             if (getSemanticsMap().containsKey(key)) {
                 actorData.setSemantics(getSemanticsMap().get(key));
@@ -186,8 +185,8 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             actorDatas.add(actorData);
         } else {
             LifelineData lifelineData = new LifelineData(name);
-            String key = name + "|InteractionLifeline"; // TODO check if accurate type
-
+            lifelineData.setAlias(alias);
+            String key = name + "|InteractionLifeLine";
             if (getSemanticsMap().containsKey(key)) {
                 lifelineData.setSemantics(getSemanticsMap().get(key));
             }

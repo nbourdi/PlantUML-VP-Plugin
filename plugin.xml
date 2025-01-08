@@ -14,7 +14,7 @@
 				tooltip="PlantUML..."
 				style="normal"
 				icon="icons/puml-icon.png"
-				ribbonPath="Project/Import/Visio">
+				ribbonPath="Project/Import/XML">
 				<actionController 
 					class="plugins.plantUML.actions.PlantUMLImportController"/>
 			</action>

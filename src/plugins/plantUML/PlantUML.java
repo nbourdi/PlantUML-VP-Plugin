@@ -8,7 +8,7 @@ import com.vp.plugin.VPPluginInfo;
 
 import plugins.plantUML.imports.importers.DiagramImportPipeline;
 
-public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
+public class PlantUML implements VPPlugin, VPPluginCommandLineSupport {
 
 	@Override
 	public void loaded(VPPluginInfo pluginInfo) {
@@ -81,7 +81,6 @@ public class PlantUML implements VPPlugin, VPPluginCommandLineSupport{
     }
 
     private void performExport(String path) {
-        // Implement your export logic here
         System.out.println("Exporting to path: " + path);
         // TODO: Add actual export functionality
     
