@@ -6,6 +6,7 @@ import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
 import net.sourceforge.plantuml.abel.Link;
+import net.sourceforge.plantuml.sequencediagram.Note;
 import net.sourceforge.plantuml.statediagram.StateDiagram;
 import plugins.plantUML.models.*;
 
@@ -20,6 +21,8 @@ public class StateDiagramImporter extends DiagramImporter {
     private List<RelationshipData> relationshipDatas = new ArrayList<>();
     private List<ForkJoin> forkJoins = new ArrayList<>();
     private List<StateChoice> stateChoices = new ArrayList<>();
+    private List<History> histories = new ArrayList<>();
+    private List<NoteData> noteDatas = new ArrayList<>();
 
 
     public StateDiagramImporter(StateDiagram stateDiagram, Map<String, SemanticsData> semanticsMap) {
@@ -32,14 +35,14 @@ public class StateDiagramImporter extends DiagramImporter {
 
         for (Entity groupEntity : stateDiagram.groups()) {
             if (groupEntity.getParentContainer().isRoot()) {
-                extractGroup(groupEntity);
+                extractGroup(groupEntity, stateDatas, null);
             }
         }
 
         for (Entity entity : stateDiagram.leafs()) {
 
             if (entity.getParentContainer().isRoot()) {
-                extractLeaf(entity);
+                extractLeaf(entity, stateDatas, histories);
             }
         }
 
@@ -49,17 +52,13 @@ public class StateDiagramImporter extends DiagramImporter {
         }
     }
 
-    private void extractGroup(Entity groupEntity) {
+    private void extractGroup(Entity groupEntity, List<StateData> states, StateData state) {
         GroupType groupType = groupEntity.getGroupType();
         if (groupType == GroupType.STATE) {
 
-            for (Entity subState : groupEntity.leafs()) {
-                extractLeaf(subState);
-            }
+            List<StateData> subStates = new ArrayList<>();
+            List<History> historyList = new ArrayList<>();
 
-            for (Entity subGroup : groupEntity.groups()) {
-                extractGroup(subGroup);
-            }
             StringBuilder name = new StringBuilder(groupEntity.getName());
             name.append(" \n").append(removeBrackets(groupEntity.getBodier().getRawBody().toString()));
 
@@ -68,13 +67,42 @@ public class StateDiagramImporter extends DiagramImporter {
             stateData.setEnd(false);
             stateData.setStart(false);
 
+            for (Entity subState : groupEntity.leafs()) {
+                extractLeaf(subState, subStates, historyList);
+            }
+
+            for (Entity subGroup : groupEntity.groups()) {
+                extractGroup(subGroup, subStates, stateData);
+            }
+
+            StateData.StateRegion region = new StateData.StateRegion();
+            region.setSubStates(subStates);
+            region.setHistories(historyList);
+            stateData.getRegions().add(region);
+
             String key = name + "|State";
             boolean hasSemantics = getSemanticsMap().containsKey(key);
 
             if (hasSemantics) stateData.setSemantics(getSemanticsMap().get(key));
-            if (groupEntity.getParentContainer().isRoot()) {
-                stateDatas.add(stateData);
+            states.add(stateData);
+        } else if (groupType == GroupType.CONCURRENT_STATE) {
+            // we are inside a state, a subgroup of it.
+            // new region
+            List<StateData> subStates = new ArrayList<>();
+            List<History> historyList = new ArrayList<>();
+
+            StateData.StateRegion region = new StateData.StateRegion();
+
+            for (Entity subState : groupEntity.leafs()) {
+                extractLeaf(subState, subStates, historyList);
             }
+
+            for (Entity subGroup : groupEntity.groups()) {
+                extractGroup(subGroup, subStates, state);
+            }
+
+            region.setSubStates(subStates);
+            state.getRegions().add(region);
         }
     }
 
@@ -88,33 +116,50 @@ public class StateDiagramImporter extends DiagramImporter {
         return relationshipData;
     }
 
-    private void extractLeaf(Entity entity) {
+    private void extractLeaf(Entity entity, List<StateData> states, List<History> historyList) {
         LeafType leafType = entity.getLeafType();
 
 
         switch (leafType) {
             case STATE:
-                stateDatas.add(extractState(entity, false, false));
+                states.add(extractState(entity, false, false));
                 break;
             case CIRCLE_START:
-                stateDatas.add(extractState(entity, true, false));
+                states.add(extractState(entity, true, false));
                 break;
             case CIRCLE_END:
-                stateDatas.add(extractState(entity, false, true));
+                states.add(extractState(entity, false, true));
                 break;
             case STATE_FORK_JOIN:
                 forkJoins.add(extractForkJoin(entity));
                 break;
             case DEEP_HISTORY:
+                historyList.add(extractHistory(entity, true));
+                break;
+            case PSEUDO_STATE:
+                historyList.add(extractHistory(entity, false));
                 break;
             case STATE_CHOICE:
                 stateChoices.add(extractChoice(entity));
+                break;
+            case NOTE:
+                noteDatas.add(extractNote(entity));
                 break;
             default:
                 ApplicationManager.instance().getViewManager().showMessage("NOT EXTRACTED LEAF TYPE : " + leafType);
 
         }
 
+    }
+
+    private History extractHistory(Entity entity, boolean deep) {
+        StringBuilder name = new StringBuilder(entity.getName());
+        name.append(" \n").append(removeBrackets(entity.getBodier().getRawBody().toString()));
+
+        History history = new History(name.toString());
+        history.setUid(entity.getUid());
+        history.setDeep(deep);
+        return history;
     }
 
     private StateChoice extractChoice(Entity entity) {
@@ -125,9 +170,10 @@ public class StateDiagramImporter extends DiagramImporter {
     }
 
     private ForkJoin extractForkJoin(Entity entity) {
-
         ForkJoin forkJoin = new ForkJoin(entity.getName());
         forkJoin.setUid(entity.getUid());
+        List<String> stereo = extractStereotypes(entity, forkJoin);
+        if (stereo.contains("fork")) forkJoin.setFork(true);
         return forkJoin;
     }
 
@@ -163,5 +209,13 @@ public class StateDiagramImporter extends DiagramImporter {
 
     public List<RelationshipData> getRelationshipDatas() {
         return relationshipDatas;
+    }
+
+    public List<History> getHistories() {
+        return histories;
+    }
+
+    public List<NoteData> getNoteDatas() {
+        return noteDatas;
     }
 }

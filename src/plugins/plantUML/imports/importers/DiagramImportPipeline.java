@@ -333,7 +333,7 @@ public class DiagramImportPipeline {
 		importer.extract();
 
 		StateDiagramCreator creator = new StateDiagramCreator(diagramTitle);
-		creator.createDiagram(importer.getStateDatas(), importer.getStateChoices(), importer.getForkJoins(), importer.getRelationshipDatas());
+		creator.createDiagram(importer.getStateDatas(), importer.getStateChoices(), importer.getForkJoins(), importer.getRelationshipDatas(), importer.getHistories(), importer.getNoteDatas());
 	}
 
 	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle, List<FieldAndOperationInfo> fieldAndOperationInfos) {
