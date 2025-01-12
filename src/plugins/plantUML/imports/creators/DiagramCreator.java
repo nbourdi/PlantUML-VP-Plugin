@@ -132,6 +132,9 @@ public abstract class DiagramCreator {
 				diagramManager.createConnector(diagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT,
 						shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
 				return; // No further configuration for Containment
+			case "Transition":
+				relationshipElement = IModelElementFactory.instance().createTransition2();
+				break;
 			default:
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: unsupported type " + relationshipData.getType() + " of relationship was skipped.");

@@ -1,5 +1,7 @@
 package plugins.plantUML.imports.importers;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +26,7 @@ import com.vp.plugin.model.factory.IModelElementFactory;
 import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.UmlDiagram;
 import net.sourceforge.plantuml.abel.Entity;
+import net.sourceforge.plantuml.activitydiagram.ActivityDiagram;
 import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
 import net.sourceforge.plantuml.core.Diagram;
@@ -32,14 +35,11 @@ import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.jsondiagram.JsonDiagram;
 import net.sourceforge.plantuml.sequencediagram.SequenceDiagram;
 import net.sourceforge.plantuml.skin.UmlDiagramType;
+import net.sourceforge.plantuml.statediagram.StateDiagram;
 import net.sourceforge.plantuml.syntax.SyntaxChecker;
 import net.sourceforge.plantuml.syntax.SyntaxResult;
-import plugins.plantUML.imports.creators.ClassDiagramCreator;
-import plugins.plantUML.imports.creators.DescriptionDiagramCreator;
-import plugins.plantUML.imports.creators.SequenceDiagramCreator;
-import plugins.plantUML.models.Reference;
-import plugins.plantUML.models.SemanticsData;
-import plugins.plantUML.models.SubDiagramData;
+import plugins.plantUML.imports.creators.*;
+import plugins.plantUML.models.*;
 
 public class DiagramImportPipeline {
 
@@ -168,8 +168,26 @@ public class DiagramImportPipeline {
 	public void importFromSource(File sourceFile) {
 		try {
 			List<String> lines = Files.readAllLines(sourceFile.toPath());
-			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
+			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
 
+			List<FieldAndOperationInfo> fieldAndOperationsList = null;
+
+			// Check if "allowmixing" is present
+			if (source.contains("allowmixing")) {
+				int jsonStartIndex = source.indexOf("json");
+				int endumlIndex = source.lastIndexOf("@enduml");
+
+				if (jsonStartIndex != -1 && endumlIndex != -1) {
+					String json = extractJson(source.substring(jsonStartIndex));
+
+					source = source.substring(0, jsonStartIndex).trim() + "\n" + source.substring(endumlIndex).trim();
+					fieldAndOperationsList = deserializeJsonToFieldAndOperations(json);
+				}
+			}
+
+			// Check for syntax errors
+
+			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
 			if (result.isError()) {
 				// Display syntax errors
 				StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
@@ -184,9 +202,9 @@ public class DiagramImportPipeline {
 				return;
 			}
 
-			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
+			System.out.println(source);
+			// Parse the UML diagram
 			SourceStringReader reader = new SourceStringReader(source);
-
 			Diagram diagram = reader.getBlocks().get(0).getDiagram();
 			UmlDiagramType umlDiagramType;
 
@@ -194,11 +212,7 @@ public class DiagramImportPipeline {
 				UmlDiagram umlDiagram = (UmlDiagram) diagram;
 				umlDiagramType = umlDiagram.getUmlDiagramType();
 
-				/*
-				 * Check for the keyword "component" to reclassify as DESCRIPTION.
-				 * Components are allowed in Puml class diagrams and auto classifier prioritizes
-				 * "class" assumption over description but components aren't in VP class.
-				 */
+				// Handle auto-classification for components
 				if (umlDiagramType == UmlDiagramType.CLASS && source.contains("component")) {
 					umlDiagramType = UmlDiagramType.DESCRIPTION;
 				}
@@ -215,25 +229,32 @@ public class DiagramImportPipeline {
 				diagramTitle = diagramTitle.substring(0, diagramTitle.lastIndexOf('.'));
 			}
 
+			// Handle UML diagram based on type
 			switch (umlDiagramType) {
 				case CLASS:
 					handleClassDiagram((ClassDiagram) diagram, diagramTitle);
 					break;
 
 				case DESCRIPTION:
-					// Again, to tackle unwanted auto classification as "Class", cast to
-					// ClassDiagram and DescriptionDiagram superclass AbstractEntityDiagram instead of DescriptionDiagram.
-					handleDescriptionDiagram((AbstractEntityDiagram) diagram, diagramTitle);
+					// Pass the extracted FieldAndOperations list to DescriptionDiagramImporter
+					handleDescriptionDiagram((AbstractEntityDiagram) diagram, diagramTitle, fieldAndOperationsList);
 					break;
 
 				case SEQUENCE:
 					handleSequenceDiagram((SequenceDiagram) diagram, diagramTitle);
 					break;
 
+				case ACTIVITY:
+					handleActivityDiagram((ActivityDiagram) diagram, diagramTitle);
+					break;
+				case STATE:
+					handleStateDiagram((StateDiagram) diagram, diagramTitle);
+					break;
 				default:
 					ApplicationManager.instance().getViewManager().showMessageDialog(
 							ApplicationManager.instance().getViewManager().getRootFrame(),
-							"Unsupported diagram type: " + umlDiagramType.name());
+							"Unsupported diagram type: " + umlDiagramType.name()
+					);
 			}
 
 		} catch (IOException e) {
@@ -243,6 +264,47 @@ public class DiagramImportPipeline {
 			);
 		}
 	}
+
+
+
+
+	/**
+	 * Extracts the JSON block from the source string.
+	 */
+	private String extractJson(String source) {
+		int jsonStart = source.indexOf("{"); // Locate the first '{' after "json"
+		int jsonEnd = source.lastIndexOf("}"); // Locate the last '}'
+		if (jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart) {
+			throw new IllegalArgumentException("Invalid JSON block in source.");
+		}
+		return source.substring(jsonStart, jsonEnd + 1); // Extract and return the JSON block
+	}
+
+
+	/**
+	 * Deserializes JSON to a list of FieldAndOperations objects.
+	 */
+	private List<FieldAndOperationInfo> deserializeJsonToFieldAndOperations(String json) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+
+			// Check if JSON starts with '{' and adjust deserialization accordingly
+			if (json.trim().startsWith("{")) {
+				FieldAndOperationWrapper wrapper = objectMapper.readValue(json, FieldAndOperationWrapper.class);
+				return wrapper.getElements();
+			} else if (json.trim().startsWith("[")) {
+				return objectMapper.readValue(json, new TypeReference<List<FieldAndOperationInfo>>() {});
+			} else {
+				throw new RuntimeException("Invalid JSON format for FieldAndOperations");
+			}
+
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException("Error processing JSON: " + e.getMessage(), e);
+		} catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
 	private void handleClassDiagram(ClassDiagram classDiagram, String diagramTitle) {
 		ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram, semanticsMap);
@@ -257,12 +319,34 @@ public class DiagramImportPipeline {
 				importer.getAssociationPoints());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
 	}
+	private void handleActivityDiagram(ActivityDiagram activityDiagram, String diagramTitle) {
+//		ActivityDiagramImporter importer = new ActivityDiagramImporter(activityDiagram, semanticsMap);
+//		importer.extract();
+//
+//		ActivityDiagramCreator creator = new ActivityDiagramCreator(diagramTitle);
+//		// creator.createDiagram(importer.get...)
+//		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+	}
 
-	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle) {
+	private void handleStateDiagram(StateDiagram diagram, String diagramTitle) {
+		StateDiagramImporter importer = new StateDiagramImporter(diagram, semanticsMap);
+		importer.extract();
+
+		StateDiagramCreator creator = new StateDiagramCreator(diagramTitle);
+		creator.createDiagram(importer.getStateDatas(), importer.getStateChoices(), importer.getForkJoins(), importer.getRelationshipDatas());
+	}
+
+	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle, List<FieldAndOperationInfo> fieldAndOperationInfos) {
 		String specificType = determineDiagramType(descriptionDiagram);
 
-		DescriptionDiagramImporter importer = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
+		DescriptionDiagramImporter importer = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap, fieldAndOperationInfos);
 		importer.extract();
+		for (FieldAndOperationInfo fieldAndOperations : fieldAndOperationInfos) {
+			System.out.println("Element Name: " + fieldAndOperations.getElementName());
+			System.out.println("Element Type: " + fieldAndOperations.getElementType());
+			System.out.println("Operations: " + fieldAndOperations.getOperations());
+			System.out.println("Attributes: " + fieldAndOperations.getAttributes());
+		}
 
 		DescriptionDiagramCreator creator = new DescriptionDiagramCreator(diagramTitle, specificType);
 		creator.createDiagram(importer.getComponentDatas(),

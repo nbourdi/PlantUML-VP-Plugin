@@ -15,6 +15,8 @@ public class ComponentData extends BaseWithSemanticsData {
 	private List<PortData> ports;
 	private boolean isNodeComponent; // components and nodes are basically the same.
 	private List<ArtifactData> artifacts;
+	private List<AttributeData> attributes;
+	private List<OperationData> operations;
 
 
 	public ComponentData(String name, boolean isInPackage) {
@@ -86,6 +88,22 @@ public class ComponentData extends BaseWithSemanticsData {
 
     public void setNodeComponent(boolean nodeComponent) {
         isNodeComponent = nodeComponent;
+    }
+
+    public List<AttributeData> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(List<AttributeData> attributes) {
+        this.attributes = attributes;
+    }
+
+    public List<OperationData> getOperations() {
+        return operations;
+    }
+
+    public void setOperations(List<OperationData> operations) {
+        this.operations = operations;
     }
 
     public static class PortData {

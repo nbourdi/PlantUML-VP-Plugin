@@ -7,6 +7,8 @@ public class AttributeData {
     private String initialValue;
     private boolean isStatic;
 
+    public AttributeData() {} // for json
+
     public AttributeData(String visibility, String name, String type, String initValue, String scope) {
         this.setName(name);
         this.visibility = visibility;

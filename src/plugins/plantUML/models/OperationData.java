@@ -12,7 +12,8 @@ public class OperationData {
     private boolean isStatic;
     private List<Parameter> parameters = new ArrayList<>();
 
-	 
+	 public OperationData() {}
+
 	 public OperationData(String visibility, String name, String returnType, boolean isAbstract, List<Parameter> parameters, String scope) {
 	     this.setName(name);
 	     this.visibility = visibility;
@@ -103,4 +104,8 @@ public class OperationData {
 	public boolean isStatic() {
 		return this.isStatic;
 	}
+
+    public void setStatic(boolean aStatic) {
+        isStatic = aStatic;
+    }
 }
