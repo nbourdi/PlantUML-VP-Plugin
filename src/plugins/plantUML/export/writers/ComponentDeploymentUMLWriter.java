@@ -16,23 +16,21 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private List<PackageData> packages;
 	private List<RelationshipData> relationships;
 	private List<ArtifactData> artifacts;
-	private List<FieldAndOperationInfo> jsonInfo;
 
-	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships, List<FieldAndOperationInfo> jsonInfo) {
+	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships) {
 		super(notes);
 		this.components = components;
 		this.interfaces = interfaces;
 		this.artifacts = artifacts;
 		this.packages = packages;
 		this.relationships = relationships;
-		this.jsonInfo = jsonInfo;
 	}
 
 	@Override
 	public void writeToFile(File file) throws IOException {
 		StringBuilder plantUMLContent = new StringBuilder("@startuml\n");
 
-		// Allowmixing parameter to allow for embedded json
+		// Allowmixing parameter to allow for class-type interfaces
 		plantUMLContent.append("allowmixing\n");
 
 		for (ComponentData componentData : components) {
@@ -60,8 +58,6 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		for (RelationshipData relationship : relationships) {
 			plantUMLContent.append(writeRelationship(relationship));
 		}
-		if (!jsonInfo.isEmpty())
-			plantUMLContent.append(PlantJSONWriter.writeEmbeddedComponentInfo(jsonInfo));
 
 		plantUMLContent.append("@enduml");
 		try (FileWriter writer = new FileWriter(file)) {
@@ -110,18 +106,33 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private String writeInterface(ClassData interfaceData, String indent) {
 		StringBuilder interfaceString = new StringBuilder();
 		String name = formatName(interfaceData.getName());
-		interfaceString.append(indent);
-		interfaceString.append("() ").append(name).append(" as ").append(formatAlias(interfaceData.getName()));
+		String aliasDeclaration = formatAlias(interfaceData.getName()).equals(interfaceData.getName()) ? "" : (" as " + formatAlias(interfaceData.getName()));
 
-		List<String> filteredStereotypes = interfaceData.getStereotypes().stream()
-				.filter(stereotype -> !"interface".equalsIgnoreCase(stereotype)) // Skip "interface"
-				.collect(Collectors.toList());
+		interfaceString.append(indent);
+		boolean hasAttrAndOps = (!interfaceData.getAttributes().isEmpty() || !interfaceData.getOperations().isEmpty());
+		List<String> filteredStereotypes;
+		if (hasAttrAndOps) {
+			interfaceString.append("class ");
+			filteredStereotypes = interfaceData.getStereotypes();
+		} else {
+			interfaceString.append("() ");
+			filteredStereotypes = interfaceData.getStereotypes().stream()
+					.filter(stereotype -> !"interface".equalsIgnoreCase(stereotype)) // Skip "interface"
+					.collect(Collectors.toList());
+		}
+
+		interfaceString.append(name).append(aliasDeclaration);
 
 		if (!filteredStereotypes.isEmpty()) {
 			String stereotypesString = filteredStereotypes.stream()
 					.map(stereotype -> "<<" + stereotype + ">>")
 					.collect(Collectors.joining(", "));
 			interfaceString.append(" ").append(stereotypesString);
+		}
+		if (hasAttrAndOps) {
+			interfaceString.append(" {\n");
+			writeAttributesAndOperations(interfaceData.getAttributes(), interfaceData.getOperations(), indent, interfaceString);
+			interfaceString.append(indent).append("}\n");
 		}
 		interfaceString.append("\n");
 		return interfaceString.toString();
@@ -133,6 +144,13 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		String name = formatName(componentData.getName()) ;
 		String aliasDeclaration = formatAlias(componentData.getName()).equals(componentData.getName()) ? "" : (" as " + formatAlias(componentData.getName()));
 
+		List<AttributeData> attributeData = componentData.getAttributes();
+		List<OperationData> operationData = componentData.getOperations();
+		boolean hasOpsAndAttrs = !attributeData.isEmpty() || !operationData.isEmpty();
+		if (hasOpsAndAttrs) {
+			// we will need to create a package to contain the component and the interface it will implement
+			componentString.append("package ").append(name).append(" {\n");
+		}
 		componentString.append(indent);
 
 		if (componentData.isNodeComponent()) {
@@ -184,6 +202,27 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		
 		componentString.append(indent).append("}");
 		componentString.append("\n");
+
+		if (hasOpsAndAttrs) {
+			componentString.append(writeImplInterface(componentData, indent));
+			componentString.append("}\n");
+		}
 		return componentString.toString();
+	}
+
+	private String writeImplInterface(ComponentData componentData, String indent) {
+		String name = formatName("I" + componentData.getName());
+		StringBuilder interfaceString = new StringBuilder();
+		String aliasDeclaration = formatAlias(componentData.getName()).equals(componentData.getName()) ? "" : (" as I" + formatAlias(componentData.getName()));
+
+		interfaceString.append(indent).append("class ").append(name).append(aliasDeclaration).append(" <<interface>>");
+		interfaceString.append(" {\n");
+
+		writeAttributesAndOperations(componentData.getAttributes(), componentData.getOperations(), indent, interfaceString);
+		interfaceString.append(indent).append("}\n");
+
+		interfaceString.append(indent).append(formatAlias(componentData.getName())).append(" ..|> ").append("I" + formatAlias(componentData.getName()));
+		interfaceString.append("\n");
+		return interfaceString.toString();
 	}
 }

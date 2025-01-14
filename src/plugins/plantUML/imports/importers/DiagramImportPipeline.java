@@ -170,23 +170,7 @@ public class DiagramImportPipeline {
 			List<String> lines = Files.readAllLines(sourceFile.toPath());
 			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
 
-			List<FieldAndOperationInfo> fieldAndOperationsList = null;
-
-			// Check if "allowmixing" is present
-			if (source.contains("allowmixing")) {
-				int jsonStartIndex = source.indexOf("json");
-				int endumlIndex = source.lastIndexOf("@enduml");
-
-				if (jsonStartIndex != -1 && endumlIndex != -1) {
-					String json = extractJson(source.substring(jsonStartIndex));
-
-					source = source.substring(0, jsonStartIndex).trim() + "\n" + source.substring(endumlIndex).trim();
-					fieldAndOperationsList = deserializeJsonToFieldAndOperations(json);
-				}
-			}
-
 			// Check for syntax errors
-
 			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
 			if (result.isError()) {
 				// Display syntax errors
@@ -202,8 +186,6 @@ public class DiagramImportPipeline {
 				return;
 			}
 
-			System.out.println(source);
-			// Parse the UML diagram
 			SourceStringReader reader = new SourceStringReader(source);
 			Diagram diagram = reader.getBlocks().get(0).getDiagram();
 			UmlDiagramType umlDiagramType;
@@ -237,7 +219,7 @@ public class DiagramImportPipeline {
 
 				case DESCRIPTION:
 					// Pass the extracted FieldAndOperations list to DescriptionDiagramImporter
-					handleDescriptionDiagram((AbstractEntityDiagram) diagram, diagramTitle, fieldAndOperationsList);
+					handleDescriptionDiagram((AbstractEntityDiagram) diagram, diagramTitle);
 					break;
 
 				case SEQUENCE:
@@ -281,31 +263,6 @@ public class DiagramImportPipeline {
 	}
 
 
-	/**
-	 * Deserializes JSON to a list of FieldAndOperations objects.
-	 */
-	private List<FieldAndOperationInfo> deserializeJsonToFieldAndOperations(String json) {
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-
-			// Check if JSON starts with '{' and adjust deserialization accordingly
-			if (json.trim().startsWith("{")) {
-				FieldAndOperationWrapper wrapper = objectMapper.readValue(json, FieldAndOperationWrapper.class);
-				return wrapper.getElements();
-			} else if (json.trim().startsWith("[")) {
-				return objectMapper.readValue(json, new TypeReference<List<FieldAndOperationInfo>>() {});
-			} else {
-				throw new RuntimeException("Invalid JSON format for FieldAndOperations");
-			}
-
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException("Error processing JSON: " + e.getMessage(), e);
-		} catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
 	private void handleClassDiagram(ClassDiagram classDiagram, String diagramTitle) {
 		ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram, semanticsMap);
 		importer.extract();
@@ -336,17 +293,11 @@ public class DiagramImportPipeline {
 		creator.createDiagram(importer.getStateDatas(), importer.getStateChoices(), importer.getForkJoins(), importer.getRelationshipDatas(), importer.getHistories(), importer.getNoteDatas());
 	}
 
-	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle, List<FieldAndOperationInfo> fieldAndOperationInfos) {
+	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle) {
 		String specificType = determineDiagramType(descriptionDiagram);
 
-		DescriptionDiagramImporter importer = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap, fieldAndOperationInfos);
+		DescriptionDiagramImporter importer = new DescriptionDiagramImporter(descriptionDiagram, semanticsMap);
 		importer.extract();
-		for (FieldAndOperationInfo fieldAndOperations : fieldAndOperationInfos) {
-			System.out.println("Element Name: " + fieldAndOperations.getElementName());
-			System.out.println("Element Type: " + fieldAndOperations.getElementType());
-			System.out.println("Operations: " + fieldAndOperations.getOperations());
-			System.out.println("Attributes: " + fieldAndOperations.getAttributes());
-		}
 
 		DescriptionDiagramCreator creator = new DescriptionDiagramCreator(diagramTitle, specificType);
 		creator.createDiagram(importer.getComponentDatas(),

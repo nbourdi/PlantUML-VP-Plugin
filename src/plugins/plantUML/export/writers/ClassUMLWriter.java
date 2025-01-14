@@ -141,85 +141,15 @@ public class ClassUMLWriter extends PlantUMLWriter {
     	classString.append(" {\n");
 
         // Attributes
-        for (AttributeData attribute : classData.getAttributes()) {
-        	String visibilityChar = writeVisibility(attribute.getVisibility());
-        	
-        	classString.append(indent).append("\t").append(visibilityChar).append(" ");
-        	if (attribute.isStatic()) classString.append("{static} ");
-        	classString.append(attribute.getName());
-        	
-        	if (attribute.getType() != null) {
-        		classString.append(": ").append(attribute.getType());
-        	}
-        	if (attribute.getInitialValue() != null) {
-        		classString.append(" = ").append(attribute.getInitialValue());
-        	}
-            classString.append("\n");
-        }
+		writeAttributesAndOperations(classData.getAttributes(), classData.getOperations(), indent, classString);
 
-        // Add operations
-        for (OperationData operation : classData.getOperations()) {
-            String visibilityChar = writeVisibility(operation.getVisibility());
-
-            classString.append(indent).append("\t").append(visibilityChar);
-            
-            if (operation.isAbstract()) classString.append("{abstract} ");
-            
-        	if (operation.isStatic()) classString.append("{static} ");
-        	
-            classString.append(operation.getName()).append("(");
-
-            // Add parameters
-            List<OperationData.Parameter> parameters = operation.getParameters();
-            for (int i = 0; i < parameters.size(); i++) {
-                OperationData.Parameter param = parameters.get(i);
-
-                classString.append(param.getName());
-
-                if (param.getType() != null && !param.getType().isEmpty()) {
-                    classString.append(": ").append(param.getType());
-                }
-
-                if (param.getDefaultValue() != null && !param.getDefaultValue().isEmpty()) {
-                    classString.append(" = ").append(param.getDefaultValue());
-                }
-
-                if (i < parameters.size() - 1) {
-                    classString.append(", ");
-                }
-            }
-            
-            classString.append(")");
-
-            if (operation.getReturnType() != null && !operation.getReturnType().isEmpty()) {
-                classString.append(": ").append(operation.getReturnType());
-            }
-
-            classString.append("\n");
-        }
-
-        classString.append(indent + "}\n");
+		classString.append(indent).append("}\n");
         return classString.toString();
     }
 
-	private String writeVisibility(String visibility) {
-    	String visibilityCharacter = "";
-    	switch (visibility) {
-    		case "private": 
-    			visibilityCharacter = "-";
-    			break;
-    		case "protected": 
-    			visibilityCharacter = "#";
-    			break;
-    		case 
-	    		"package": visibilityCharacter = "~";
-	    		break;
-    		case "public": 
-    			visibilityCharacter = "+";
-    			break;    	
-    	}
-    	return visibilityCharacter;
-    }
+
+
+
 
 
 	private String writeRelationship(RelationshipData relationship) {

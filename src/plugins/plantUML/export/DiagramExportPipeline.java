@@ -59,8 +59,7 @@ public class DiagramExportPipeline {
 						comde.getExportedInterfaces(),
 						comde.getExportedArtifacts(),
 						comde.getExportedPackages(),
-						comde.getRelationshipDatas(),
-						comde.getFieldAndOperationInfo()
+						comde.getRelationshipDatas()
 						);
 				componentWriter.writeToFile(outputFile);
 

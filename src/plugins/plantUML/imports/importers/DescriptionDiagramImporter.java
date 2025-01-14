@@ -31,32 +31,14 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
     private List<ActorData> actorDatas = new ArrayList<>();
     private List<UseCaseData> useCaseDatas = new ArrayList<>();
-    private List<FieldAndOperationInfo> fieldAndOperationInfos = null;
-    private Map<String, FieldAndOperationInfo> fieldAndOperationsMap; // Simplified map with key as "elementName|elementType"
 
 
-    public DescriptionDiagramImporter(AbstractEntityDiagram descriptionDiagram, Map<String, SemanticsData> semanticsMap, List<FieldAndOperationInfo> fieldAndOperationInfos) {
+    public DescriptionDiagramImporter(AbstractEntityDiagram descriptionDiagram, Map<String, SemanticsData> semanticsMap) {
         super(semanticsMap);
         this.descriptionDiagram = descriptionDiagram;
-        this.fieldAndOperationInfos = fieldAndOperationInfos;
-        this.fieldAndOperationsMap = createFieldAndOperationsMap();
     }
 
-    private Map<String, FieldAndOperationInfo> createFieldAndOperationsMap() {
-        Map<String, FieldAndOperationInfo> map = new HashMap<>();
-        if (fieldAndOperationInfos != null) {
-            for (FieldAndOperationInfo info : fieldAndOperationInfos) {
-                String key = info.getElementName() + "|" + info.getElementType();
-                map.put(key, info);
-            }
-        }
-        return map;
-    }
 
-    public FieldAndOperationInfo getFieldAndOperationInfo(String elementName, String elementType) {
-        String key = elementName + "|" + elementType;
-        return fieldAndOperationsMap.get(key);
-    }
 
     public void extract() {
 
@@ -288,11 +270,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
 
         interfaceData.setUid(entity.getUid());
 
-        FieldAndOperationInfo info = getFieldAndOperationInfo(name, "Interface");
-        if (info != null) {
-            interfaceData.setAttributes(info.getAttributes());
-            interfaceData.setOperations(info.getOperations());
-        }
         return interfaceData;
     }
 
@@ -312,11 +289,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         }
 
         componentData.setUid(entity.getUid());
-        FieldAndOperationInfo info = getFieldAndOperationInfo(name, "Component");
-        if (info != null) {
-            componentData.setAttributes(info.getAttributes());
-            componentData.setOperations(info.getOperations());
-        }
 
         for (Entity residentGroup : entity.groups()) {
             extractGroup(residentGroup, componentData.getResidents(), componentData.getPackages());

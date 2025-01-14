@@ -25,7 +25,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	List<NoteData> exportedNotes = new ArrayList<>();
 	List<PackageData> exportedPackages = new ArrayList<PackageData>();
 	List<PortData> allExportedPorts = new ArrayList<>();
-	List<FieldAndOperationInfo> fieldAndOperationInfo = new ArrayList<>();
 
 	public ComponentDeploymentDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
@@ -263,12 +262,11 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		interfaceData.setDescription(interfaceModel.getDescription());
 		interfaceData.setStereotypes(extractStereotypes(interfaceModel));
 
-		addSemantics(
-				"Interface",
-				interfaceData.getName(),
-				interfaceModel::attributeIterator,
-				interfaceModel::operationIterator
-		);
+		List<AttributeData> attributes = extractAttributes(interfaceModel::attributeIterator);
+		List<OperationData> operations = extractOperations(interfaceModel::operationIterator);
+		interfaceData.setAttributes(attributes);
+		interfaceData.setOperations(operations);
+
 		addSemanticsIfExist(interfaceModel, interfaceData);
 		
 		exportedInterfaces.add(interfaceData);
@@ -303,7 +301,9 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			allExportedPorts.add(portData);
 		}
 
-		addSemantics("Component", componentData.getName(), componentModel::attributeIterator, componentModel::operationIterator);
+		componentData.setAttributes(extractAttributes(componentModel::attributeIterator));
+		componentData.setOperations(extractOperations(componentModel::operationIterator));
+
 		addSemanticsIfExist(componentModel, componentData);
 		
 		exportedComponents.add(componentData);
@@ -313,25 +313,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			parentComponentData.getResidents().add(componentData);
 	}
 
-
-	private void addSemantics(
-			String elementType,
-			String elementName,
-			Supplier<Iterator> attributeIteratorSupplier,
-			Supplier<Iterator> operationIteratorSupplier
-	) {
-		List<OperationData> operations = extractOperations(operationIteratorSupplier);
-		List<AttributeData> attributes = extractAttributes(attributeIteratorSupplier);
-
-		if (!operations.isEmpty() || !attributes.isEmpty()) {
-			FieldAndOperationInfo semantics = new FieldAndOperationInfo();
-			semantics.setElementType(elementType);
-			semantics.setElementName(elementName);
-			semantics.setAttributes(attributes);
-			semantics.setOperations(operations);
-			fieldAndOperationInfo.add(semantics);
-		}
-	}
 
 	private List<AttributeData> extractAttributes(Supplier<Iterator> attributeIteratorSupplier) {
 		List<AttributeData> attributes = new ArrayList<>();
@@ -385,7 +366,4 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		return exportedArtifacts;
 	}
 
-	public List<FieldAndOperationInfo> getFieldAndOperationInfo() {
-		return fieldAndOperationInfo;
-	}
 }
