@@ -89,7 +89,7 @@ public class StateUMLWriter extends PlantUMLWriter {
         String alias = stateData.getAlias();
 
         String name = stateData.getName();
-        stateString.append(indent).append("state ").append(alias);
+        stateString.append(indent).append("state \" \" as ").append(alias);
 
         if (isStart) {
             return stateString.append(" <<start>>\n").toString();
@@ -110,7 +110,15 @@ public class StateUMLWriter extends PlantUMLWriter {
             name = name.replace("\n", "\\n");
         }
 
+        stateString.append(writeRegions(stateData, indent));
+        stateString.append(" : ").append(name);
+        stateString.append("\n");
+        return  stateString.toString();
 
+    }
+
+    private String writeRegions(StateData stateData, String indent) {
+        StringBuilder stateString = new StringBuilder();
         if (!stateData.getRegions().isEmpty()) {
             stateString.append( " {\n");
 
@@ -124,6 +132,10 @@ public class StateUMLWriter extends PlantUMLWriter {
                         stateString.append(writeState(stateInRegion, indent + "\t"));
                     }
                 }
+
+                for (RelationshipData transition : region.getRegTransitions()) {
+                    stateString.append(indent).append("\t").append(transition.toExportFormat());
+                }
                 // concurrent if there's more than one region
                 if (i < regions.size() - 1) {
                     stateString.append(indent).append("\t").append("--\n");
@@ -131,13 +143,8 @@ public class StateUMLWriter extends PlantUMLWriter {
             }
 
             stateString.append("}\n");
-            stateString.append(indent).append("state ").append(alias);
+            stateString.append(indent).append("state ").append(stateData.getAlias());
         }
-        stateString.append(" : ").append(name);
-
-        stateString.append("\n");
-
-        return  stateString.toString();
-
+        return stateString.toString();
     }
 }

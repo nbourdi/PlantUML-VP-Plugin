@@ -4,7 +4,6 @@ import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
-import org.apache.commons.lang.ObjectUtils;
 import plugins.plantUML.models.*;
 
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ import java.util.Objects;
 
 public class StateDiagramExporter extends DiagramExporter {
 
-    private IDiagramUIModel diagram;
+    private final IDiagramUIModel diagram;
     List<NoteData> exportedNotes = new ArrayList<>();
     List<StateData> stateDatas = new ArrayList<>();
     List<History> histories = new ArrayList<>();
@@ -47,7 +46,7 @@ public class StateDiagramExporter extends DiagramExporter {
 
             if (modelElement instanceof IState2) {
                 if (isRootLevel(modelElement)) {
-                    extractState((IState2) modelElement, null);
+                   extractState((IState2) modelElement, null);
                 }
             } else if (modelElement instanceof IInitialPseudoState) {
                 if (isRootLevel(modelElement)) {
@@ -65,8 +64,7 @@ public class StateDiagramExporter extends DiagramExporter {
                 if (isRootLevel(modelElement)) {
                     extractHistory(modelElement, null);
                 }
-            }
-            else if (modelElement instanceof  IForkNode || modelElement instanceof IJoinNode) {
+            } else if (modelElement instanceof  IFork || modelElement instanceof IJoin) {
                 extractForkJoin(modelElement);
             } else if (modelElement instanceof INOTE) {
                 extractNote((INOTE) modelElement);
@@ -76,14 +74,14 @@ public class StateDiagramExporter extends DiagramExporter {
                 allExportedElements.remove(modelElement);
                 ApplicationManager.instance().getViewManager()
                         .showMessage("Warning: diagram element " + modelElement.getName()
-                                + " is of unsupported type and will not be processed ... ");
+                                + " is of unsupported type " + modelElement.getModelType() +" and will not be processed ... ");
             }
         }
 
         for (IRelationship relationship : deferredRelationships) {
             extractTransition(relationship);
         }
-
+        filterAndExportTransitions();
         exportedNotes = getNotes();
     }
 
@@ -91,7 +89,7 @@ public class StateDiagramExporter extends DiagramExporter {
         History history = new History(modelElement.getName());
         history.setDeep(modelElement instanceof IDeepHistory);
         history.setId(modelElement.getId());
-        history.setInState(modelElement.getParent() instanceof IRegion);
+        history.setInState(modelElement.getParent() instanceof IRegion || regionData != null);
         if (regionData != null) {
             regionData.getSubStates().add(history);
         }
@@ -99,6 +97,7 @@ public class StateDiagramExporter extends DiagramExporter {
     }
 
     private void extractForkJoin(IModelElement modelElement) {
+        ApplicationManager.instance().getViewManager().showMessage("extracting forkjoin ===");
         String id = modelElement.getId();
 
         ForkJoin forkJoin = new ForkJoin(modelElement.getName());
@@ -139,16 +138,8 @@ public class StateDiagramExporter extends DiagramExporter {
             return;
         }
 
-        if (source instanceof IState2 || source instanceof IInitialPseudoState || source instanceof IFinalState2 || source instanceof IChoice) {
-            sourceName = getStateAliasById(source.getId());
-        } else if (source instanceof INOTE) {
-            sourceName = getNoteAliasById(source.getId());
-        }
-        if (target instanceof IState2 || target instanceof IInitialPseudoState || target instanceof IFinalState2 || target instanceof IChoice) {
-            targetName = getStateAliasById(target.getId());
-        } else if (target instanceof INOTE) {
-            targetName = getNoteAliasById(target.getId());
-        }
+        sourceName = getAliasByType(source, sourceName);
+        targetName = getAliasByType(target, targetName);
 
         ApplicationManager.instance().getViewManager()
                 .showMessage("Relationship from: " + sourceName + " to: " + targetName);
@@ -161,7 +152,40 @@ public class StateDiagramExporter extends DiagramExporter {
 
         if (Objects.equals(relationship.getModelType(), "Anchor")) return;
         RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(), relationship.getName());
+
+        StateData sourceState = findStateById(source.getId());
+        StateData targetState = findStateById(target.getId());
+        for (StateData state : stateDatas) {
+            for (StateData.StateRegion region : state.getRegions()) {
+                if (region.getSubStates().contains(sourceState) && region.getSubStates().contains(targetState)) {
+                    region.getRegTransitions().add(relationshipData);
+                    return;
+                }
+            }
+        }
+
         transitions.add(relationshipData);
+
+    }
+    private String getAliasByType(IModelElement element, String original) {
+        if (element instanceof IState2 || element instanceof IInitialPseudoState ||
+                element instanceof IFinalState2 || element instanceof IChoice ||
+                element instanceof IDeepHistory || element instanceof IShallowHistory ||
+                element instanceof IFork || element instanceof IJoin) {
+            return getStateAliasById(element.getId());
+        } else if (element instanceof INOTE) {
+            return getNoteAliasById(element.getId());
+        }
+        return original;
+    }
+
+    private StateData findStateById(String id) {
+        for (StateData stateData : stateDatas) {
+            if (stateData.getId().equals(id)) {
+                return stateData;
+            }
+        }
+        return null;
     }
 
     private String getStateAliasById(String id) {
@@ -170,9 +194,22 @@ public class StateDiagramExporter extends DiagramExporter {
                 return stateData.getAlias();
             }
         }
-        for (StateChoice stateChoice :choices) {
+
+        for (StateChoice stateChoice : choices) {
             if (stateChoice.getId().equals(id)) {
                 return stateChoice.getAlias();
+            }
+        }
+
+        for (StateData hist : histories) {
+            if (hist.getId().equals(id)) {
+                return hist.getAlias();
+            }
+        }
+
+        for (ForkJoin forkJoin : forkJoins) {
+            if (forkJoin.getId().equals(id)) {
+                return forkJoin.getAlias();
             }
         }
         return null;
@@ -241,7 +278,7 @@ public class StateDiagramExporter extends DiagramExporter {
                 extractHistory(hist, regionData);
             }
 
-            Iterator histIter2 = regionModel.deepHistoryIterator();
+            Iterator histIter2 = regionModel.shallowHistoryIterator();
             while (histIter2.hasNext()) {
                 IDeepHistory hist = (IDeepHistory) histIter2.next();
                 extractHistory(hist, regionData);
@@ -254,6 +291,85 @@ public class StateDiagramExporter extends DiagramExporter {
         stateDatas.add(stateData);
     }
 
+    private void filterAndExportTransitions() {
+        List<RelationshipData> validTransitions = new ArrayList<>();
+
+        for (RelationshipData transition : transitions) {
+            StateData sourceState = findStateByAlias(transition.getSource());
+            StateData targetState = findStateByAlias(transition.getTarget());
+
+            if (sourceState == null || targetState == null) {
+                validTransitions.add(transition);
+                continue;
+            }
+
+            // Get regions for both states
+            StateData.StateRegion sourceRegion = findRegionContainingState(sourceState);
+            StateData.StateRegion targetRegion = findRegionContainingState(targetState);
+
+            if (sourceRegion == targetRegion) {
+                // Valid if both are in the same region
+                validTransitions.add(transition);
+            } else if (sourceRegion == null || targetRegion == null) {
+                // Valid if one state is not in a region and the other belongs to a single-region state
+                StateData containingState = findStateContainingRegion(sourceRegion != null ? sourceRegion : targetRegion);
+                if (containingState == null || containingState.getRegions().size() == 1) {
+                    validTransitions.add(transition);
+                } else {
+                    outputLostTransitionWarning(transition, "One state is not in a region, but the other belongs to a multi-region state.");
+                }
+            } else {
+                // Check if both regions belong to a single-region state
+                StateData sourceContainingState = findStateContainingRegion(sourceRegion);
+                StateData targetContainingState = findStateContainingRegion(targetRegion);
+
+                if (sourceContainingState != null && sourceContainingState == targetContainingState
+                        && sourceContainingState.getRegions().size() == 1) {
+                    validTransitions.add(transition);
+                } else {
+                    outputLostTransitionWarning(transition, "States are in different regions of a multi-region state.");
+                }
+            }
+        }
+
+        // Replace original transitions with valid ones
+        transitions = validTransitions;
+    }
+
+    private void outputLostTransitionWarning(RelationshipData transition, String reason) {
+        ApplicationManager.instance().getViewManager()
+                .showMessage("Warning: Transition '" + transition.getName() + "' lost during export because it's illegal in PlantUML. Reason: " + reason);
+    }
+
+
+    private StateData.StateRegion findRegionContainingState(StateData state) {
+        for (StateData containerState : stateDatas) {
+            for (StateData.StateRegion region : containerState.getRegions()) {
+                if (region.getSubStates().contains(state)) {
+                    return region;
+                }
+            }
+        }
+        return null;
+    }
+
+    private StateData findStateContainingRegion(StateData.StateRegion region) {
+        for (StateData state : stateDatas) {
+            if (state.getRegions().contains(region)) {
+                return state;
+            }
+        }
+        return null;
+    }
+
+    private StateData findStateByAlias(String alias) {
+        for (StateData stateData : stateDatas) {
+            if (stateData.getAlias().equals(alias)) {
+                return stateData;
+            }
+        }
+        return null;
+    }
 
     public List<History> getHistories() {
         return histories;

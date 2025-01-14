@@ -90,8 +90,8 @@ public class StateData extends BaseWithSemanticsData {
 
     public static class StateRegion {
         private List<StateData> subStates = new ArrayList<>();
-
-        private  List<History> histories = new ArrayList<>();
+        private List<History> histories = new ArrayList<>();
+        private List<RelationshipData> regTransitions = new ArrayList<>();
 
         public StateRegion() {
 
@@ -103,6 +103,10 @@ public class StateData extends BaseWithSemanticsData {
 
         public void setSubStates(List<StateData> subStates) {
             this.subStates = subStates;
+        }
+
+        public List<RelationshipData> getRegTransitions() {
+            return regTransitions;
         }
 
         public List<History> getHistories() {
