@@ -1,6 +1,6 @@
 package plugins.plantUML.models;
 
-public class StateChoice extends BaseWithSemanticsData {
+public class StateChoice extends StateData {
     private String Uid;
 
     public StateChoice(String name) {

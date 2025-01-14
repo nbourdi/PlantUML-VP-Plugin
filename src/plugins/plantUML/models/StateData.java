@@ -1,5 +1,7 @@
 package plugins.plantUML.models;
 
+import com.jniwrapper.Str;
+
 import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +12,23 @@ public class StateData extends BaseWithSemanticsData {
     private boolean isStart;
     private boolean isEnd;
     private List<StateRegion> regions = new ArrayList<>();
+    private boolean isInState;
+    private String id;
+    private String alias;
+
 
     public StateData(String name) {
         super(name);
     }
 
+    private String generateAlias() {
+        // if (this.name == null) {
+        if(this.id != null)
+            return "state_" + id.replaceAll("[^a-zA-Z0-9]", "_");
+        //}
+        // return name;
+        return null;
+    }
 
     public String getUid() {
         return Uid;
@@ -46,6 +60,31 @@ public class StateData extends BaseWithSemanticsData {
 
     public void setRegions(List<StateRegion> regions) {
         this.regions = regions;
+    }
+
+    public boolean isInState() {
+        return isInState;
+    }
+
+    public void setInState(boolean inState) {
+        isInState = inState;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+        this.alias = generateAlias();
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
 

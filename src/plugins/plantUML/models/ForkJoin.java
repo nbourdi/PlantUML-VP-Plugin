@@ -1,6 +1,6 @@
 package plugins.plantUML.models;
 
-public class ForkJoin extends StateData{
+public class ForkJoin extends StateData {
 
     private boolean isFork; // else Join
 

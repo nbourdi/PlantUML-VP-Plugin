@@ -70,8 +70,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
 	    String name = naryData.getName();
 	    
 	    naryString.append(indent).append("diamond ")
-        .append("\"").append(name).append("\"")
-		  .append(" as " + alias + "\n");
+                .append("\"").append(name).append("\"").append(" as ").append(alias).append("\n");
 	    
 	    return naryString.toString();
 	}

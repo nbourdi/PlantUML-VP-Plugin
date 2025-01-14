@@ -2,11 +2,7 @@ package plugins.plantUML.export;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 
-import plugins.plantUML.export.writers.ClassUMLWriter;
-import plugins.plantUML.export.writers.ComponentDeploymentUMLWriter;
-import plugins.plantUML.export.writers.PlantJSONWriter;
-import plugins.plantUML.export.writers.SequenceUMLWriter;
-import plugins.plantUML.export.writers.UseCaseWriter;
+import plugins.plantUML.export.writers.*;
 import plugins.plantUML.models.SemanticsData;
 
 import java.io.File;
@@ -108,8 +104,26 @@ public class DiagramExportPipeline {
 
 					projectSemanticsDatas.addAll(ucde.getExportedSemantics());
 				}
-				break;
 
+				break;
+			case "StateDiagram":
+				StateDiagramExporter stde = new StateDiagramExporter(diagram);
+				stde.extract();
+				StateUMLWriter stateUMLWriter = new StateUMLWriter(
+						stde.getNotes(),
+						stde.getStateDatas(),
+						stde.getTransitions(),
+						stde.getChoices(),
+						stde.getHistories(),
+						stde.getForkJoins()
+				);
+				stateUMLWriter.writeToFile(outputFile);
+				if (stde.getExportedSemantics() != null && !stde.getExportedSemantics().isEmpty()) {
+
+					projectSemanticsDatas.addAll(stde.getExportedSemantics());
+				}
+
+				break;
 			default:
 				ApplicationManager.instance().getViewManager()
 				.showMessage("TYPE " + diagramType + " not yet implemented");

@@ -67,6 +67,9 @@ public class RelationshipData {
 		case "Containment":
 			symbol = "+--";
 			break;
+		case "Transition2":
+			symbol = "-->";
+			break;
 		}
 
 		if (!label.isEmpty() || !name.isEmpty()) {
