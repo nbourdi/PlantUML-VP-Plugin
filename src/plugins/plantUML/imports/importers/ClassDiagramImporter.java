@@ -268,7 +268,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		else {
 			ApplicationManager.instance().getViewManager()
-			.showMessage("Warning: a leaf was not imported due to unsupported type..");
+			.showMessage("Warning: a leaf was not imported due to unsupported type...");
 		}
 	}
 
@@ -323,105 +323,12 @@ public class ClassDiagramImporter extends DiagramImporter {
 			classData.addStereotype(stereotype);
 		}
 
-		List<String> basicTypes = Arrays.asList("int", "char", "string", "boolean", "float", "double", "void", "short",
-				"byte", "String");
-		String typesPattern = String.join("|", basicTypes);
-		Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
-
-		// fields:: MOST OF THIS IS CONVENTION BASED, NOT SOLIDLY DEFINED SYNTAX
-		for (CharSequence cs : entity.getBodier().getFieldsToDisplay()) {
-			final Member m = (Member) cs;
-			final VisibilityModifier fieldModifier = m.getVisibilityModifier();
-			String attrVisibility = convertVisibility(fieldModifier);
-			String scope = m.isStatic() ? "classifier" : "instance";
-			//String typesPattern = String.join("|", basicTypes);
-			//Pattern pattern1 = Pattern.compile("\\b(" + typesPattern + ")\\b");
-			Matcher matcher1 = pattern1.matcher(m.getDisplay(false));
-			String detectedType = "";
-
-			if (matcher1.find()) {
-				detectedType = matcher1.group(1);
-			}
-			String attributeName = m.getDisplay(false).replaceAll("\\b" + detectedType + "\\b", "").replaceAll(":", "")
-					.trim();
-
-			Pattern valuePattern = Pattern.compile("=\\s*(.*)");
-			Matcher valueMatcher = valuePattern.matcher(attributeName);
-
-			String detectedValue = null;
-
-			if (valueMatcher.find())
-				detectedValue = valueMatcher.group(1); // Captures the value after '='
-
-			if (detectedValue != null)
-				attributeName = attributeName.replaceAll("=\\s*" + Pattern.quote(detectedValue), "").trim();
-			AttributeData attributeData = new AttributeData(attrVisibility, attributeName, detectedType, detectedValue,
-					scope);
-			classData.addAttribute(attributeData);
-		}
-
-		for (CharSequence cs : entity.getBodier().getMethodsToDisplay()) {
-			final Member m = (Member) cs;
-			final VisibilityModifier methodModifier = m.getVisibilityModifier();
-			String opVisibility = convertVisibility(methodModifier);
-
-			String scope = m.isStatic() ? "classifier" : "instance";
-
-			Pattern returnTypePattern = Pattern.compile("\\b(" + typesPattern + ")\\b(?=\\s+\\w+\\()");
-			Matcher returnTypeMatcher = returnTypePattern.matcher(m.getDisplay(false));
-			String detectedReturnType = "";
-
-			if (returnTypeMatcher.find()) {
-				detectedReturnType = returnTypeMatcher.group(1);
-			}
-
-			Pattern paramPattern = Pattern.compile("\\((.*?)\\)"); // parentheses
-			Matcher paramMatcher = paramPattern.matcher(m.getDisplay(false));
-
-			StringBuilder paramsStr = new StringBuilder();
-			if (paramMatcher.find()) {
-				paramsStr.append(paramMatcher.group(1));
-			}
-			List<Parameter> parameters = new ArrayList<>();
-			// split parameters by commas
-			String[] paramStrings = paramsStr.toString().split(",");
-			for (String param : paramStrings) {
-				param = param.trim();
-				String paramType = null;
-				String paramName = null;
-				String paramValue = null;
-
-				String[] nameValueParts = param.split("=", 2); 
-				String namePart = nameValueParts[0].trim(); 
-				if (nameValueParts.length > 1) {
-					paramValue = nameValueParts[1].trim(); 
-				}
-
-				String[] nameParts = namePart.split("\\s+"); 
-				if (nameParts.length == 1) {
-					paramName = nameParts[0];
-				} else {
-					if (basicTypes.contains(nameParts[0])) {
-						paramType = nameParts[0];
-						paramName = nameParts[1]; 
-					} else {
-						paramName = nameParts[1] + " : " + nameParts[0];			        }
-				}
-
-				if (paramName != null && !paramName.isEmpty()) {
-					Parameter parameter = new Parameter(paramName, paramType, paramValue);
-					parameters.add(parameter);
-				}
-			}
-			String opName = m.getDisplay(false).replaceFirst("\\b" + detectedReturnType + "\\b", "")
-					.replaceAll("\\(.*\\)", "").trim();
-			OperationData operationData = new OperationData(opVisibility, opName, detectedReturnType, m.isAbstract(),
-					parameters, scope);
-			classData.addOperation(operationData);
-		}
+		extractAttrsAndOps(entity, classData);
 		classData.setUid(entity.getUid());
 		return classData;
 	}
+
+
 
 	public List<ClassData> getClassDatas() {
 		return classDatas;

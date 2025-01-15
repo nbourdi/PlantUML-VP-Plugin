@@ -28,6 +28,8 @@ public class ComponentData extends BaseWithSemanticsData {
 		this.packages = new ArrayList<>();
 		this.ports = new ArrayList<>();
 		this.artifacts = new ArrayList<>();
+		this.setOperations(new ArrayList<>());
+		this.setAttributes(new ArrayList<>());
 	}
 
 	public List<String> getStereotypes() {

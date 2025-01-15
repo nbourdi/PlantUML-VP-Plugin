@@ -221,7 +221,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		writeAttributesAndOperations(componentData.getAttributes(), componentData.getOperations(), indent, interfaceString);
 		interfaceString.append(indent).append("}\n");
 
-		interfaceString.append(indent).append(formatAlias(componentData.getName())).append(" ..|> ").append("I" + formatAlias(componentData.getName()));
+		interfaceString.append(indent).append(formatAlias(componentData.getName())).append(" ..|> ").append("I" + formatAlias(componentData.getName())).append(" : implements");
 		interfaceString.append("\n");
 		return interfaceString.toString();
 	}

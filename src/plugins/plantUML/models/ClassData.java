@@ -7,8 +7,8 @@ import org.stringtemplate.v4.compiler.STParser.namedArg_return;
 
 public class ClassData extends BaseWithSemanticsData {
     private boolean isAbstract;
-    private List<AttributeData> attributes;
-    private List<OperationData> operations;
+    private List<AttributeData> attributes = new ArrayList<>();
+    private List<OperationData> operations = new ArrayList<>();
     private List<String> stereotypes;
     private boolean isInPackage;
     private String visibility;
@@ -17,9 +17,7 @@ public class ClassData extends BaseWithSemanticsData {
     public ClassData(String name, boolean isAbstract, String visibility, boolean isInPackage) {
     	super(name);
         this.setAbstract(isAbstract);
-        this.visibility = visibility; 
-        this.setAttributes(new ArrayList<>());
-        this.setOperations(new ArrayList<>());
+        this.visibility = visibility;
         this.stereotypes = new ArrayList<>();
         this.setInPackage(isInPackage);
     }
@@ -28,6 +26,7 @@ public class ClassData extends BaseWithSemanticsData {
     	super(name);
     	this.setInPackage(isInPackage);
     	this.stereotypes = new ArrayList<>();
+
 	}
 
 	public void addAttribute(AttributeData attribute) {

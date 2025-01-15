@@ -391,33 +391,6 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             componentModel.addChild(packageModel);
             componentShape.addChild((IShapeUIModel) shapeMap.get(packageModel));
         }
-        for (AttributeData attributeData : componentData.getAttributes()) {
-            IAttribute attributeModel = IModelElementFactory.instance().createAttribute();
-            attributeModel.setName(attributeData.getName());
-            attributeModel.setType(attributeData.getType());
-            attributeModel.setInitialValue(attributeData.getInitialValue());
-            attributeModel.setVisibility(attributeData.getVisibility());
-            if (attributeData.isStatic()) {
-                attributeModel.setScope("classifier");
-            }
-            componentModel.addAttribute(attributeModel);
-        }
-
-        for (OperationData operationData : componentData.getOperations()) {
-            IOperation operationModel = IModelElementFactory.instance().createOperation();
-            operationModel.setAbstract(operationData.isAbstract());
-            operationModel.setName(operationData.getName());
-            operationModel.setReturnType(operationData.getReturnType());
-
-            for (OperationData.Parameter parameter : operationData.getParameters()) {
-                IParameter paramModel = IModelElementFactory.instance().createParameter();
-                paramModel.setName(parameter.getName());
-                paramModel.setType(parameter.getType());
-                paramModel.setDefaultValue(parameter.getDefaultValue());
-                operationModel.addParameter(paramModel);
-            }
-            componentModel.addOperation(operationModel);
-        }
 
         putInSemanticsMap(componentModel, componentData);
 

@@ -194,10 +194,21 @@ public class DiagramImportPipeline {
 				UmlDiagram umlDiagram = (UmlDiagram) diagram;
 				umlDiagramType = umlDiagram.getUmlDiagramType();
 
+				if (source.contains("allowmixing")) {
+					ApplicationManager.instance().getViewManager().showMessageDialog(
+							ApplicationManager.instance().getViewManager().getRootFrame(),
+							"WARNING: \"allowmixing\" diagrams are not fully supported.\n Only mix description diagrams with class interfaces."
+					);
+					// The allowed mixed diagrams will always classify as CLASS, so if not CLASS -> def illegal
+					if (!(umlDiagramType == UmlDiagramType.CLASS)) {
+						return;
+					}
+				}
 				// Handle auto-classification for components
 				if (umlDiagramType == UmlDiagramType.CLASS && source.contains("component")) {
 					umlDiagramType = UmlDiagramType.DESCRIPTION;
 				}
+
 			} catch (ClassCastException e) {
 				ApplicationManager.instance().getViewManager().showMessageDialog(
 						ApplicationManager.instance().getViewManager().getRootFrame(),

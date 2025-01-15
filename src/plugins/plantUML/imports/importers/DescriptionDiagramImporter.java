@@ -132,7 +132,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             }
         }
 
-        if (isReverse) {
+        if (isDecorated1 && !isReverse || isDecorated2 && isReverse) {
             sourceID = link.getEntity1().getUid();
             targetID = link.getEntity2().getUid();
         } else {
@@ -167,11 +167,15 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         else if (entity.getLeafType() == LeafType.USECASE || entity.getLeafType() == LeafType.USECASE_BUSINESS) {
             usecases.add(extractUseCase(entity));
             return;
+        } else if (entity.getLeafType() == LeafType.CLASS) {
+            interfaces.add(extractInterface(entity));
         }
         // ideally leafTypes would be more specific than they are for component, workaround by getting SNames from USymbols
-
+        if (entity.getUSymbol() == null) {
+            ApplicationManager.instance().getViewManager().showMessage("Warning: An entity is of unsupported type for description diagram (component/deployment/usecase): " + entity.getDisplay().toString());
+            return;
+        }
         SName sName = entity.getUSymbol().getSName();
-        ApplicationManager.instance().getViewManager().showMessage("extracting leaf " + sName.toString() +" " + entity.getDisplay().toString());
         switch (sName) {
             // TODO: packages, nodes.. when empty are considered leafs
             case component:
@@ -253,14 +257,10 @@ public class DescriptionDiagramImporter extends DiagramImporter {
     }
 
     private ClassData extractInterface(Entity entity) {
-
         String name = removeBrackets(entity.getDisplay().toString());
-
         ClassData interfaceData = new ClassData(name, false);
         String key = name + "|Class";
-
         boolean hasSemantics = getSemanticsMap().containsKey(key);
-
         if (hasSemantics) interfaceData.setSemantics(getSemanticsMap().get(key));
         List<String> stereotypes = extractStereotypes(entity, interfaceData);
 
@@ -268,22 +268,18 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             interfaceData.addStereotype(stereotype);
         }
 
+        if(entity.getLeafType() == LeafType.CLASS) extractAttrsAndOps(entity, interfaceData);
         interfaceData.setUid(entity.getUid());
-
         return interfaceData;
     }
 
     private ComponentData extractComponent(Entity entity) {
         String name = removeBrackets(entity.getDisplay().toString());
-
         ComponentData componentData = new ComponentData(name, false);
         String key = name + "|Component";
-
         boolean hasSemantics = getSemanticsMap().containsKey(key);
         if (hasSemantics) componentData.setSemantics(getSemanticsMap().get(key));
-
         List<String> stereotypes = extractStereotypes(entity, componentData);
-
         for (String stereotype : stereotypes) {
             componentData.addStereotype(stereotype);
         }
