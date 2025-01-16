@@ -66,7 +66,6 @@ public class ClassDiagramCreator extends DiagramCreator {
 		assocPoints.forEach(this::createAssocPoint);
 
 		diagramManager.layout(classDiagram, DiagramManager.LAYOUT_AUTO);
-        ApplicationManager.instance().getProjectManager().saveProject();
         ApplicationManager.instance().getDiagramManager().openDiagram(classDiagram);
 	}
 

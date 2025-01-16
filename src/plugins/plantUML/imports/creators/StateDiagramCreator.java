@@ -29,13 +29,9 @@ public class StateDiagramCreator extends DiagramCreator {
         noteDatas.forEach(this::createNote);
         transitions.forEach(this::createRelationship);
 
-
         diagramManager.layout(stateDiagram, DiagramManager.LAYOUT_AUTO);
         diagramManager.layout(stateDiagram, DiagramManager.LAYOUT_HIERARCHIC);
-        ApplicationManager.instance().getProjectManager().saveProject();
         ApplicationManager.instance().getDiagramManager().openDiagram(stateDiagram);
-
-
     }
 
     private void createHistory(History history) {

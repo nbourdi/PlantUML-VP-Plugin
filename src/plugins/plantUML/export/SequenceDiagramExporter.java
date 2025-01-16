@@ -12,14 +12,7 @@ import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
 
-import plugins.plantUML.models.ActorData;
-import plugins.plantUML.models.CombinedFragment;
-import plugins.plantUML.models.CombinedFragment.Operand;
-import plugins.plantUML.models.InteractionRef;
-import plugins.plantUML.models.LifelineData;
-import plugins.plantUML.models.MessageData;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.*;
 
 public class SequenceDiagramExporter extends DiagramExporter {
 
@@ -138,7 +131,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 
 		for(IInteractionOperand childOperand : fragmentModel.toOperandArray()) {
 
-			Operand operand = new Operand();
+			CombinedFragment.Operand operand = new CombinedFragment.Operand();
 			if (childOperand.toMessageArray() != null) {
 				for (IMessage message : childOperand.toMessageArray()) {
 

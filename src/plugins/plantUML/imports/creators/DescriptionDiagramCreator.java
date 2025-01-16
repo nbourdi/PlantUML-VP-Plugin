@@ -39,21 +39,18 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             if (componentData.isNodeComponent()) createNode(componentData);
            else createComponent(componentData);
         }
-
         interfaceDatas.forEach(this::createInterface);
         artifactDatas.forEach(this::createArtifact);
         packageDatas.forEach(this::createPackage);
         noteDatas.forEach(this::createNote);
         actorDatas.forEach(this::createActor);
         useCaseDatas.forEach(this::createUseCase);
-
         for (RelationshipData relationshipData : relationshipDatas) {
             ApplicationManager.instance().getViewManager().showMessage("Trying to create relationship");
             createRelationship(relationshipData);
         }
 
         diagramManager.layout(diagram, DiagramManager.LAYOUT_AUTO);
-        ApplicationManager.instance().getProjectManager().saveProject();
         ApplicationManager.instance().getDiagramManager().openDiagram(diagram);
     }
 
@@ -155,78 +152,6 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         return actorModel;
     }
 
-//    private void createRelationship(RelationshipData relationshipData) {
-//        String fromID = relationshipData.getSourceID();
-//        String toID = relationshipData.getTargetID();
-//        IModelElement fromModelElement = elementMap.get(fromID);
-//        IModelElement toModelElement = elementMap.get(toID);
-//
-//        if (fromModelElement == null || toModelElement == null) {
-//            ApplicationManager.instance().getViewManager()
-//                    .showMessage("Warning: a relationship was skipped because one of its ends was not a previously imported model element.");
-//            return;
-//        }
-//
-//        if (relationshipData instanceof AssociationData) {
-//            createAssociation((AssociationData) relationshipData, fromModelElement, toModelElement);
-//            return;
-//        }
-//
-//        IRelationship relationshipElement;
-//        switch (relationshipData.getType()) {
-//            case "Generalization":
-//                relationshipElement = IModelElementFactory.instance().createGeneralization();
-//                break;
-//            case "Realization":
-//                relationshipElement = IModelElementFactory.instance().createRealization();
-//                break;
-//            case "Dependency":
-//                relationshipElement = IModelElementFactory.instance().createDependency();
-//                break;
-//            case "Anchor":
-//                relationshipElement = IModelElementFactory.instance().createAnchor();
-//                break;
-//            case "Containment":
-//                diagramManager.createConnector(diagram, IClassDiagramUIModel.SHAPETYPE_CONTAINMENT,
-//                        shapeMap.get(fromModelElement), shapeMap.get(toModelElement), null);
-//                return; // No further configuration for Containment
-//            default:
-//                ApplicationManager.instance().getViewManager()
-//                        .showMessage("Warning: unsupported type " + relationshipData.getType() + " of relationship was skipped.");
-//                return;
-//        }
-//
-//        relationshipElement.setFrom(fromModelElement);
-//        relationshipElement.setTo(toModelElement);
-//
-//        if (!"NULL".equals(relationshipData.getName())) {
-//            relationshipElement.setName(relationshipData.getName());
-//        }
-//
-//        diagramManager.createConnector(diagram, relationshipElement, shapeMap.get(fromModelElement),
-//                shapeMap.get(toModelElement), null);
-//    }
-//
-//    private void createAssociation(AssociationData associationData, IModelElement from, IModelElement to) {
-//        IAssociation association = IModelElementFactory.instance().createAssociation();
-//        association.setFrom(from);
-//        association.setTo(to);
-//        if ("Aggregation".equals(associationData.getType())) {
-//            ((IAssociationEnd) association.getFromEnd()).setAggregationKind(IAssociationEnd.AGGREGATION_KIND_AGGREGATION);
-//        } else if ("Composition".equals(associationData.getType())) {
-//            ((IAssociationEnd) association.getFromEnd()).setAggregationKind(IAssociationEnd.AGGREGATION_KIND_COMPOSITED);
-//        }
-//        ((IAssociationEnd) association.getFromEnd()).setMultiplicity(associationData.getFromEndMultiplicity());
-//        ((IAssociationEnd) association.getToEnd()).setMultiplicity(associationData.getToEndMultiplicity());
-//
-//        diagramManager.createConnector(diagram, association, shapeMap.get(from), shapeMap.get(to), null);
-//
-//        if (!"NULL".equals(associationData.getName())) {
-//            association.setName(associationData.getName());
-//        }
-//    }
-
-
     private IHasChildrenBaseModelElement createPackage(PackageData packageData) {
 
         IHasChildrenBaseModelElement packageOrSystem;
@@ -254,7 +179,12 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             packageOrSystem.addChild(packagedInterfaceModel);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedInterfaceModel));
         }
+        fillInPackage(packageData, packageOrSystem, packageShape);
+        putInSemanticsMap(packageOrSystem, packageData);
+        return packageOrSystem;
+    }
 
+    private void fillInPackage(PackageData packageData, IHasChildrenBaseModelElement packageOrSystem, IShapeUIModel packageShape) {
         for (ComponentData packagedComponentData : packageData.getComponents()) {
             IHasChildrenBaseModelElement residentModel;
             if (packagedComponentData.isNodeComponent()) {
@@ -289,9 +219,6 @@ public class DescriptionDiagramCreator extends DiagramCreator {
             packageOrSystem.addChild(packagedArtifact);
             packageShape.addChild((IShapeUIModel) shapeMap.get(packagedArtifact));
         }
-
-        putInSemanticsMap(packageOrSystem, packageData);
-        return packageOrSystem;
     }
 
     private IClass createInterface(ClassData interfaceData) {
@@ -397,5 +324,4 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         componentShape.fitSize();
         return componentModel;
     }
-
 }

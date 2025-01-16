@@ -215,7 +215,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		StringBuilder interfaceString = new StringBuilder();
 		String aliasDeclaration = formatAlias(componentData.getName()).equals(componentData.getName()) ? "" : (" as I" + formatAlias(componentData.getName()));
 
-		interfaceString.append(indent).append("class ").append(name).append(aliasDeclaration).append(" <<interface>>");
+		interfaceString.append(indent).append("interface ").append(name).append(aliasDeclaration);
 		interfaceString.append(" {\n");
 
 		writeAttributesAndOperations(componentData.getAttributes(), componentData.getOperations(), indent, interfaceString);

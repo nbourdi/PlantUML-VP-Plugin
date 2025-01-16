@@ -123,6 +123,18 @@ public class DiagramExportPipeline {
 				}
 
 				break;
+			case "ActivityDiagram":
+				ActivityDiagramExporter acde = new ActivityDiagramExporter(diagram);
+				acde.extract();
+				ActivityUMLWriter activityUMLWriter =  new ActivityUMLWriter(
+						acde.getNotes(),
+						acde.getRootNode()
+				);
+				activityUMLWriter.writeToFile(outputFile);
+				if (acde.getExportedSemantics() != null && !acde.getExportedSemantics().isEmpty()) {
+					projectSemanticsDatas.addAll(acde.getExportedSemantics());
+				}
+				break;
 			default:
 				ApplicationManager.instance().getViewManager()
 				.showMessage("TYPE " + diagramType + " not yet implemented");

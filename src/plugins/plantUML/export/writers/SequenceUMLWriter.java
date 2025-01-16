@@ -10,14 +10,7 @@ import java.util.stream.Collectors;
 
 import com.vp.plugin.ApplicationManager;
 
-import plugins.plantUML.models.ActorData;
-import plugins.plantUML.models.CombinedFragment;
-import plugins.plantUML.models.CombinedFragment.Operand;
-import plugins.plantUML.models.InteractionRef;
-import plugins.plantUML.models.LifelineData;
-import plugins.plantUML.models.MessageData;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.RelationshipData;
+import plugins.plantUML.models.*;
 
 public class SequenceUMLWriter extends PlantUMLWriter {
 
@@ -99,10 +92,10 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		    
 		    fragmentString.append(fragmentType).append("\n\n");
 
-		    List<Operand> operands = fragment.getOperands();
+		    List<CombinedFragment.Operand> operands = fragment.getOperands();
 		    boolean isFirstOperand = true; 
 
-		    for (Operand operand : operands) {
+		    for (CombinedFragment.Operand operand : operands) {
 		        if (!isFirstOperand) {
 		            fragmentString.append("else\n\n");
 		        }
