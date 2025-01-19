@@ -54,12 +54,10 @@ public class PlantUMLExportController implements VPActionController {
             mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
             allCheckboxes = new ArrayList<>();
 
-            // Create the top panel for description and output folder chooser
             JPanel topPanel = new JPanel();
             topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
             topPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-            // Add a description label
             JLabel descriptionLabel = new JLabel("Please select the diagrams to export and choose an output folder:");
             topPanel.add(descriptionLabel);
             topPanel.add(Box.createVerticalStrut(10)); // Add spacing
@@ -88,50 +86,42 @@ public class PlantUMLExportController implements VPActionController {
 
             topPanel.add(folderChooserPanel);
 
-            // Add the top panel to the main panel
             mainPanel.add(topPanel, BorderLayout.NORTH);
 
-            // Group diagrams by type
             Map<String, List<IDiagramUIModel>> groupedDiagrams = groupDiagramsByType();
 
-            // Create the content panel for grouped diagrams
-         // Create the content panel for grouped diagrams
             JPanel contentPanel = new JPanel();
             contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
             contentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-            contentPanel.setBackground(Color.WHITE); // Ensure the background is white
+            contentPanel.setBackground(Color.WHITE);
 
             for (Map.Entry<String, List<IDiagramUIModel>> entry : groupedDiagrams.entrySet()) {
-                // Add a category label
                 JLabel categoryLabel = new JLabel(entry.getKey());
-                // categoryLabel.setFont(new Font(Font.BOLD));
-                categoryLabel.setOpaque(true); // Set opaque to respect background
-                categoryLabel.setBackground(Color.WHITE); // Ensure the label background is also white
+                categoryLabel.setOpaque(true);
+                categoryLabel.setBackground(Color.WHITE);
                 contentPanel.add(categoryLabel);
 
-                // Add checkboxes for diagrams in this category
                 JPanel checkBoxPanel = new JPanel();
                 checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-                checkBoxPanel.setBackground(Color.WHITE); // Ensure the panel is white
-                checkBoxPanel.setBorder(new EmptyBorder(5, 15, 15, 15)); // Add padding
+                checkBoxPanel.setBackground(Color.WHITE);
+                checkBoxPanel.setBorder(new EmptyBorder(5, 15, 15, 15));
 
                 for (IDiagramUIModel diagram : entry.getValue()) {
                     JCheckBox checkBox = new JCheckBox(diagram.getName());
                     checkBox.setActionCommand(diagram.getId());
-                    checkBox.setBackground(Color.WHITE); // Ensure checkboxes have a white background
+                    checkBox.setBackground(Color.WHITE);
                     allCheckboxes.add(checkBox);
                     checkBoxPanel.add(checkBox);
                 }
 
                 contentPanel.add(checkBoxPanel);
 
-                // Add a white border between categories (no visible grey area)
-                contentPanel.add(Box.createVerticalStrut(10)); // Acts as a spacer
+                contentPanel.add(Box.createVerticalStrut(10));
             }
 
             JScrollPane scrollPane = new JScrollPane(contentPanel);
             scrollPane.setPreferredSize(new Dimension(700, 500));
-            scrollPane.getViewport().setBackground(Color.WHITE); // Ensure the scroll pane viewport is white
+            scrollPane.getViewport().setBackground(Color.WHITE);
 
             mainPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -148,15 +138,13 @@ public class PlantUMLExportController implements VPActionController {
 
         @Override
         public void shown() {
-            // Add buttons at the bottom-right corner
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0)); // Add spacing from the top
+            buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
             JButton exportButton = new JButton("Export");
             JButton closeButton = new JButton("Close");
 
             exportButton.addActionListener((ActionEvent e) -> {
-                // Collect selected diagrams
                 List<IDiagramUIModel> selectedDiagrams = new ArrayList<>();
                 for (JCheckBox checkBox : allCheckboxes) {
                     if (checkBox.isSelected()) {
@@ -172,7 +160,6 @@ public class PlantUMLExportController implements VPActionController {
                     }
                 }
 
-                // Perform the extraction for each selected diagram
                 File outputFolder = new File(outputFolderField.getText());
                 if (!outputFolder.exists() || !outputFolder.isDirectory()) {
                     ApplicationManager.instance().getViewManager()
@@ -181,10 +168,11 @@ public class PlantUMLExportController implements VPActionController {
                 }
 
                 DiagramExportPipeline pipeline = new DiagramExportPipeline(outputFolder);
-                pipeline.exportDiagramList(selectedDiagrams);
-          
-                ApplicationManager.instance().getViewManager()
-                    .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
+
+                if (pipeline.exportDiagramList(selectedDiagrams)) {
+                    ApplicationManager.instance().getViewManager()
+                            .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
+                }
                 dialog.close();
             });
 

@@ -24,7 +24,7 @@ public class DiagramExportPipeline {
 
 	private List<SemanticsData> projectSemanticsDatas = new ArrayList<SemanticsData>();
 
-	public void export(IDiagramUIModel diagram) throws IOException {
+	public void export(IDiagramUIModel diagram) throws IOException, UnfitForExportException {
 		String diagramType = diagram.getType();
 		String diagramTitle = diagram.getName();
 		File outputFile = createOutputFile(diagramTitle, "uml");
@@ -136,13 +136,17 @@ public class DiagramExportPipeline {
 				}
 				break;
 			default:
-				ApplicationManager.instance().getViewManager()
-				.showMessage("TYPE " + diagramType + " not yet implemented");
-				break;
+				throw new UnfitForExportException("Error: " + diagramType + " not supported for export yet.");
 			}
 		} catch (IOException ex) {
 			ApplicationManager.instance().getViewManager()
 			.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error processing diagram: " + diagram.getName() + "\n" + ex.getMessage());
+			throw ex;
+
+		} catch (UnfitForExportException e) {
+			ApplicationManager.instance().getViewManager()
+					.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error: " + diagram.getName() + " is unfit for exporting\n" + e.getMessage());
+			throw e;
 		}
 	}
 
@@ -165,16 +169,21 @@ public class DiagramExportPipeline {
 		return outputFile;
 	}
 
-	public void exportDiagramList(List<IDiagramUIModel> selectedDiagrams) {
+	public boolean exportDiagramList(List<IDiagramUIModel> selectedDiagrams) {
+		boolean allSuccessful = true;
 		for (IDiagramUIModel activeDiagram : selectedDiagrams) {
 			try {
 				export(activeDiagram);
 			} catch (IOException ex) {
 				ApplicationManager.instance().getViewManager()
 				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error processing diagram: " + activeDiagram.getName() + "\n" + ex.getMessage());
+				allSuccessful = false;
 			} catch (UnsupportedOperationException ex) {
 				ApplicationManager.instance().getViewManager()
 				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), ex.getMessage());
+				allSuccessful = false;
+			} catch (UnfitForExportException e) {
+				allSuccessful = false;
 			}
 		}
 
@@ -186,8 +195,10 @@ public class DiagramExportPipeline {
 			ApplicationManager.instance().getViewManager()
 			.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error writing to json semantics file");
 			e.printStackTrace();
+			allSuccessful = false;
 		}
 
 
+		return allSuccessful;
 	}
 }

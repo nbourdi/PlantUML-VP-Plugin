@@ -1,18 +1,20 @@
 package plugins.plantUML.export.writers;
 
-import plugins.plantUML.models.FlowNode;
-import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.ActionData;
-import plugins.plantUML.models.SplitFlowNode;
+import plugins.plantUML.models.*;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 public class ActivityUMLWriter extends PlantUMLWriter {
 
     private final FlowNode rootFlowNode;
+    private final Set<FlowNode> processedNodes = new HashSet<>();
+    Stack<JoinFlowNode> joinStack = new Stack<>();
 
     public ActivityUMLWriter(List<NoteData> notes, FlowNode rootFlowNode) {
         super(notes);
@@ -23,12 +25,10 @@ public class ActivityUMLWriter extends PlantUMLWriter {
     public void writeToFile(File file) throws IOException {
         StringBuilder plantUMLContent = new StringBuilder("@startuml\n");
 
-        // Traverse the flow and generate PlantUML content
+        // Start the diagram
         generateFlowUML(rootFlowNode, plantUMLContent);
 
-        // Append notes if any
-
-
+        // End the diagram
         plantUMLContent.append("@enduml\n");
 
         // Write to file
@@ -38,65 +38,90 @@ public class ActivityUMLWriter extends PlantUMLWriter {
     }
 
     private void generateFlowUML(FlowNode node, StringBuilder plantUMLContent) {
-        if (node == null) {
+        if (node == null || processedNodes.contains(node)) {
             return;
         }
+
+        processedNodes.add(node);
 
         // Handle ActionData nodes
         if (node instanceof ActionData) {
             ActionData action = (ActionData) node;
-            String actionDeclaration = "";
-            if (action.isInitial()) actionDeclaration = "start\n";
-            else if (action.isFinal()) {
-                actionDeclaration = "stop\n";
+            if (action.isInitial()) {
+               plantUMLContent.append("start\n");
+            } else if (action.isFinal()) {
+                plantUMLContent.append("stop\n");
+            } else {
+                plantUMLContent.append(":" + action.getName() + ";\n");
             }
-            else actionDeclaration = ":" + action.getName() + ";\n";
-            plantUMLContent.append(actionDeclaration);
 
-            // Handle the next node if it exists
             if (action.getNextNode() != null) {
                 generateFlowUML(action.getNextNode(), plantUMLContent);
+            } else if (!action.isFinal() && !action.isFinal()) {
+                plantUMLContent.append("kill\n");
             }
+
         }
-        // Handle SplitFlowNode (Decision, Fork, Merge, Join)
+        // Handle SplitFlowNode
         else if (node instanceof SplitFlowNode) {
             SplitFlowNode splitNode = (SplitFlowNode) node;
             String type = splitNode.getType();
-            if (type == "decision") {
+
+            if ("decision".equals(type)) {
                 writeDecision(plantUMLContent, splitNode);
-            } else if (type == "fork") {
-                writeFork(plantUMLContent, splitNode);
-            } else if (type == "join") {
-                plantUMLContent.append("end fork\n");
+            } else if ("fork".equals(type)) {
+                writeForkAndJoin(plantUMLContent, splitNode);
             }
-        }
+        } else if (node instanceof JoinFlowNode) {
+            JoinFlowNode joinNode = (JoinFlowNode) node;
+            if (!joinStack.contains(joinNode)) joinStack.push(joinNode);
 
+
+        }
     }
 
-    private void writeFork(StringBuilder plantUMLContent, SplitFlowNode splitNode) {
-        plantUMLContent.append("fork\n");
+    private void writeDecision(StringBuilder plantUMLContent, SplitFlowNode decisionNode) {
+        plantUMLContent.append("if (" + decisionNode.getName() + ") then (branch0)\n");
 
-        for (int i = 0; i < splitNode.getBranches().size(); i++) {
-            FlowNode branch = splitNode.getBranches().get(i);
-            generateFlowUML(branch, plantUMLContent);
-            if (i < splitNode.getBranches().size() - 1) {
-                plantUMLContent.append("fork again\n");
-            }
-        }
-        // plantUMLContent.append("endif\n");
-    }
-
-    private void writeDecision(StringBuilder plantUMLContent, SplitFlowNode splitNode) {
-
-        plantUMLContent.append("if (" + splitNode.getName() + ") then (branch0)\n");
-
-        for (int i = 0; i < splitNode.getBranches().size(); i++) {
-            FlowNode branch = splitNode.getBranches().get(i);
-            generateFlowUML(branch, plantUMLContent);
-            if (i < splitNode.getBranches().size() - 1) {
+        List<FlowNode> branches = decisionNode.getBranches();
+        for (int i = 0; i < branches.size(); i++) {
+            generateFlowUML(branches.get(i), plantUMLContent);
+            if (i < branches.size() - 1) {
                 plantUMLContent.append("else (branch " + (i + 1) + ")\n");
             }
         }
+
         plantUMLContent.append("endif\n");
+    }
+
+    private void writeForkAndJoin(StringBuilder plantUMLContent, SplitFlowNode forkNode) {
+        plantUMLContent.append("fork\n");
+
+        List<FlowNode> branches = forkNode.getBranches();
+        for (int i = 0; i < branches.size(); i++) {
+            generateFlowUML(branches.get(i), plantUMLContent);
+            if (i < branches.size() - 1) {
+                plantUMLContent.append("fork again\n");
+            }
+        }
+
+        plantUMLContent.append("end fork\n");
+        if (!joinStack.isEmpty()) {
+            JoinFlowNode join = joinStack.pop();
+            generateFlowUML(join.getNextNode(), plantUMLContent);
+        }
+        FlowNode continuationNode = findJoinContinuation(forkNode);
+        if (continuationNode != null) {
+            generateFlowUML(continuationNode, plantUMLContent);
+        }
+    }
+
+    private FlowNode findJoinContinuation(SplitFlowNode forkNode) {
+        for (FlowNode branch : forkNode.getBranches()) {
+            if (branch instanceof JoinFlowNode) {
+                return ((JoinFlowNode) branch).getNextNode();
+            }
+        }
+        return null;
     }
 }

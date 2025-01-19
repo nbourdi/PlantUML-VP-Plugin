@@ -24,4 +24,6 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
     public void addBranch(FlowNode node) {
         branches.add(node);
     }
+
+
 }
