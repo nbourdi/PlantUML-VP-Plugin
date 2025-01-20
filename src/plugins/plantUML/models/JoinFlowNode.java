@@ -3,7 +3,8 @@ package plugins.plantUML.models;
 public class JoinFlowNode extends BaseWithSemanticsData implements FlowNode {
 
     private FlowNode nextNode;
-    private int branchesToMerge;
+    private String prevLabel;
+    private boolean isMerge;
 
     public JoinFlowNode(String name) {
         super(name);
@@ -17,11 +18,21 @@ public class JoinFlowNode extends BaseWithSemanticsData implements FlowNode {
         this.nextNode = nextNode;
     }
 
-    public int getBranchesToMerge() {
-        return branchesToMerge;
+    @Override
+    public String getPrevLabelBranch() {
+        return this.prevLabel;
     }
 
-    public void setBranchesToMerge(int branchesToMerge) {
-        this.branchesToMerge = branchesToMerge;
+    @Override
+    public void setPrevLabelBranch(String label) {
+        this.prevLabel = label;
+    }
+
+    public boolean isMerge() {
+        return isMerge;
+    }
+
+    public void setMerge(boolean merge) {
+        isMerge = merge;
     }
 }

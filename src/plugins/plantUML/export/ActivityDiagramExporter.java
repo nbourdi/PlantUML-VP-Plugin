@@ -5,8 +5,7 @@ import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
-import com.vp.vpserver.shared.admin.AdStringDTO;
-import org.hibernate.mapping.Join;
+import com.vp.plugin.model.factory.IModelElementFactory;
 import plugins.plantUML.models.ActionData;
 import plugins.plantUML.models.JoinFlowNode;
 import plugins.plantUML.models.SplitFlowNode;
@@ -50,30 +49,20 @@ public class ActivityDiagramExporter extends DiagramExporter {
 
     private FlowNode traverseAndBuild(IModelElement currentElement, List<IModelElement> visited) {
         if (visited.contains(currentElement)) {
-            if (currentElement.getModelType() == SHAPE_TYPE_JOIN_NODE) {
+            if (currentElement.getModelType() == SHAPE_TYPE_JOIN_NODE || currentElement.getModelType() == SHAPE_TYPE_MERGE_NODE) {
                 return joinMap.get(currentElement);
             }
             throw new UnfitForExportException("Looping or repeated flows detected during export.");
         }
         visited.add(currentElement);
+        ApplicationManager.instance().getViewManager().showMessage("Current element parent " + currentElement.getParent().getModelType() + currentElement.getParent().getName());
 
         switch (currentElement.getModelType()) {
             case SHAPE_TYPE_ACTIVITY_ACTION:
             case SHAPE_TYPE_INITIAL_NODE:
             case SHAPE_TYPE_ACTIVITY_FINAL_NODE:
             case SHAPE_TYPE_FLOW_FINAL_NODE:
-                if (!checkSingleOutgoingEdge(currentElement)) {
-                    throw new UnfitForExportException("Error: an action can't have more than one outgoing edge.");
-                }
-                ActionData action = extractAction(currentElement);
-                IRelationship[] outgoingRelationships = currentElement.toFromRelationshipArray();
-                if (outgoingRelationships.length > 0) {
-                    IModelElement targetElement = outgoingRelationships[0].getTo();
-                    FlowNode nextNode = traverseAndBuild(targetElement, visited);
-                    if (nextNode != null) {
-                        action.setNextNode(nextNode);
-                    }
-                }
+                ActionData action = getActionData(currentElement, visited);
                 return action;
 
             case SHAPE_TYPE_DECISION_NODE:
@@ -92,29 +81,76 @@ public class ActivityDiagramExporter extends DiagramExporter {
                 if (outgoingRelationships2.length > 0) {
                     ApplicationManager.instance().getViewManager().showMessage("1 outgoing relation");
                     IModelElement targetElement = outgoingRelationships2[0].getTo();
+
                     FlowNode nextNode = traverseAndBuild(targetElement, visited);
                     if (nextNode != null) {
-                        ApplicationManager.instance().getViewManager().showMessage("next node isnt null.");
                         join.setNextNode(nextNode);
                     }
                 }
                 return join;
+            case SHAPE_TYPE_MERGE_NODE:
+                if (!checkSingleOutgoingEdge(currentElement)) {
+                    throw new UnfitForExportException("Error: a merge node can't have more than one outgoing edge.");
+                }
+                JoinFlowNode merge = extractJoin(currentElement);
+                joinMap.put(currentElement, merge);
+                IRelationship[] outgoingRelationships3 = currentElement.toFromRelationshipArray();
+                if (outgoingRelationships3.length > 0) {
+                    ApplicationManager.instance().getViewManager().showMessage("1 outgoing relation");
+                    IModelElement targetElement = outgoingRelationships3[0].getTo();
+
+                    FlowNode nextNode = traverseAndBuild(targetElement, visited);
+                    if (nextNode != null) {
+                        merge.setNextNode(nextNode);
+                    }
+                }
+                return merge;
 
             default:
                 throw new UnfitForExportException("ERROR: can't export type " + currentElement.getModelType() + ", no PlantUML equivalent.");
         }
     }
 
-    private JoinFlowNode extractJoin(IModelElement joinModel) {
-        JoinFlowNode forkOrJoinNode = new JoinFlowNode(joinModel.getName());
+    private ActionData getActionData(IModelElement currentElement, List<IModelElement> visited) {
+        if (!checkSingleOutgoingEdge(currentElement)) {
+            throw new UnfitForExportException("Error: an action can't have more than one outgoing edge.");
+        }
+        ActionData action = extractAction(currentElement);
+        IRelationship[] outgoingRelationships = currentElement.toFromRelationshipArray();
+        if (outgoingRelationships.length > 0) {
+            IModelElement targetElement = outgoingRelationships[0].getTo();
+            FlowNode nextNode = traverseAndBuild(targetElement, visited);
+            action.setNextLabel(outgoingRelationships[0].getName());
+            if (nextNode != null) {
+                action.setNextNode(nextNode);
+            }
+        }
+        return action;
+    }
 
-        return forkOrJoinNode;
+    private JoinFlowNode extractJoin(IModelElement joinModel) {
+        JoinFlowNode joinOrMergeNode = new JoinFlowNode(joinModel.getName());
+        joinOrMergeNode.setMerge(joinModel instanceof IMergeNode);
+
+        return joinOrMergeNode;
     }
 
     private ActionData extractAction(IModelElement actionModel) {
         ActionData actionData = new ActionData(actionModel.getName());
         actionData.setInitial(actionModel instanceof IInitialNode);
-        actionData.setFinal(actionModel instanceof IActivityFinalNode || actionModel instanceof IFlowFinalNode);
+        actionData.setFinal(actionModel instanceof IActivityFinalNode);
+        actionData.setFinalFlow(actionModel instanceof IFlowFinalNode);
+
+        IModelElement[] partition =
+                actionModel.getReferencingModels(
+                        IModelElementFactory.MODEL_TYPE_ACTIVITY_PARTITION, // <------ owner’s modelType (Partition’s modelType)
+                        IActivityPartition.PROP_CONTAINED_ELEMENTS // <----- owner’s propertyName (Partition’s PROP_CONTAINED_ELEMENTS)
+                );
+
+        if (partition.length > 0) {
+            actionData.setSwimlane(partition[0].getName());
+        }
+
         return actionData;
     }
 
@@ -124,15 +160,13 @@ public class ActivityDiagramExporter extends DiagramExporter {
         for (IRelationship relationship : outgoingRelationships) {
             IModelElement targetElement = relationship.getTo();
             FlowNode branch = traverseAndBuild(targetElement, visited);
-            if (branch != null) {
-                decisionNode.addBranch(branch);
-            }
+            branch.setPrevLabelBranch(relationship.getName());
+            decisionNode.addBranch(branch);
         }
         return decisionNode;
     }
 
     private FlowNode extractFork(IModelElement forkModel) {
-        // TODO merge
         SplitFlowNode fork = new SplitFlowNode(forkModel.getName(), "fork");
         IRelationship[] outgoingRelationships = forkModel.toFromRelationshipArray();
         for (IRelationship relationship : outgoingRelationships) {
