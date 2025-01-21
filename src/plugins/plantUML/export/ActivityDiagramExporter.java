@@ -43,8 +43,8 @@ public class ActivityDiagramExporter extends DiagramExporter {
             throw new UnfitForExportException("Failed to construct activity diagram structure.");
         }
 
-        System.out.println("=============Constructed Activity Flow:");
-        logFlow(rootNode, "");
+        // System.out.println("=============Constructed Activity Flow:");
+       // logFlow(rootNode, "");
     }
 
     private FlowNode traverseAndBuild(IModelElement currentElement, List<IModelElement> visited) {
@@ -55,7 +55,6 @@ public class ActivityDiagramExporter extends DiagramExporter {
             throw new UnfitForExportException("Looping or repeated flows detected during export.");
         }
         visited.add(currentElement);
-        ApplicationManager.instance().getViewManager().showMessage("Current element parent " + currentElement.getParent().getModelType() + currentElement.getParent().getName());
 
         switch (currentElement.getModelType()) {
             case SHAPE_TYPE_ACTIVITY_ACTION:
@@ -96,7 +95,6 @@ public class ActivityDiagramExporter extends DiagramExporter {
                 joinMap.put(currentElement, merge);
                 IRelationship[] outgoingRelationships3 = currentElement.toFromRelationshipArray();
                 if (outgoingRelationships3.length > 0) {
-                    ApplicationManager.instance().getViewManager().showMessage("1 outgoing relation");
                     IModelElement targetElement = outgoingRelationships3[0].getTo();
 
                     FlowNode nextNode = traverseAndBuild(targetElement, visited);
@@ -203,25 +201,21 @@ public class ActivityDiagramExporter extends DiagramExporter {
             return;
         }
 
-        // Handle ActionData
         if (node instanceof ActionData) {
             ActionData action = (ActionData) node;
             System.out.println(indent + "Action: " + action.getName() +
                     (action.isInitial() ? " (Initial)" : "") +
                     (action.isFinal() ? " (Final)" : ""));
 
-            // Recursively log the next node
             if (action.getNextNode() != null) {
                 System.out.println(indent + "  -> Next:");
                 logFlow(action.getNextNode(), indent + "    ");
             }
         }
-        // Handle DecisionNode
         else if (node instanceof SplitFlowNode) {
             SplitFlowNode decision = (SplitFlowNode) node;
             System.out.println(indent + "Decision Node: " + decision.getName());
 
-            // Recursively log each branch
             for (int i = 0; i < decision.getBranches().size(); i++) {
                 System.out.println(indent + "  Branch " + (i + 1) + ":");
                 logFlow(decision.getBranches().get(i), indent + "    ");

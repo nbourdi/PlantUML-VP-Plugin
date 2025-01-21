@@ -9,6 +9,7 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
     private String type;
     private List<FlowNode> branches = new ArrayList<>();
     private String prevLabel;
+    private List<SplitBranch> splitBranches = new ArrayList<>();
 
     public SplitFlowNode(String name, String type) {
         super(name);
@@ -35,5 +36,13 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
     @Override
     public void setPrevLabelBranch(String label) {
         this.prevLabel = label;
+    }
+
+    public List<SplitBranch> getSplitBranches() {
+        return splitBranches;
+    }
+
+    public void setSplitBranches(List<SplitBranch> splitBranches) {
+        this.splitBranches = splitBranches;
     }
 }

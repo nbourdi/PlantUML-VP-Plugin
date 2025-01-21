@@ -27,6 +27,7 @@ import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.UmlDiagram;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.activitydiagram.ActivityDiagram;
+import net.sourceforge.plantuml.activitydiagram3.ActivityDiagram3;
 import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
 import net.sourceforge.plantuml.core.Diagram;
@@ -238,7 +239,7 @@ public class DiagramImportPipeline {
 					break;
 
 				case ACTIVITY:
-					handleActivityDiagram((ActivityDiagram) diagram, diagramTitle);
+					handleActivityDiagram((ActivityDiagram3) diagram, diagramTitle);
 					break;
 				case STATE:
 					handleStateDiagram((StateDiagram) diagram, diagramTitle);
@@ -258,9 +259,6 @@ public class DiagramImportPipeline {
 		}
 	}
 
-
-
-
 	/**
 	 * Extracts the JSON block from the source string.
 	 */
@@ -272,7 +270,6 @@ public class DiagramImportPipeline {
 		}
 		return source.substring(jsonStart, jsonEnd + 1); // Extract and return the JSON block
 	}
-
 
 	private void handleClassDiagram(ClassDiagram classDiagram, String diagramTitle) {
 		ClassDiagramImporter importer = new ClassDiagramImporter(classDiagram, semanticsMap);
@@ -287,13 +284,14 @@ public class DiagramImportPipeline {
 				importer.getAssociationPoints());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
 	}
-	private void handleActivityDiagram(ActivityDiagram activityDiagram, String diagramTitle) {
-//		ActivityDiagramImporter importer = new ActivityDiagramImporter(activityDiagram, semanticsMap);
-//		importer.extract();
-//
-//		ActivityDiagramCreator creator = new ActivityDiagramCreator(diagramTitle);
-//		// creator.createDiagram(importer.get...)
-//		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+
+	private void handleActivityDiagram(ActivityDiagram3 activityDiagram, String diagramTitle) {
+		ActivityDiagramImporter importer = new ActivityDiagramImporter(activityDiagram, semanticsMap);
+		importer.extract();
+
+		ActivityDiagramCreator creator = new ActivityDiagramCreator(diagramTitle);
+		creator.createDiagram(importer.getNodeList());
+		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
 	}
 
 	private void handleStateDiagram(StateDiagram diagram, String diagramTitle) {
