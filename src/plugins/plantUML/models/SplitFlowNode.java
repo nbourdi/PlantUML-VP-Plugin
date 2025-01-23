@@ -1,6 +1,5 @@
 package plugins.plantUML.models;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +14,7 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
         super(name);
         this.type = type;
     }
+
     public List<FlowNode> getBranches() {
         return branches;
     }
@@ -26,7 +26,6 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
     public void addBranch(FlowNode node) {
         branches.add(node);
     }
-
 
     @Override
     public String getPrevLabelBranch() {
@@ -40,9 +39,5 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
 
     public List<SplitBranch> getSplitBranches() {
         return splitBranches;
-    }
-
-    public void setSplitBranches(List<SplitBranch> splitBranches) {
-        this.splitBranches = splitBranches;
     }
 }

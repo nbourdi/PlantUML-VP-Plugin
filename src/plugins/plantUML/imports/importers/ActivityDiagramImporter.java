@@ -45,6 +45,8 @@ public class ActivityDiagramImporter extends DiagramImporter {
             throw new RuntimeException(e);
         }
 
+        logFlow(rootNodeList);
+
     }
 
     private void reflectionPrep() {
@@ -76,8 +78,6 @@ public class ActivityDiagramImporter extends DiagramImporter {
             throw new RuntimeException(e);
         }
 
-//        IModelElement previous = null;
-
         for (Instruction child : children) {
 
             if (child instanceof InstructionSimple || child instanceof InstructionStart || child instanceof InstructionStop || child instanceof InstructionEnd)  nodeList.add(handleSimpleInstruction(child));
@@ -85,7 +85,31 @@ public class ActivityDiagramImporter extends DiagramImporter {
                 // CANNT IMPORT LABELS. / GOTO
             } else if (child instanceof InstructionIf) {
                 nodeList.add(handleDecisionInstruction((InstructionIf) child));
+            } else if (child instanceof InstructionFork) {
+                nodeList.add(handleFork((InstructionFork) child));
             }
+        }
+    }
+
+    private SplitFlowNode handleFork(InstructionFork instruction) {
+
+        try {
+            Field forksListField = instruction.getClass().getDeclaredField("forks");
+            forksListField.setAccessible(true);
+
+            List<Instruction> forksList = (List<Instruction>) forksListField.get(instruction);
+
+            SplitFlowNode forkNode = new SplitFlowNode("testFork", "fork");
+
+            // each fork is another branch, and contains an InstructionList
+            for (Instruction forkListItem : forksList) {
+                SplitBranch forkBranch = new SplitBranch();
+                forkNode.getSplitBranches().add(forkBranch);
+                traverseInstructions(forkListItem, forkBranch.getNodeList());
+            }
+            return forkNode;
+        } catch (Exception e) {
+            throw new RuntimeException();
         }
     }
 
@@ -98,29 +122,60 @@ public class ActivityDiagramImporter extends DiagramImporter {
             Field elseField = (instruction).getClass().getDeclaredField("elseBranch");
             elseField.setAccessible(true);
 
-            List<Branch> branches = (List<Branch>) branchesListField.get(instruction);
+            List<Branch> thens = (List<Branch>) branchesListField.get(instruction);
 
-            Branch first = branches.get(0);
+            Branch first = thens.get(0);
             Field branchLabelField = first.getClass().getDeclaredField("labelTest");
             branchLabelField.setAccessible(true);
+            Field listOfBranch = first.getClass().getDeclaredField("list");
+            listOfBranch.setAccessible(true);
 
-            String conditionLabel = (String) branchLabelField.get(first);
 
+
+            String conditionLabel = branchLabelField.get(first).toString();
             SplitFlowNode decisionNode = new SplitFlowNode( conditionLabel,  "decision");
 
-            for (Branch branch : branches) {
-                Field listOfBranch = branch.getClass().getDeclaredField("list");
-                listOfBranch.setAccessible(true);
-                InstructionList list = (InstructionList) listOfBranch.get(branch);
+            // "b1" list
+            InstructionList firstThenList = (InstructionList) listOfBranch.get(thens.get(0));
+            SplitBranch firstThen = handleBranch(firstThenList);
+            decisionNode.getSplitBranches().add(firstThen);
+            // done adding the first "then", now onto the decision node elses (elseifs)
 
-                decisionNode.getSplitBranches().add(handleBranch(list));
+            // elseIfsBranch has the else ifs chain etc, even the final else branch
+            // "b2"
+            SplitBranch elseIfsBranch = new SplitBranch();
+
+            System.out.println("THENS SIZE: " + thens.size());
+
+            decisionNode.getSplitBranches().add(elseIfsBranch);
+            SplitBranch currentBranch = elseIfsBranch;
+            SplitFlowNode lastSubdecision = decisionNode;
+
+            for (int i = 1; i < thens.size(); i++) {
+                // create a splitflow node!
+                SplitFlowNode  subdecision = new SplitFlowNode( "testConditionLabel",  "decision");
+                // this subdecision is in the "elseif " branch we are on
+                currentBranch.getNodeList().add(subdecision);
+                InstructionList listsubThen = (InstructionList) listOfBranch.get(thens.get(i));
+                SplitBranch subThenBranch = handleBranch(listsubThen);
+                subdecision.getSplitBranches().add(subThenBranch);
+
+                lastSubdecision = subdecision;
+                // in the begin
+                if (i < thens.size() - 1) {
+                    SplitBranch subElseIfsBranch = new SplitBranch();
+                    currentBranch = subElseIfsBranch;
+                    subdecision.getSplitBranches().add(subElseIfsBranch);
+                }
+
             }
 
+
+            // now to handle the else branch, the very last one
             Branch elseBranch = (Branch) elseField.get(instruction);
-            Field listOfBranch = elseBranch.getClass().getDeclaredField("list");
-            listOfBranch.setAccessible(true);
-            InstructionList list = (InstructionList) listOfBranch.get(elseBranch);
-            decisionNode.getSplitBranches().add(handleBranch(list));
+            InstructionList listElse = (InstructionList) listOfBranch.get(elseBranch);
+            SplitBranch elseSplitBranch = handleBranch(listElse);
+            lastSubdecision.getSplitBranches().add(elseSplitBranch);
 
             return decisionNode;
 
@@ -135,7 +190,8 @@ public class ActivityDiagramImporter extends DiagramImporter {
 
         SplitBranch branch = new SplitBranch();
 
-        Field allField = null;
+
+        Field allField;
         try {
             allField = ((list).getClass().getDeclaredField("all"));
         } catch (NoSuchFieldException e) {
@@ -143,7 +199,7 @@ public class ActivityDiagramImporter extends DiagramImporter {
         }
         allField.setAccessible(true);
 
-        List<Instruction> children = null;
+        List<Instruction> children;
 
         try {
             children = (List<Instruction>) allField.get(list);
@@ -172,7 +228,6 @@ public class ActivityDiagramImporter extends DiagramImporter {
                 throw new RuntimeException(e);
             }
             labelField.setAccessible(true);
-            System.out.println("label:: " + labelField.get(instruction));  //NAME
             actionName = removeBrackets(labelField.get(instruction).toString());
         }
 
@@ -192,4 +247,28 @@ public class ActivityDiagramImporter extends DiagramImporter {
     public List<FlowNode> getNodeList() {
         return rootNodeList;
     }
+
+    public void logFlow(List<FlowNode> nodeList) {
+
+        for (FlowNode node : nodeList) {
+            if (node instanceof ActionData) {
+                System.out.println(((ActionData) node).getName() + ((ActionData) node).isFinal());
+            } else
+              System.out.println("Node: " + node); // Log the current node
+
+            // Check if the node is a SplitFlowNode to handle its branches
+            if (node instanceof SplitFlowNode) {
+                SplitFlowNode splitNode = (SplitFlowNode) node;
+
+                System.out.println("SplitFlowNode: " + splitNode.getName() + ", Branches: " + splitNode.getSplitBranches().size());
+
+                for (SplitBranch branch : splitNode.getSplitBranches()) {
+                    System.out.println("Branch: "); // Log the branch
+                    logFlow(branch.getNodeList()); // Recursively log the branch nodes
+                }
+            }
+        }
+    }
+
+
 }
