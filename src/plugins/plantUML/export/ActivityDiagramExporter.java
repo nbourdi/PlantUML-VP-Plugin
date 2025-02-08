@@ -145,6 +145,7 @@ public class ActivityDiagramExporter extends DiagramExporter {
                         IActivityPartition.PROP_CONTAINED_ELEMENTS // <----- owner’s propertyName (Partition’s PROP_CONTAINED_ELEMENTS)
                 );
 
+        // could be in multiple due to other activity diagrams, but safe enough to assume it's just in this one, hence [0]
         if (partition.length > 0) {
             actionData.setSwimlane(partition[0].getName());
         }

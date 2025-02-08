@@ -21,6 +21,16 @@ public class StateDiagramExporter extends DiagramExporter {
     List<StateChoice> choices = new ArrayList<>();
     List<ForkJoin> forkJoins = new ArrayList<>();
 
+    // call at the very end to fix insane aliases
+    private void prettifyAliases(List<? extends StateData> stateDatas, String type) {
+            // iterate through them and change the aliases
+        int alias_counter = 0;
+        for (StateData stateData : stateDatas) {
+            stateData.setAlias(type + "_" + alias_counter);
+            alias_counter++;
+        }
+    }
+
 
     public StateDiagramExporter(IDiagramUIModel diagram) {
         this.diagram = diagram;
@@ -77,6 +87,11 @@ public class StateDiagramExporter extends DiagramExporter {
                                 + " is of unsupported type " + modelElement.getModelType() +" and will not be processed ... ");
             }
         }
+
+        prettifyAliases(stateDatas, "state");
+        prettifyAliases(choices, "choice");
+        prettifyAliases(forkJoins, "forkjoin");
+        prettifyAliases(histories, "history");
 
         for (IRelationship relationship : deferredRelationships) {
             extractTransition(relationship);

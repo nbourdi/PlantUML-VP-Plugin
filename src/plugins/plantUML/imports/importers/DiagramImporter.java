@@ -43,11 +43,16 @@ public abstract class DiagramImporter {
 	
 	protected NoteData extractNote(Entity noteEntity) {
 		String noteContent = removeBrackets(noteEntity.getDisplay().toString()) ;
-		NoteData noteData = new NoteData(noteEntity.getName(), noteContent, null);
+		NoteData noteData = new NoteData(ignoreLinebreak(noteEntity.getName()), noteContent, null);
 		noteData.setUid(noteEntity.getUid());
 		return noteData;
 	}
-	
+
+	private String ignoreLinebreak(String name) {
+		return name.replace("\n", " ").replace("\r", " ");
+	}
+
+
 	protected String removeBrackets(String bracketedString) {
 	    if (bracketedString != null && bracketedString.length() > 1 
 	        && bracketedString.charAt(0) == '[' 

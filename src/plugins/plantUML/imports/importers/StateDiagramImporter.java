@@ -1,12 +1,10 @@
 package plugins.plantUML.imports.importers;
 
-import cb.petal.Diagram;
 import com.vp.plugin.ApplicationManager;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
 import net.sourceforge.plantuml.abel.Link;
-import net.sourceforge.plantuml.sequencediagram.Note;
 import net.sourceforge.plantuml.statediagram.StateDiagram;
 import plugins.plantUML.models.*;
 
@@ -110,6 +108,7 @@ public class StateDiagramImporter extends DiagramImporter {
         String sourceID = link.getEntity1().getUid();
         String targetID = link.getEntity2().getUid();
         String relationshipType = "Transition";
+        if (link.getEntity1().getLeafType() == LeafType.NOTE || link.getEntity2().getLeafType() == LeafType.NOTE) relationshipType = "Anchor";
         RelationshipData relationshipData = new RelationshipData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()));
         relationshipData.setSourceID(sourceID);
         relationshipData.setTargetID(targetID);

@@ -89,11 +89,18 @@ public class ActivityUMLWriter extends PlantUMLWriter {
         plantUMLContent.append("if (" + decisionNode.getName() + ") then ");
 
         List<FlowNode> branches = decisionNode.getBranches();
-        plantUMLContent.append("(" + branches.get(0).getPrevLabelBranch() + ")\n");
+        String branchLabel = branches.get(0).getPrevLabelBranch();
+        if (branchLabel != null && !branchLabel.isEmpty())
+            plantUMLContent.append("(" + branchLabel + ")");
+        plantUMLContent.append("\n");
         for (int i = 0; i < branches.size(); i++) {
             generateFlowUML(branches.get(i), plantUMLContent);
             if (i < branches.size() - 1) {
-                plantUMLContent.append("else ("+ branches.get(i+1).getPrevLabelBranch() + ")\n");
+                String branchLabel2 = branches.get(i+1).getPrevLabelBranch();
+                plantUMLContent.append("else ");
+                if (branchLabel2 != null && !branchLabel2.isEmpty())
+                     plantUMLContent.append("("+ branches.get(i+1).getPrevLabelBranch() + ")");
+                plantUMLContent.append("\n");
             }
         }
         plantUMLContent.append("endif\n");
