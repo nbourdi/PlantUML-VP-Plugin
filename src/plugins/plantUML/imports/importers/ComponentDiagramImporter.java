@@ -255,7 +255,7 @@ public class ComponentDiagramImporter extends DiagramImporter {
 	private void extractGroup(Entity groupEntity, List<ComponentData> components, List<PackageData> packages) {
 		SName sName = groupEntity.getUSymbol().getSName();
 
-		ApplicationManager.instance().getViewManager().showMessage("usymbol " + sName.toString());
+//		ApplicationManager.instance().getViewManager().showMessage("usymbol " + sName.toString());
 		switch (sName) {
 		case component:
 

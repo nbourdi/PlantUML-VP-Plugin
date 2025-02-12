@@ -61,8 +61,6 @@ public class SequenceDiagramImporter extends  DiagramImporter {
     }
 
     private void extractNoteEvent(Note note) {
-        ApplicationManager.instance().getViewManager().showMessage("extracting event note display, part, part2  " + note.getDisplay() + " , " + note.getParticipant().getCode() + " , " );
-
         String noteContent = removeBrackets(note.getDisplay().toString()) ;
         NoteData noteData = new NoteData("note", noteContent, null);
         if (note.getParticipant() != null) {
@@ -110,8 +108,7 @@ public class SequenceDiagramImporter extends  DiagramImporter {
     }
 
     private void extractMessage(AbstractMessage message) {
-
-        MessageData messageData = null;
+        MessageData messageData;
         String source;
         String target;
         String relationshipType = "Message";
@@ -137,16 +134,13 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             }
         } else if (message instanceof  MessageExo) {
 
-            switch (((MessageExo) message).getType()) { // Todo
+            switch (((MessageExo) message).getType()) {
                 case TO_LEFT:
                 case TO_RIGHT:
-                    ApplicationManager.instance().getViewManager().showMessage("LOST MESSAGE FOUND");
                     messageData.setLost(true);
                     break;
                 case FROM_LEFT:
                 case FROM_RIGHT:
-
-                    ApplicationManager.instance().getViewManager().showMessage("FOUND MESSAGE FOUND");
                     messageData.setFound(true);
                     break;
             }

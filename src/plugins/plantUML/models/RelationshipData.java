@@ -27,8 +27,10 @@ public class RelationshipData {
 //	}
 
 	protected String formatAlias(String name) {
-		return name.replaceAll("[^a-zA-Z0-9]", "_");
+		return name.replaceAll("[^a-zA-Z0-9\u0370-\u03FF]", "_");
 	}
+
+
 
 	public String toExportFormat() {
 		String symbol = "--";

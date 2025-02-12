@@ -24,6 +24,7 @@ import plugins.plantUML.models.SubDiagramData;
 public abstract class DiagramExporter {
 
 	public abstract void extract();
+	protected List<String> warnings = new ArrayList<>();
 
 	protected List<NoteData> noteDatas = new ArrayList<>();
 	protected List<SemanticsData> exportedSemantics = new ArrayList<SemanticsData>();
@@ -90,10 +91,12 @@ public abstract class DiagramExporter {
 
 				default:
 					ApplicationManager.instance().getViewManager().showMessage("Found and ignored an unsupported reference");
+					addWarning("Found and ignored an unsupported reference");
 					break;
 				}
 			} catch (NullPointerException e) {
 				ApplicationManager.instance().getViewManager().showMessage("Warning: a reference by model element " + modelElement.getName() + " was null possibly due to referencing a deleted element/diagram.");
+				addWarning("A reference by model element \" + modelElement.getName() + \" was null possibly due to referencing a deleted element/diagram.");
 			}
 
 			if (referenceData != null)
@@ -126,7 +129,7 @@ public abstract class DiagramExporter {
 		while (stereoIter.hasNext()) {
 			IStereotype stereotype = (IStereotype) stereoIter.next();
 			String stereotypeString = stereotype.getName();
-			ApplicationManager.instance().getViewManager().showMessage("Stereotype: " + stereotypeString);
+//			ApplicationManager.instance().getViewManager().showMessage("Stereotype: " + stereotypeString);
 			stereotypes.add(stereotypeString);
 		}
 		return stereotypes;
@@ -163,4 +166,22 @@ public abstract class DiagramExporter {
 	public List<SemanticsData> getExportedSemantics() {
 		return exportedSemantics;
 	}
+
+	protected void addWarning(String warning) {
+		warnings.add(warning);
+	}
+
+	protected void showPopupWarnings() {
+		if (warnings.isEmpty()) {
+			return;
+		}
+
+		String message = String.join("\n", warnings); // Join all warnings with new lines
+
+		ApplicationManager.instance().getViewManager()
+				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), message);
+	}
+
+
 }
+

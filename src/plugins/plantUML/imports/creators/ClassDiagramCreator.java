@@ -92,7 +92,6 @@ public class ClassDiagramCreator extends DiagramCreator {
 		INARY naryModel = IModelElementFactory.instance().createNARY();
 		String entityId = naryData.getUid();
 		elementMap.put(entityId, naryModel);
-		// TODO: naries dont conflict for some reason..
 		checkAndSettleNameConflict(naryData.getName(), "NARY");
 		naryModel.setName(naryData.getName());
 		putInSemanticsMap(naryModel, naryData);
@@ -142,8 +141,6 @@ public class ClassDiagramCreator extends DiagramCreator {
 		checkAndSettleNameConflict(classData.getName(), "Class");
 		
 		classModel.setName(classData.getName());
-		ApplicationManager.instance().getViewManager()
-         .showMessage("classData name: " + classData.getName() + " classModel name " + classModel.getName());
 		classModel.setVisibility(classData.getVisibility());
 		classModel.setAbstract(classData.isAbstract());
 		for (String stereotype : classData.getStereotypes()) {

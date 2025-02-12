@@ -1,15 +1,11 @@
 package plugins.plantUML.export;
 
-
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
-import plugins.plantUML.models.ActionData;
-import plugins.plantUML.models.JoinFlowNode;
-import plugins.plantUML.models.SplitFlowNode;
-import plugins.plantUML.models.FlowNode;
+import plugins.plantUML.models.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +20,7 @@ public class ActivityDiagramExporter extends DiagramExporter {
     private FlowNode rootNode;
     private List<IModelElement> visited = new ArrayList<>();
     private Map<IModelElement, FlowNode> joinMap = new HashMap<>();
+    List<NoteData> exportedNotes = new ArrayList<>();
 
     public ActivityDiagramExporter(IDiagramUIModel diagram) {
         this.diagram = diagram;
@@ -43,8 +40,7 @@ public class ActivityDiagramExporter extends DiagramExporter {
             throw new UnfitForExportException("Failed to construct activity diagram structure.");
         }
 
-        // System.out.println("=============Constructed Activity Flow:");
-       // logFlow(rootNode, "");
+        logFlow(rootNode, "");
     }
 
     private FlowNode traverseAndBuild(IModelElement currentElement, List<IModelElement> visited) {

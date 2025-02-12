@@ -1,23 +1,15 @@
 package plugins.plantUML.export.writers;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
-import java.util.Map;
-import java.util.jar.Attributes.Name;
 import java.util.stream.Collectors;
 
-import com.vp.plugin.ApplicationManager;
 
+import com.vp.plugin.ApplicationManager;
 import plugins.plantUML.models.ActorData;
-import plugins.plantUML.models.AttributeData;
-import plugins.plantUML.models.ClassData;
-import plugins.plantUML.models.NaryData;
 import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
 import plugins.plantUML.models.UseCaseData;
@@ -62,9 +54,9 @@ public class UseCaseWriter extends PlantUMLWriter {
         }
         
         plantUMLContent.append("@enduml");
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write(plantUMLContent.toString());
-        }
+		try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
+			writer.write(plantUMLContent.toString());
+		}
     }
     
     
@@ -96,8 +88,9 @@ public class UseCaseWriter extends PlantUMLWriter {
 	    StringBuilder usecaseString = new StringBuilder();
 	    String name = useCaseData.getName();
 	    String business = useCaseData.isBusiness() ? "/" : "";
+		String aliasDeclaration = formatAlias(useCaseData.getName()).equals(useCaseData.getName()) ? "" : (" as " + formatAlias(useCaseData.getName()));
 	    usecaseString.append(indent).append("usecase").append(business)
-	                 .append(" (").append(name).append(")");
+	                 .append(" (").append(name).append(")").append(aliasDeclaration);
 	    
 	    if (!useCaseData.getStereotypes().isEmpty()) {
 	        String stereotypesString = useCaseData.getStereotypes().stream()
@@ -117,9 +110,10 @@ public class UseCaseWriter extends PlantUMLWriter {
 	private String writeActor(ActorData actorData, String indent) {
 		StringBuilder actorString = new StringBuilder();
 		String name = actorData.getName();
+		String aliasDeclaration = formatAlias(actorData.getName()).equals(actorData.getName()) ? "" : (" as " + formatAlias(actorData.getName()));
 		String business = actorData.isBusiness() ? "/" : "";
 		actorString.append(indent).append("actor ").append(business)
-					.append(" :" + name + ":");
+					.append(" :" + name + ":").append(aliasDeclaration);
 		if (!actorData.getStereotypes().isEmpty()) {
 	        String stereotypesString = actorData.getStereotypes().stream()
 	            .map(stereotype -> "<<" + stereotype + ">>")

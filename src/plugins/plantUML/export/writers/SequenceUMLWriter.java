@@ -3,6 +3,9 @@ package plugins.plantUML.export.writers;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,7 +67,7 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		}
 
 		plantUMLContent.append("@enduml");
-		try (FileWriter writer = new FileWriter(file)) {
+		try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
 			writer.write(plantUMLContent.toString());
 		}
 	}

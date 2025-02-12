@@ -1,5 +1,6 @@
 package plugins.plantUML.imports.importers;
 
+import net.sourceforge.plantuml.klimt.creole.Display;
 import com.vp.plugin.ApplicationManager;
 import net.sourceforge.plantuml.activitydiagram3.*;
 import plugins.plantUML.models.*;
@@ -93,13 +94,69 @@ public class ActivityDiagramImporter extends DiagramImporter {
                     nodeList.add(handleDecisionInstruction((InstructionIf) child));
                 } else if (child instanceof InstructionFork) {
                     nodeList.add(handleFork((InstructionFork) child));
+                } else if (child instanceof  InstructionWhile) {
+                     nodeList.add(handleWhileLoop((InstructionWhile) child));
+
                 }
             }
             return;
         }
+        if (instruction instanceof InstructionWhile) {
+            System.out.println("WHILE PROCESSING0 : " );
+            nodeList.add(handleWhileLoop((InstructionWhile) instruction));
+            return;
+        }
 
-        ApplicationManager.instance().getViewManager().showMessage("Error: unhandled type of activity instruction\n (supported complex types: if, fork");
+        ApplicationManager.instance().getViewManager().showMessage("Error: unhandled type of activity instruction\n (supported complex types: if, fork, while");
+    }
 
+    private WhileFlowNode handleWhileLoop(InstructionWhile instruction) {
+        try {
+            Field repeatListField = instruction.getClass().getDeclaredField("repeatList");
+            repeatListField.setAccessible(true);
+            Field testDisplayField = instruction.getClass().getDeclaredField("test");
+            testDisplayField.setAccessible(true);
+            Field yesDisplayField = instruction.getClass().getDeclaredField("yes");
+            yesDisplayField.setAccessible(true);
+            Field insSpecialOutField = instruction.getClass().getDeclaredField("specialOut");
+            insSpecialOutField.setAccessible(true);
+            Field backwardField = instruction.getClass().getDeclaredField("backward");
+            backwardField.setAccessible(true);
+
+            Field nextLinkRendererField = instruction.getClass().getDeclaredField("nextLinkRenderer");
+            nextLinkRendererField.setAccessible(true);
+
+            LinkRendering nextLinkDisplay = (LinkRendering) nextLinkRendererField.get(instruction);
+            Instruction specialOut = (Instruction) insSpecialOutField.get(instruction);
+
+            InstructionList whileList = (InstructionList) repeatListField.get(instruction);
+            Display yes = (Display) yesDisplayField.get(instruction);
+            Display test = (Display) testDisplayField.get(instruction);
+            Display backward = (Display) backwardField.get(instruction);
+
+            System.out.println("WHILE PROCESSING1 : " + yes.toString() + test.toString() + nextLinkDisplay.getDisplay().toString() + "asdf   " + backward.toString());
+
+
+
+            WhileFlowNode whileNode = new WhileFlowNode();
+            whileNode.setTestLabel(removeBrackets(test.toString()));
+            whileNode.setYesLabel(removeBrackets(yes.toString()));
+            if (backward != Display.NULL)
+                whileNode.setBackwardAction(removeBrackets(backward.toString()));
+
+            traverseInstructions(whileList, whileNode.getFlowNodeList());
+
+
+            if (specialOut != null) {
+                FlowNode special = handleSimpleInstruction(specialOut);
+                whileNode.setSpecialOut(special);
+            }
+
+            return whileNode;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
 
     }
 
@@ -190,8 +247,6 @@ public class ActivityDiagramImporter extends DiagramImporter {
                 }
 
             }
-
-
             // now to handle the else branch, the very last one
             Branch elseBranch = (Branch) elseField.get(instruction);
             InstructionList listElse = (InstructionList) listOfBranch.get(elseBranch);
@@ -203,8 +258,6 @@ public class ActivityDiagramImporter extends DiagramImporter {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     private SplitBranch handleBranch(InstructionList list) throws IllegalAccessException {
@@ -233,6 +286,8 @@ public class ActivityDiagramImporter extends DiagramImporter {
                 branch.getNodeList().add(handleDecisionInstruction((InstructionIf) child));
             } else if (child instanceof  InstructionFork) {
                 branch.getNodeList().add(handleFork((InstructionFork) child));
+            } else if (child instanceof InstructionWhile) {
+                branch.getNodeList().add(handleWhileLoop((InstructionWhile) child));
             }
         }
 
@@ -262,6 +317,10 @@ public class ActivityDiagramImporter extends DiagramImporter {
         else if (instruction instanceof InstructionStop) actionData.setFinal(true);
         else if (instruction instanceof InstructionEnd) actionData.setFinalFlow(true);
 
+        if (!instruction.getInLinkRendering().isNone()) {
+            actionData.setNextLabel(removeBrackets(instruction.getInLinkRendering().getDisplay().toString()));
+        }
+
         return actionData;
     }
 
@@ -273,7 +332,7 @@ public class ActivityDiagramImporter extends DiagramImporter {
 
         for (FlowNode node : nodeList) {
             if (node instanceof ActionData) {
-                System.out.println(((ActionData) node).getName() + ((ActionData) node).isFinal());
+                System.out.println(((ActionData) node).getName());
             } else
               System.out.println("Node: " + node); // Log the current node
 
@@ -287,9 +346,14 @@ public class ActivityDiagramImporter extends DiagramImporter {
                     System.out.println("Branch: "); // Log the branch
                     logFlow(branch.getNodeList()); // Recursively log the branch nodes
                 }
+            } else if (node instanceof WhileFlowNode) {
+                WhileFlowNode whileNode = (WhileFlowNode) node;
+                System.out.println("While: ");
+
+                logFlow(whileNode.getFlowNodeList());
+
+
             }
         }
     }
-
-
 }

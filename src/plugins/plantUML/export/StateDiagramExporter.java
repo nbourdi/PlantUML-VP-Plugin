@@ -48,6 +48,7 @@ public class StateDiagramExporter extends DiagramExporter {
             if (modelElement == null) {
                 ApplicationManager.instance().getViewManager()
                         .showMessage("Warning: modelElement is null for a diagram element.");
+                addWarning("ModelElement is null for a diagram element.");
                 continue;
             }
 
@@ -85,6 +86,8 @@ public class StateDiagramExporter extends DiagramExporter {
                 ApplicationManager.instance().getViewManager()
                         .showMessage("Warning: diagram element " + modelElement.getName()
                                 + " is of unsupported type " + modelElement.getModelType() +" and will not be processed ... ");
+                addWarning("Diagram element " + modelElement.getName()
+                        + " is of unsupported type " + modelElement.getModelType() +" and was not processed. ");
             }
         }
 
@@ -112,7 +115,7 @@ public class StateDiagramExporter extends DiagramExporter {
     }
 
     private void extractForkJoin(IModelElement modelElement) {
-        ApplicationManager.instance().getViewManager().showMessage("extracting forkjoin ===");
+//        ApplicationManager.instance().getViewManager().showMessage("extracting forkjoin ===");
         String id = modelElement.getId();
 
         ForkJoin forkJoin = new ForkJoin(modelElement.getName());
@@ -150,19 +153,22 @@ public class StateDiagramExporter extends DiagramExporter {
         catch (NullPointerException e) {
             ApplicationManager.instance().getViewManager()
                     .showMessage("Warning: One of the relationship's elements were null possibly due to a previously imported illegal relationship (e.g. an Anchor between classes)");
+            addWarning("One of the relationship's elements were null possibly due to a previously imported illegal relationship (e.g. an Anchor between classes)");
             return;
         }
 
         sourceName = getAliasByType(source, sourceName);
         targetName = getAliasByType(target, targetName);
 
-        ApplicationManager.instance().getViewManager()
-                .showMessage("Relationship from: " + sourceName + " to: " + targetName);
-        ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
+//        ApplicationManager.instance().getViewManager()
+//                .showMessage("Relationship from: " + sourceName + " to: " + targetName);
+//        ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 
         if (sourceName == null || targetName == null) {
             ApplicationManager.instance().getViewManager()
                     .showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+
+            addWarning("One of the relationship's elements were null possibly due to a previously imported illegal relationship (e.g. an Anchor between classes)");
         }
 
         if (Objects.equals(relationship.getModelType(), "Anchor")) return;
@@ -354,6 +360,7 @@ public class StateDiagramExporter extends DiagramExporter {
     private void outputLostTransitionWarning(RelationshipData transition, String reason) {
         ApplicationManager.instance().getViewManager()
                 .showMessage("Warning: Transition '" + transition.getName() + "' lost during export because it's illegal in PlantUML. Reason: " + reason);
+        addWarning("Transition '" + transition.getName() + "' lost during export because it's illegal in PlantUML. Reason: " + reason);
     }
 
 

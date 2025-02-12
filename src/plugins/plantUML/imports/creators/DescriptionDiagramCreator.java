@@ -46,7 +46,6 @@ public class DescriptionDiagramCreator extends DiagramCreator {
         actorDatas.forEach(this::createActor);
         useCaseDatas.forEach(this::createUseCase);
         for (RelationshipData relationshipData : relationshipDatas) {
-            ApplicationManager.instance().getViewManager().showMessage("Trying to create relationship");
             createRelationship(relationshipData);
         }
 

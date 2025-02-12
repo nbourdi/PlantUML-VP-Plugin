@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.vp.plugin.ApplicationManager;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.cucadiagram.Member;
 import net.sourceforge.plantuml.sequencediagram.Participant;
@@ -16,6 +17,7 @@ import plugins.plantUML.models.*;
 public abstract class DiagramImporter {
 	
 	private Map<String, SemanticsData> semanticsMap;
+	protected List<String> warnings = new ArrayList<>();
 	
 	public DiagramImporter(Map<String, SemanticsData> semanticsMap) {
 		this.setSemanticsMap(semanticsMap);
@@ -178,5 +180,19 @@ public abstract class DiagramImporter {
 		this.semanticsMap = semanticsMap;
 	}
 
-	
+	protected void addWarning(String warning) {
+		warnings.add(warning);
+	}
+
+	protected void showPopupWarnings() {
+		if (warnings.isEmpty()) {
+			return;
+		}
+
+		String message = String.join("\n", warnings); // Join all warnings with new lines
+
+		ApplicationManager.instance().getViewManager()
+				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), message);
+	}
+
 }

@@ -1,5 +1,6 @@
 package plugins.plantUML.export;
 import com.vp.plugin.ApplicationManager;
+import com.vp.plugin.ProjectManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 
 import plugins.plantUML.export.writers.*;
@@ -8,6 +9,7 @@ import plugins.plantUML.models.SemanticsData;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DiagramExportPipeline {
@@ -200,5 +202,17 @@ public class DiagramExportPipeline {
 
 
 		return allSuccessful;
+	}
+
+	public void exportAllDiagrams() {
+		ProjectManager projectManager = ApplicationManager.instance().getProjectManager();
+		IDiagramUIModel[] allDiagrams = projectManager.getProject().toDiagramArray();
+		this.exportDiagramList(Arrays.asList(allDiagrams));
+	}
+
+	public void exportSpecificDiagram(String target) throws IOException {
+		ProjectManager projectManager = ApplicationManager.instance().getProjectManager();
+		IDiagramUIModel targetDiagram = projectManager.getProject().getDiagramById(target);
+		this.export(targetDiagram);
 	}
 }

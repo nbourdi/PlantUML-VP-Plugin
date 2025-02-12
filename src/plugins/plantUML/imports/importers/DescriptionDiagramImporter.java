@@ -110,6 +110,9 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 relationshipType = "Generalization";
             } else if (decor == "CROWFOOT") {
                 relationshipType = "Containment";
+            } else if (decor == "ARROW") {
+                relationshipType = "Simple";
+                isAssoc = true;
             }
 
         } else {
@@ -177,7 +180,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         }
         SName sName = entity.getUSymbol().getSName();
         switch (sName) {
-            // TODO: packages, nodes.. when empty are considered leafs
             case component:
                 components.add(extractComponent(entity));
                 break;

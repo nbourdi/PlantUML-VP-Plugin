@@ -47,6 +47,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 			if (modelElement == null) {
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: modelElement is null for a diagram element.");
+				addWarning("ModelElement is null for a diagram element.");
 				continue;
 			}
 			// Add to exported elements preemptively
@@ -72,6 +73,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 						"Warning: diagram element " + modelElement.getName()
 								+ " is of unsupported type and will not be processed ..."
 				);
+				addWarning("Diagram element " + modelElement.getName()
+						+ " is of unsupported type and will not be processed ...");
 			}
 		}
 
@@ -90,7 +93,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 	private void extractAnchor(IRelationship relationship) {
 		IModelElement source = relationship.getFrom();
 		IModelElement target = relationship.getTo();
-		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
+//		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
@@ -103,6 +106,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		if (sourceName == null || targetName == null) {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			addWarning("One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
 			return;
 		}
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),
@@ -114,6 +118,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		if(refModel.getRefersTo() == null) {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("A ref referring to nothing was skipped.");
+			addWarning("A ref referring to nothing was skipped.");
 			return;
 		}
 		String referenceName = refModel.getRefersTo().getName();

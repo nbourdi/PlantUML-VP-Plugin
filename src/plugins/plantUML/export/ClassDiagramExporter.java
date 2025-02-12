@@ -48,6 +48,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 			if (modelElement == null) {
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: modelElement is null for a diagram element.");
+				addWarning("ModelElement is null for a diagram element.");
 				continue;
 			}
 
@@ -73,6 +74,9 @@ public class ClassDiagramExporter extends DiagramExporter {
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: diagram element " + modelElement.getName()
 								+ " is of unsupported type and will not be processed ... ");
+
+				addWarning("Diagram element " + modelElement.getName()
+								+ " is of unsupported type and was not processed. ");
 			}
 		}
 
@@ -131,7 +135,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractContainment(IContainmentUIModel relationship) {
 		IModelElement source = relationship.getFromShape().getModelElement();
 		IModelElement target = relationship.getToShape().getModelElement();
-		ApplicationManager.instance().getViewManager().showMessage("CONTAINMENT EXTRACTING");
 		String sourceName = source.getName();
 		String targetName = target.getName();
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, "Containment", "");
@@ -141,7 +144,14 @@ public class ClassDiagramExporter extends DiagramExporter {
 	private void extractRelationship(IRelationship relationship) {
 		IModelElement source = relationship.getFrom();
 		IModelElement target = relationship.getTo();
-		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
+//		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
+
+		if (source.getName() == null || target.getName() == null) {
+			ApplicationManager.instance().getViewManager()
+					.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			addWarning("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+		}
+
 		String sourceName = source.getName();
 		String targetName = target.getName();
 
@@ -154,7 +164,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 			targetName = getNaryAliasById(target.getId());
 		} else if (target instanceof INOTE) {
 			targetName = getNoteAliasById(target.getId());
-		} 
+		}
 
 		if (relationship instanceof IAssociation) {
 			IAssociation association = (IAssociation) relationship;
@@ -194,14 +204,11 @@ public class ClassDiagramExporter extends DiagramExporter {
 			}
 		}
 
-		ApplicationManager.instance().getViewManager()
-				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
-		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
+//		ApplicationManager.instance().getViewManager()
+//				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
+//		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 
-		if (sourceName == null || targetName == null) {
-			ApplicationManager.instance().getViewManager()
-			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
-		}
+
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(), relationship.getName());
 		relationshipDatas.add(relationshipData);
 	}
@@ -227,7 +234,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
-		ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
+//		ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
 
 		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true, false);
 		packageData.setDescription(packageModel.getDescription());

@@ -5,6 +5,9 @@ import plugins.plantUML.models.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +33,7 @@ public class ActivityUMLWriter extends PlantUMLWriter {
 
         plantUMLContent.append("@enduml\n");
 
-        try (FileWriter writer = new FileWriter(file)) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
             writer.write(plantUMLContent.toString());
         }
     }
@@ -104,6 +107,15 @@ public class ActivityUMLWriter extends PlantUMLWriter {
             }
         }
         plantUMLContent.append("endif\n");
+
+        if (!joinStack.isEmpty()) {
+            JoinFlowNode join = joinStack.pop();
+            generateFlowUML(join.getNextNode(), plantUMLContent);
+        }
+        FlowNode continuationNode = findJoinContinuation(decisionNode);
+        if (continuationNode != null) {
+            generateFlowUML(continuationNode, plantUMLContent);
+        }
     }
 
     private void writeForkAndJoin(StringBuilder plantUMLContent, SplitFlowNode forkNode) {

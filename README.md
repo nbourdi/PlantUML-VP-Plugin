@@ -2,7 +2,7 @@
 
 ## Supported Diagram Types
 
-The plugin currently supports conversion from and to:
+The plugin currently supports conversion from/to:
 
 - Class Diagram
 - Use Case Diagram

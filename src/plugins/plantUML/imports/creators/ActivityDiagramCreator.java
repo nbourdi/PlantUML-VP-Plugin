@@ -5,16 +5,11 @@ import com.vp.plugin.DiagramManager;
 import com.vp.plugin.diagram.IActivityDiagramUIModel;
 import com.vp.plugin.diagram.IShapeTypeConstants;
 import com.vp.plugin.diagram.IShapeUIModel;
+import com.vp.plugin.diagram.connector.IControlFlowUIModel;
 import com.vp.plugin.diagram.shape.*;
-import com.vp.plugin.model.IActivityPartition;
-import com.vp.plugin.model.IActivitySwimlane2;
-import com.vp.plugin.model.IControlFlow;
-import com.vp.plugin.model.IModelElement;
+import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
-import plugins.plantUML.models.ActionData;
-import plugins.plantUML.models.FlowNode;
-import plugins.plantUML.models.SplitBranch;
-import plugins.plantUML.models.SplitFlowNode;
+import plugins.plantUML.models.*;
 
 import java.util.*;
 
@@ -50,12 +45,14 @@ public class ActivityDiagramCreator extends DiagramCreator{
         ApplicationManager.instance().getDiagramManager().openDiagram(activityDiagram);
     }
 
-    private void createControlFlow(IModelElement previous, IModelElement current) {
+    private void createControlFlow(IModelElement previous, IModelElement current, String label) {
         if (previous == null || current == null) return;
         IControlFlow controlFlow = IModelElementFactory.instance().createControlFlow();
         controlFlow.setFrom(previous);
         controlFlow.setTo(current);
-        diagramManager.createConnector(activityDiagram, controlFlow, shapeMap.get(previous), shapeMap.get(current), null);
+        controlFlow.setName(label);
+        IControlFlowUIModel connector = (IControlFlowUIModel) diagramManager.createConnector(activityDiagram, controlFlow, shapeMap.get(previous), shapeMap.get(current), null);
+        connector.resetCaption();
     }
 
     private IModelElement createFlowNode(FlowNode flowNode, IModelElement previousUpNode) {
@@ -78,7 +75,7 @@ public class ActivityDiagramCreator extends DiagramCreator{
             }
             element.setName(((ActionData) flowNode).getName());
             shapeMap.put(element, shape);
-            createControlFlow(previousUpNode, element);
+            createControlFlow(previousUpNode, element, ((ActionData) flowNode).getNextLabel());
             
             String swimlane = ((ActionData) flowNode).getSwimlane();
             if (!swimlane.isEmpty()) {
@@ -95,10 +92,11 @@ public class ActivityDiagramCreator extends DiagramCreator{
                 shapeMap.put(element, shape);
                 shape.resetCaption();
 
-                createControlFlow(previousUpNode, element);
+                createControlFlow(previousUpNode, element, "");
 
                 for (SplitBranch branch : ((SplitFlowNode) flowNode).getSplitBranches()) {
                     List<FlowNode> nodes = branch.getNodeList();
+                    if (nodes.isEmpty()) break;
                     IModelElement previous = createFlowNode(nodes.get(0), element);
 
                     for (int i = 1; i < nodes.size(); i++) {
@@ -112,19 +110,17 @@ public class ActivityDiagramCreator extends DiagramCreator{
                 shape = (IForkNodeUIModel) diagramManager.createDiagramElement(activityDiagram, element);
                 shapeMap.put(element, shape);
 
-                createControlFlow(previousUpNode, element);
+                createControlFlow(previousUpNode, element, "");
 
                 List<IModelElement> lastInBranch = new ArrayList<>();
 
                 for (SplitBranch branch : ((SplitFlowNode) flowNode).getSplitBranches()) {
                     List<FlowNode> nodes = branch.getNodeList();
                     IModelElement previous = createFlowNode(nodes.get(0), element);
-//                    createControlFlow(element, previous);
 
                     for (int i = 1; i < nodes.size(); i++) {
                         FlowNode node = nodes.get(i);
                         IModelElement current = createFlowNode(node, previous);
-                        // createControlFlow(previous, current);
                         previous = current;
                     }
                     // we reached the end of the branch, save the last element to link with the join
@@ -145,12 +141,46 @@ public class ActivityDiagramCreator extends DiagramCreator{
                 shapeMap.put(joinElement, joinShape);
 
                 for (IModelElement lastInBranchItem : lastInBranch)
-                    createControlFlow(lastInBranchItem, joinElement);
+                    createControlFlow(lastInBranchItem, joinElement, "" );
                 return joinElement;
             }
+        } else if (flowNode instanceof WhileFlowNode) {
+            element = IModelElementFactory.instance().createDecisionNode();
+            element.setName(((WhileFlowNode) flowNode).getTestLabel());
+            shape = (IDecisionNodeUIModel) diagramManager.createDiagramElement(activityDiagram, element);
+            shape.resetCaption();
+            shapeMap.put(element, shape);
+
+            createControlFlow(previousUpNode, element, "");
+            List<FlowNode> nodes = ((WhileFlowNode) flowNode).getFlowNodeList();
+            IModelElement previous = createFlowNode(nodes.get(0), element);
+
+            for (int i = 1; i < nodes.size(); i++) {
+                FlowNode node = nodes.get(i);
+                IModelElement current = createFlowNode(node, previous);
+                previous = current;
+            }
+
+            if (!((WhileFlowNode) flowNode).getBackwardAction().isEmpty()) {
+                // extra backward action
+                IActivityAction backwardAction = IModelElementFactory.instance().createActivityAction();
+                backwardAction.setName(((WhileFlowNode) flowNode).getBackwardAction());
+                IActivityActionUIModel backwardShape = (IActivityActionUIModel) diagramManager.createDiagramElement(activityDiagram, backwardAction);
+                shapeMap.put(backwardAction, backwardShape);
+                createControlFlow(previous, backwardAction, "");
+                previous = backwardAction;
+            }
+            createControlFlow(previous, element, "");
+
+            if (((WhileFlowNode) flowNode).getSpecialOut() != null) {
+                createFlowNode(((WhileFlowNode) flowNode).getSpecialOut(), element);
+            }
+
+            return element;
         }
         return element;
     }
+
 
     private IActivityPartition createSwimlaneIfNotExist(String swimlane) {
         if (createdSwimlanes.contains(swimlane)) {

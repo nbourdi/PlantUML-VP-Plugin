@@ -3,6 +3,9 @@ package plugins.plantUML.export.writers;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,16 +60,15 @@ public class ClassUMLWriter extends PlantUMLWriter {
         }
         
         plantUMLContent.append("@enduml");
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write(plantUMLContent.toString());
-        }
+		try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
+			writer.write(plantUMLContent.toString());
+		}
     }
     
     private String writeNary(NaryData naryData, String indent) {
 		
 	    StringBuilder naryString = new StringBuilder();
 	    String alias = naryData.getAlias();
-	    String id = naryData.getId();
 	    String name = naryData.getName();
 	    
 	    naryString.append(indent).append("diamond ")

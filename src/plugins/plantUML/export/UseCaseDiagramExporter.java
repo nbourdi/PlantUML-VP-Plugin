@@ -65,7 +65,6 @@ public class UseCaseDiagramExporter extends DiagramExporter {
             IModelElement modelElement = diagramElement.getModelElement();
 
             if (modelElement != null) {
-//
                 if (modelElement instanceof IActor) {
                     extractActor((IActor) modelElement, null);
                 } else if (modelElement instanceof IUseCase) {
@@ -79,13 +78,16 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                 } else {
                 	ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element " + modelElement.getName() + 
                 			" is UNSUPPORTED and will not be processed ... .");
+                    addWarning("Diagram element " + modelElement.getName() +
+                            " is of unsupported type and was not processed");
                 }
                 
             } else {
                 ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
+                addWarning("ModelElement is null for a diagram element.");
             }
         }
-        exportedNotes = getNotes(); // from base diagram exporter
+        exportedNotes = getNotes();
 
     }
 
@@ -183,7 +185,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     }
 
 	private void extractPackagedPackage(IModelElement childElement, PackageData parent) {
-        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
+//        ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + childElement.getName());
         
         PackageData packageData = new PackageData(childElement.getName(), null, null, null, true, childElement instanceof ISystem);
         packageData.setDescription(childElement.getDescription());
