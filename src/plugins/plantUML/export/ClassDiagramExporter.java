@@ -40,6 +40,8 @@ public class ClassDiagramExporter extends DiagramExporter {
 	public void extract() {
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
+		ApplicationManager.instance().getViewManager().showMessage("== all emements sizwe: " + allElements.length);
+
 		List<IRelationship> deferredRelationships = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
@@ -56,9 +58,9 @@ public class ClassDiagramExporter extends DiagramExporter {
 			allExportedElements.add(modelElement);
 
 			if (modelElement instanceof IClass) {
-				if (isRootLevel(modelElement)) {
+			//	if (isRootLevel(modelElement)) {
 					extractClass((IClass) modelElement, null);
-				}
+				//}
 			} else if (modelElement instanceof IPackage) {
 				extractPackage((IPackage) modelElement);
 			} else if (modelElement instanceof INARY) {

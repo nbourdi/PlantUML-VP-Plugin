@@ -161,7 +161,7 @@ public class DiagramExportPipeline {
 
 	private File createOutputFile(String title, String contentType) throws IOException {
 		StringBuilder fileName = new StringBuilder();
-		fileName.append(title.replaceAll("[^a-zA-Z0-9._-]", "_"));
+		fileName.append(title.replaceAll("[^a-zA-Z0-9\u0370-\u03FF]", "_"));
 		if (contentType.equals("json")) fileName.append("_semantics");
 		fileName.append(".txt");
 		File outputFile = new File(outputFolder, fileName.toString());

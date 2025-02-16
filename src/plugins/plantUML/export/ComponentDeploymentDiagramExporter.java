@@ -61,13 +61,14 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 	private boolean processSupportedElement(IModelElement element) {
 		if (element instanceof IComponent) {
-			if (isRootLevel(element)) extractComponent((IComponent) element, null, null);
+
+			if (!isRootLevel(element)) extractComponent((IComponent) element, null, null);
 		} else if (element instanceof IClass) {
-			if (isRootLevel(element)) extractInterface((IClass) element, null);
+			if (!isRootLevel(element)) extractInterface((IClass) element, null);
 		} else if (element instanceof INode) {
-			if (isRootLevel(element)) extractNode((INode) element, null, null);
+			if (!isRootLevel(element)) extractNode((INode) element, null, null);
 		} else if (element instanceof IArtifact) {
-			if (isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
+			if (!isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
 		} else if (element instanceof IPackage) {
 			extractPackage((IPackage) element);
 		} else if (element instanceof INOTE) {
@@ -172,9 +173,9 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		} else if (target instanceof INOTE) {
 			targetName = getNoteAliasById(target.getId());
 		}
-		ApplicationManager.instance().getViewManager()
-				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
-		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
+//		ApplicationManager.instance().getViewManager()
+//				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
+//		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 		if (relationship instanceof IAssociation) {
 			IAssociation association = (IAssociation) relationship;
 
@@ -275,7 +276,6 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractComponent(IComponent componentModel, PackageData packageData, ComponentData parentComponentData) {
-		
 		boolean isInPackage = (componentModel.getParent() instanceof IPackage);
 		boolean isResident = (componentModel.getParent() instanceof IComponent) || (componentModel.getParent() instanceof INode) ;
 		
@@ -311,6 +311,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			packageData.getComponents().add(componentData);
 		if (parentComponentData != null)
 			parentComponentData.getResidents().add(componentData);
+
 	}
 
 

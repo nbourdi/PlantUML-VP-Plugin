@@ -44,7 +44,7 @@ public class ClassUMLWriter extends PlantUMLWriter {
         }
 
         for (ClassData classData : classes) {
-        	if(!classData.isInPackage())  
+        	if(!classData.isInPackage())
         		plantUMLContent.append(writeClass(classData, ""));
         }
         

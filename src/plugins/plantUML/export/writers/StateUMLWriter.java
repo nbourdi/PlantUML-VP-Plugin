@@ -117,7 +117,6 @@ public class StateUMLWriter extends PlantUMLWriter {
         stateString.append(" : ").append(name);
         stateString.append("\n");
         return  stateString.toString();
-
     }
 
     private String writeRegions(StateData stateData, String indent) {
