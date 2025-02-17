@@ -109,11 +109,13 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 	private void extractActor(IActor modelElement, PackageData packageData) {
 		boolean isInPackage = (modelElement.getParent() instanceof IPackage);
+        boolean isBusiness = modelElement.isBusinessModel();
     	String name = modelElement.getName();
     	ActorData actorData = new ActorData(name);
     	actorData.setInPackage(isInPackage);
         actorData.setDescription(modelElement.getDescription());
     	actorData.setStereotypes(extractStereotypes(modelElement));
+        actorData.setBusiness(isBusiness);
         addSemanticsIfExist(modelElement, actorData);
     	exportedActors.add(actorData);
     	if (packageData != null) packageData.getActors().add(actorData);

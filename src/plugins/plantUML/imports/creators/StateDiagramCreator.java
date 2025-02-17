@@ -47,6 +47,7 @@ public class StateDiagramCreator extends DiagramCreator {
         historyModel.setName(history.getName());
         elementMap.put(history.getUid(), historyModel);
         shapeMap.put(historyModel, historyShape);
+        historyShape.resetCaption();
     }
 
     private void createForkJoin(ForkJoin forkJoin) {
@@ -61,6 +62,7 @@ public class StateDiagramCreator extends DiagramCreator {
         }
         elementMap.put(forkJoin.getUid(), forkOrJoin);
         shapeMap.put(forkOrJoin, shape);
+        shape.resetCaption();
     }
 
 
@@ -69,13 +71,12 @@ public class StateDiagramCreator extends DiagramCreator {
         String entityId = stateChoice.getUid();
         elementMap.put(entityId, choiceModel);
 
-        //no name conflict.
-
         choiceModel.setName(stateChoice.getName());
 
         IChoiceUIModel choiceShape = (IChoiceUIModel) diagramManager.createDiagramElement(stateDiagram, choiceModel);
         shapeMap.put(choiceModel, choiceShape);
         choiceShape.fitSize();
+        choiceShape.resetCaption();
     }
 
     private void createState(StateData stateData) {
@@ -121,6 +122,7 @@ public class StateDiagramCreator extends DiagramCreator {
 
         shapeMap.put(stateModel, stateShape);
         stateShape.fitSize();
+//        stateShape.resetCaption();
 
     }
 

@@ -56,25 +56,25 @@ public class StateDiagramExporter extends DiagramExporter {
             allExportedElements.add(modelElement);
 
             if (modelElement instanceof IState2) {
-                if (isRootLevel(modelElement)) {
+               // if (isRootLevel(modelElement)) {
                    extractState((IState2) modelElement, null);
-                }
+               // }
             } else if (modelElement instanceof IInitialPseudoState) {
-                if (isRootLevel(modelElement)) {
+                //if (isRootLevel(modelElement)) {
                     extractInitFin(modelElement, null, true);
-                }
+                //}
             } else if (modelElement instanceof IFinalState2) {
-                if (isRootLevel(modelElement)) {
+                //if (isRootLevel(modelElement)) {
                     extractInitFin(modelElement, null, false);
-                }
+                //}
             } else if (modelElement instanceof IChoice) {
-                if (isRootLevel(modelElement)) {
+                //if (isRootLevel(modelElement)) {
                     extractChoice((IChoice) modelElement, null);
-                }
+                //}
             } else if (modelElement instanceof IShallowHistory || modelElement instanceof IDeepHistory) {
-                if (isRootLevel(modelElement)) {
+                //if (isRootLevel(modelElement)) {
                     extractHistory(modelElement, null);
-                }
+                //}
             } else if (modelElement instanceof  IFork || modelElement instanceof IJoin) {
                 extractForkJoin(modelElement);
             } else if (modelElement instanceof INOTE) {
@@ -169,6 +169,7 @@ public class StateDiagramExporter extends DiagramExporter {
                     .showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
 
             addWarning("One of the relationship's elements were null possibly due to a previously imported illegal relationship (e.g. an Anchor between classes)");
+            return;
         }
 
         if (Objects.equals(relationship.getModelType(), "Anchor")) return;

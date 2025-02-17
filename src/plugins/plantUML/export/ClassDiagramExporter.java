@@ -58,15 +58,15 @@ public class ClassDiagramExporter extends DiagramExporter {
 			allExportedElements.add(modelElement);
 
 			if (modelElement instanceof IClass) {
-			//	if (isRootLevel(modelElement)) {
+			//if (isRootLevel(modelElement)) {
 					extractClass((IClass) modelElement, null);
-				//}
+			//	}
 			} else if (modelElement instanceof IPackage) {
 				extractPackage((IPackage) modelElement);
 			} else if (modelElement instanceof INARY) {
-				if (isRootLevel(modelElement)) {
+			//	if (isRootLevel(modelElement)) {
 					extractNary((INARY) modelElement, null);
-				}
+			//	}
 			} else if (modelElement instanceof INOTE) {
 				extractNote((INOTE) modelElement);
 			} else if (modelElement instanceof IRelationship) {

@@ -55,7 +55,6 @@ public class SequenceDiagramCreator extends  DiagramCreator {
             diagramElement.resetCaption();
             diagramElement.resetCaptionSize();
         }
-        diagramManager.layout(sequenceDiagram, DiagramManager.LAYOUT_AUTO);
     }
 
     private void createFragment(CombinedFragment fragment) {

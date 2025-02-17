@@ -10,6 +10,7 @@ import java.util.Map;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.DiagramManager;
 import com.vp.plugin.diagram.IClassDiagramUIModel;
+import com.vp.plugin.diagram.IConnectorUIModel;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.shape.INoteUIModel;
@@ -148,8 +149,9 @@ public abstract class DiagramCreator {
 			relationshipElement.setName(relationshipData.getName());
 		}
 
-		diagramManager.createConnector(diagram, relationshipElement, shapeMap.get(fromModelElement),
+		IConnectorUIModel connector = (IConnectorUIModel) diagramManager.createConnector(diagram, relationshipElement, shapeMap.get(fromModelElement),
 				shapeMap.get(toModelElement), null);
+		connector.resetCaption();
 	}
 
 	private void createAssociation(AssociationData associationData, IModelElement from, IModelElement to) {

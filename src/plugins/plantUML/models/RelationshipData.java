@@ -48,6 +48,10 @@ public class RelationshipData {
 			symbol = "..>";
 			label = "<<abstraction>> \n ";
 			break;
+			case "Permission":
+				symbol = "..>";
+				label = "<<permit>> \n ";
+				break;
 		case "Usage":
 			symbol = "..>";
 			label = "<<use>> \n ";

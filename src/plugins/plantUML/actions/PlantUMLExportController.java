@@ -20,10 +20,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class PlantUMLExportController implements VPActionController {
 
@@ -196,12 +194,24 @@ public class PlantUMLExportController implements VPActionController {
             ProjectManager projectManager = ApplicationManager.instance().getProjectManager();
             IDiagramUIModel[] allDiagrams = projectManager.getProject().toDiagramArray();
 
+            // Use HashSet for Java 8 compatibility
+            Set<String> allowedTypes = new HashSet<>(Arrays.asList(
+                    "ClassDiagram", "ComponentDiagram", "DeploymentDiagram",
+                    "InteractionDiagram", "ActivityDiagram", "UseCaseDiagram", "StateDiagram"
+            ));
+
             Map<String, List<IDiagramUIModel>> grouped = new TreeMap<>();
+
             for (IDiagramUIModel diagram : allDiagrams) {
                 String type = diagram.getType(); // Get the diagram type
-                grouped.computeIfAbsent(type, k -> new ArrayList<>()).add(diagram);
+
+                if (allowedTypes.contains(type)) { // Filter only allowed types
+                    String formattedType = type.replaceAll("([a-z])([A-Z])", "$1 $2"); // Add spaces between words
+                    grouped.computeIfAbsent(formattedType, k -> new ArrayList<>()).add(diagram);
+                }
             }
             return grouped;
         }
+
     }
 }

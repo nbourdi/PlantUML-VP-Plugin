@@ -112,7 +112,7 @@ public class UseCaseWriter extends PlantUMLWriter {
 		String name = actorData.getName();
 		String aliasDeclaration = formatAlias(actorData.getName()).equals(actorData.getName()) ? "" : (" as " + formatAlias(actorData.getName()));
 		String business = actorData.isBusiness() ? "/" : "";
-		actorString.append(indent).append("actor ").append(business)
+		actorString.append(indent).append("actor").append(business).append(" ")
 					.append(" :" + name + ":").append(aliasDeclaration);
 		if (!actorData.getStereotypes().isEmpty()) {
 	        String stereotypesString = actorData.getStereotypes().stream()
