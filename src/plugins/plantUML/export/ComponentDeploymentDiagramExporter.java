@@ -63,13 +63,13 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	private boolean processSupportedElement(IModelElement element) {
 		if (element instanceof IComponent) {
 
-			if (!isRootLevel(element)) extractComponent((IComponent) element, null, null);
+			if (isRootLevel(element)) extractComponent((IComponent) element, null, null);
 		} else if (element instanceof IClass) {
-			if (!isRootLevel(element)) extractInterface((IClass) element, null);
+			if (isRootLevel(element)) extractInterface((IClass) element, null);
 		} else if (element instanceof INode) {
-			if (!isRootLevel(element)) extractNode((INode) element, null, null);
+			if (isRootLevel(element)) extractNode((INode) element, null, null);
 		} else if (element instanceof IArtifact) {
-			if (!isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
+			if (isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
 		} else if (element instanceof IPackage) {
 			extractPackage((IPackage) element);
 		} else if (element instanceof INOTE) {

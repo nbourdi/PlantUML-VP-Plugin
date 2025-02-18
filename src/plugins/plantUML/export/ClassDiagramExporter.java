@@ -1,8 +1,6 @@
 package plugins.plantUML.export;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
@@ -10,6 +8,7 @@ import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.connector.IContainmentUIModel;
 import com.vp.plugin.model.*;
 
+import org.antlr.v4.codegen.model.ModelElement;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
@@ -19,6 +18,9 @@ import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.OperationData.Parameter;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
+
+import static com.vp.plugin.diagram.IShapeTypeConstants.SHAPE_TYPE_INITIAL_NODE;
+import static com.vp.plugin.diagram.IShapeTypeConstants.SHAPE_TYPE_PACKAGE;
 
 public class ClassDiagramExporter extends DiagramExporter {
 
@@ -30,6 +32,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 	List<NaryData> exportedNary = new ArrayList<>();
 	List<NoteData> exportedNotes = new ArrayList<>();
 
+
 	private final List<NaryData> allExportedNary = new ArrayList<>();
 
 	public ClassDiagramExporter(IDiagramUIModel diagram) {
@@ -40,10 +43,18 @@ public class ClassDiagramExporter extends DiagramExporter {
 	public void extract() {
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
+		IDiagramElement[] packageDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_PACKAGE);
+		for (IDiagramElement packageElement : packageDiagramElems) {
+			String packageModelId = packageElement.getModelElement().getId();
+			packageModelIds.add(packageModelId);
+		}
+
 
 		List<IRelationship> deferredRelationships = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
+
+
 			IModelElement modelElement = diagramElement.getModelElement();
 
 			if (modelElement == null) {
@@ -57,15 +68,15 @@ public class ClassDiagramExporter extends DiagramExporter {
 			allExportedElements.add(modelElement);
 
 			if (modelElement instanceof IClass) {
-			//if (isRootLevel(modelElement)) {
+			if (isRootLevelInDiagram(modelElement)) {
 					extractClass((IClass) modelElement, null);
-			//	}
+			}
 			} else if (modelElement instanceof IPackage) {
 				extractPackage((IPackage) modelElement);
 			} else if (modelElement instanceof INARY) {
-			//	if (isRootLevel(modelElement)) {
+				if (isRootLevelInDiagram(modelElement)) {
 					extractNary((INARY) modelElement, null);
-			//	}
+				}
 			} else if (modelElement instanceof INOTE) {
 				extractNote((INOTE) modelElement);
 			} else if (modelElement instanceof IRelationship) {
@@ -94,8 +105,10 @@ public class ClassDiagramExporter extends DiagramExporter {
 		exportedNotes = getNotes();
 	}
 
+
+
 	private void extractClass(IClass classModel, PackageData packageData) {
-		boolean isInPackage = (classModel.getParent() instanceof IPackage);
+		boolean isInPackage = !isRootLevelInDiagram(classModel);
 		ClassData classData = new ClassData(classModel.getName(), classModel.isAbstract(), classModel.getVisibility(),
 				isInPackage);
 		classData.setDescription(classModel.getDescription());
@@ -110,19 +123,20 @@ public class ClassDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractNary(INARY naryModel, PackageData packageData) {
-		boolean isInPackage = (naryModel.getParent() instanceof IPackage);
+		boolean isInPackage = !isRootLevelInDiagram(naryModel);
 		String name = naryModel.getName();
 		String id = naryModel.getId();
 		NaryData naryData = new NaryData(name, id, isInPackage);
 		naryData.setDescription(naryModel.getDescription());
 		addSemanticsIfExist(naryModel, naryData);
-		
+
 		if (packageData != null)
 			packageData.getNaries().add(naryData);
 		else exportedNary.add(naryData); // i changed if bug
-		
+
 		allExportedNary.add(naryData); // naries are to be reversed by id so whether in package or not, need to add so that relationships arent pointing to null.
 	}
+
 
 	private String getNaryAliasById(String naryId) {
 		for (NaryData naryData : allExportedNary) {
@@ -146,7 +160,9 @@ public class ClassDiagramExporter extends DiagramExporter {
 		IModelElement source = relationship.getFrom();
 		IModelElement target = relationship.getTo();
 //		ApplicationManager.instance().getViewManager().showMessage("rel type? " + relationship.getModelType());
-
+		if (!allExportedElements.contains(source) || !allExportedElements.contains(target)) {
+			return;
+		}
 		if (source.getName() == null || target.getName() == null) {
 			ApplicationManager.instance().getViewManager()
 					.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
@@ -214,7 +230,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 
 	private void extractPackage(IPackage packageModel) {
 
-		if (!(packageModel.getParent() instanceof IPackage)) {
+		if (isRootLevelInDiagram(packageModel)) {
 			PackageData packageData = new PackageData(packageModel.getName(), null, null, null, false, false);
 			packageData.setDescription(packageModel.getDescription());
 			IModelElement[] childElements = packageModel.toChildArray();
@@ -233,7 +249,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractPackagedPackage(IPackage packageModel, PackageData parent) {
-//		ApplicationManager.instance().getViewManager().showMessage("Extracting package: " + packageModel.getName());
 
 		PackageData packageData = new PackageData(packageModel.getName(), null, null, null, true, false);
 		packageData.setDescription(packageModel.getDescription());

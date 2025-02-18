@@ -31,6 +31,7 @@ public abstract class DiagramExporter {
 	
 	// Set of all exported elements for constant lookup so that no relationships with un-exported elements are written
 	protected Set<IModelElement> allExportedElements = new HashSet<>();
+	protected Set<String> packageModelIds = new HashSet<>();
 
 	protected SemanticsData extractSemantics(IModelElement modelElement) {
 		List<Reference> extractedReferences = extractReferences((IHasChildrenBaseModelElement) modelElement);
@@ -96,7 +97,7 @@ public abstract class DiagramExporter {
 				}
 			} catch (NullPointerException e) {
 				ApplicationManager.instance().getViewManager().showMessage("Warning: a reference by model element " + modelElement.getName() + " was null possibly due to referencing a deleted element/diagram.");
-				addWarning("A reference by model element \" + modelElement.getName() + \" was null possibly due to referencing a deleted element/diagram.");
+				addWarning("A reference by model element " + modelElement.getName() + " was null possibly due to referencing a deleted element/diagram.");
 			}
 
 			if (referenceData != null)
@@ -157,6 +158,10 @@ public abstract class DiagramExporter {
 
 	protected boolean isRootLevel(IModelElement element) {
 		return (element.getParent() == null);
+	}
+
+	protected boolean isRootLevelInDiagram(IModelElement modelElement) {
+		return isRootLevel(modelElement) || !packageModelIds.contains(modelElement.getParent().getId());
 	}
 
 	public List<NoteData> getNotes() {
