@@ -10,6 +10,7 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
     private String prevLabel;
     private List<SplitBranch> splitBranches = new ArrayList<>();
     private boolean isMergeStyleJoin;
+    private String swimlane;
 
     public SplitFlowNode(String name, String type) {
         super(name);
@@ -48,5 +49,13 @@ public class SplitFlowNode extends BaseWithSemanticsData implements FlowNode {
 
     public void setMergeStyleJoin(boolean mergeStyleJoin) {
         isMergeStyleJoin = mergeStyleJoin;
+    }
+
+    public String getSwimlane() {
+        return swimlane;
+    }
+
+    public void setSwimlane(String swimlane) {
+        this.swimlane = swimlane;
     }
 }

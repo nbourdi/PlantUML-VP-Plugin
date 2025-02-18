@@ -206,7 +206,9 @@ public class PlantUMLExportController implements VPActionController {
                 String type = diagram.getType(); // Get the diagram type
 
                 if (allowedTypes.contains(type)) { // Filter only allowed types
-                    String formattedType = type.replaceAll("([a-z])([A-Z])", "$1 $2"); // Add spaces between words
+                    String formattedType;
+                    if (type == "InteractionDiagram") formattedType = "Sequence Diagram";
+                    else formattedType = type.replaceAll("([a-z])([A-Z])", "$1 $2"); // Add spaces between words
                     grouped.computeIfAbsent(formattedType, k -> new ArrayList<>()).add(diagram);
                 }
             }

@@ -1,7 +1,6 @@
 package plugins.plantUML.imports.importers;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,9 +11,7 @@ import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
 import net.sourceforge.plantuml.abel.Link;
 import net.sourceforge.plantuml.classdiagram.AbstractEntityDiagram;
-import net.sourceforge.plantuml.descdiagram.DescriptionDiagram;
 import net.sourceforge.plantuml.style.SName;
-import org.pushingpixels.flamingo.api.common.AbstractFileViewPanel;
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
@@ -80,6 +77,8 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         if (isDecorated1 && isDecorated2) {
             ApplicationManager.instance().getViewManager()
                     .showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
+
+            addWarning("An unsupported type of relationship with TWO ends was found and not imported.");
             return null;
         }
         String lineStyle = link.getType().getStyle().toString();
@@ -131,6 +130,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 default:
                     ApplicationManager.instance().getViewManager()
                             .showMessage("Warning: an unsupported type of relationship was found and not imported.");
+                    addWarning("An unsupported type of relationship was found and not imported.");
                     break;
             }
         }
@@ -143,10 +143,10 @@ public class DescriptionDiagramImporter extends DiagramImporter {
             targetID = link.getEntity1().getUid();
         }
 
-        if(relationshipType.isEmpty()) return null; // TODO: temp fix.
+        if(relationshipType.isEmpty()) return null;
 
         if (isAssoc) {
-            AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+            AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, fromEndAggregation);
             associationData.setSourceID(sourceID);
             associationData.setTargetID(targetID);
 
@@ -176,6 +176,8 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         // ideally leafTypes would be more specific than they are for component, workaround by getting SNames from USymbols
         if (entity.getUSymbol() == null) {
             ApplicationManager.instance().getViewManager().showMessage("Warning: An entity is of unsupported type for description diagram (component/deployment/usecase): " + entity.getDisplay().toString());
+            addWarning("An entity is of unsupported type for description diagram (component/deployment/usecase): " + entity.getDisplay().toString());
+
             return;
         }
         SName sName = entity.getUSymbol().getSName();
@@ -244,7 +246,6 @@ public class DescriptionDiagramImporter extends DiagramImporter {
         String key = name + "|Actor";
         if (entity.getUSymbol().getSName() == SName.business) {
             actorData.setBusiness(true);
-            ApplicationManager.instance().getViewManager().showMessage("========== BUSINESS ACTOR");
         }
 
         boolean hasSemantics = getSemanticsMap().containsKey(key);
@@ -323,6 +324,7 @@ public class DescriptionDiagramImporter extends DiagramImporter {
                 return;
             }
             ApplicationManager.instance().getViewManager().showMessage("Warning: USymbol is null for a group...");
+            addWarning("USymbol (type) is null for a group element and was not imported.");
             return;
         }
         SName sName = groupEntity.getUSymbol().getSName();

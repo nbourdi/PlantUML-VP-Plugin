@@ -44,8 +44,6 @@ public class SequenceDiagramImporter extends  DiagramImporter {
             extractMessage((AbstractMessage) event);
         } else if (event instanceof Grouping) { // fragments
             extractGrouping((Grouping) event);
-        } else if (event instanceof LifeEvent) { // activate, deactivate, create
-            ApplicationManager.instance().getViewManager().showMessage("LifeEvent");
         } else if (event instanceof Note) {
             extractNoteEvent((Note) event); // In Sequence notes are events, can't use the entity method like with the other diagrams.
         } else if (event instanceof Reference) { // ref over

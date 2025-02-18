@@ -103,6 +103,5 @@ public class PlantUMLImportController implements VPActionController {
     }
 
     public void update(VPAction action) {
-        // No additional logic needed for updating the action
     }
 }

@@ -2,29 +2,18 @@ package plugins.plantUML.imports.importers;
 
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.vp.plugin.ApplicationManager;
 
-import javassist.expr.NewArray;
 import net.sourceforge.plantuml.classdiagram.ClassDiagram;
-import net.sourceforge.plantuml.cucadiagram.Member;
-import net.sourceforge.plantuml.decoration.LinkType;
-import net.sourceforge.plantuml.skin.VisibilityModifier;
-import net.sourceforge.plantuml.wire.WLinkType;
-import org.apache.tools.ant.taskdefs.Pack;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AssociationPoint;
-import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
 import plugins.plantUML.models.NaryData;
 import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
 import plugins.plantUML.models.SemanticsData;
-import plugins.plantUML.models.OperationData.Parameter;
 import net.sourceforge.plantuml.abel.Entity;
 import net.sourceforge.plantuml.abel.GroupType;
 import net.sourceforge.plantuml.abel.LeafType;
@@ -117,11 +106,11 @@ public class ClassDiagramImporter extends DiagramImporter {
 		boolean isDecorated1 = (!Objects.equals(decor1, "NONE") && !Objects.equals(decor1, "NOT_NAVIGABLE"));
 		boolean isDecorated2 = (!Objects.equals(decor2, "NONE") && !Objects.equals(decor2, "NOT_NAVIGABLE"));
 		String decor = (isDecorated1 ? decor1 : decor2);
-		boolean isNotNavigable = (Objects.equals(decor1, "NOT_NAVIGABLE") || Objects.equals(decor2, "NOT_NAVIGABLE"));
 
 		if (isDecorated1 && isDecorated2) {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("Warning: an unsupported type of relationship with TWO ends was found and not imported.");
+			addWarning("An unsupported type of relationship with TWO ends was found and not imported.");
 			return null;
 		}
 		String lineStyle = link.getType().getStyle().toString();
@@ -188,6 +177,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			default:
 				ApplicationManager.instance().getViewManager()
 				.showMessage("Warning: an unsupported type of relationship was found and not imported.");
+				addWarning("An unsupported type of relationship was found and not imported.");
 				break;
 			}
 		}
@@ -200,7 +190,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			targetID = link.getEntity1().getUid();
 		}
 
-		if(relationshipType.isEmpty()) return null; // TODO: temp fix.
+		if(relationshipType.isEmpty()) return null;
 
 		if (isAssocClassSolid || isAssocClassDashed)  {
 
@@ -230,7 +220,7 @@ public class ClassDiagramImporter extends DiagramImporter {
 			
 
 		} else if (isAssoc) {
-				AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, !isNotNavigable, fromEndAggregation);
+				AssociationData associationData = new AssociationData(link.getEntity1().getName(), link.getEntity2().getName(), relationshipType, removeBrackets(link.getLabel().toString()) , fromEndMultiplicity, toEndMultiplicity, fromEndAggregation);
 				associationData.setSourceID(sourceID);
 				associationData.setTargetID(targetID);
 
@@ -268,7 +258,8 @@ public class ClassDiagramImporter extends DiagramImporter {
 
 		else {
 			ApplicationManager.instance().getViewManager()
-			.showMessage("Warning: a leaf was not imported due to unsupported type...");
+			.showMessage("Warning: a leaf was not imported due to unsupported type: " + leafType);
+			addWarning("A leaf was not imported due to unsupported type: " + leafType);
 		}
 	}
 

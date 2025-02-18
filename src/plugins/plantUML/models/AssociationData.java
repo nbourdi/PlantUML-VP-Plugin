@@ -4,18 +4,14 @@ public class AssociationData extends RelationshipData {
 
 	private String fromEndMultiplicity;
 	private String toEndMultiplicity;
-	// private boolean fromEndNavigable; // basically unsupported 
-	private boolean toEndNavigable;
 	
 	private String Uid;
 	
-	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity, 
-			String toEndMultiplicity, boolean toEndNavigable, String fromEndAggregation) {
+	public AssociationData(String source, String target, String type, String name, String fromEndMultiplicity,
+                           String toEndMultiplicity, String fromEndAggregation) {
 		super(source, target, type, name);
 		this.fromEndMultiplicity = fromEndMultiplicity == null ? "" : fromEndMultiplicity;
 		this.toEndMultiplicity = toEndMultiplicity == null ? "" : toEndMultiplicity;
-		// this.fromEndNavigable = fromEndNavigable;
-		this.toEndNavigable = toEndNavigable;
 		if (fromEndAggregation == "shared") {
 			this.setType("Aggregation");
 		} else if (fromEndAggregation == "composite") {
@@ -34,7 +30,6 @@ public class AssociationData extends RelationshipData {
 	    String prefix = (!getName().isEmpty()) ? " : " : "";
 	    String fromMultiplicity = (fromEndMultiplicity != null && !fromEndMultiplicity.isEmpty()) ? "\"" + fromEndMultiplicity + "\" " : "";
 	    String toMultiplicity = (toEndMultiplicity != null && !toEndMultiplicity.isEmpty()) ? " \"" + toEndMultiplicity + "\"" : "";
-	    String toNavig = toEndNavigable ? "" : "x";
 	    
 	    // Determine the association type symbol
 	    String type = getType();
@@ -49,7 +44,6 @@ public class AssociationData extends RelationshipData {
 	          .append(" ")
 	          .append(fromMultiplicity)
 	          .append(symbol)
-	          .append(toNavig)
 	          .append(toMultiplicity)
 	          .append(" ")
 	          .append(formatAlias(getTarget()))
@@ -60,9 +54,6 @@ public class AssociationData extends RelationshipData {
 	    return output.toString();
 	}
 
-	public boolean isToEndNavigable() {
-		return toEndNavigable;
-	}
 	
 	public String getFromEndMultiplicity() {
 		return fromEndMultiplicity;

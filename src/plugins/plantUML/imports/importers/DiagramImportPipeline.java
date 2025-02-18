@@ -283,6 +283,8 @@ public class DiagramImportPipeline {
 				importer.getNoteDatas(),
 				importer.getAssociationPoints());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+		importer.showPopupWarnings();
+		creator.showPopupWarnings();
 	}
 
 	private void handleActivityDiagram(ActivityDiagram3 activityDiagram, String diagramTitle) {
@@ -292,6 +294,8 @@ public class DiagramImportPipeline {
 		ActivityDiagramCreator creator = new ActivityDiagramCreator(diagramTitle);
 		creator.createDiagram(importer.getNodeList());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+		importer.showPopupWarnings();
+		creator.showPopupWarnings();
 	}
 
 	private void handleStateDiagram(StateDiagram diagram, String diagramTitle) {
@@ -300,6 +304,9 @@ public class DiagramImportPipeline {
 
 		StateDiagramCreator creator = new StateDiagramCreator(diagramTitle);
 		creator.createDiagram(importer.getStateDatas(), importer.getStateChoices(), importer.getForkJoins(), importer.getRelationshipDatas(), importer.getHistories(), importer.getNoteDatas());
+		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+		importer.showPopupWarnings();
+		creator.showPopupWarnings();
 	}
 
 	private void handleDescriptionDiagram(AbstractEntityDiagram descriptionDiagram, String diagramTitle) {
@@ -318,6 +325,8 @@ public class DiagramImportPipeline {
 				importer.getArtifactDatas(),
 				importer.getNoteDatas());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+		importer.showPopupWarnings();
+		creator.showPopupWarnings();
 	}
 
 	private void handleSequenceDiagram(SequenceDiagram sequenceDiagram, String diagramTitle) {
@@ -332,6 +341,8 @@ public class DiagramImportPipeline {
 				importer.getCombinedFragments(),
 				importer.getNoteDatas());
 		modelSemanticsMap.putAll(creator.getDiagramSemanticsMap());
+		importer.showPopupWarnings();
+		creator.showPopupWarnings();
 	}
 
 

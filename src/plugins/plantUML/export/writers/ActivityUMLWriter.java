@@ -67,7 +67,7 @@ public class ActivityUMLWriter extends PlantUMLWriter {
 
             if (action.getNextNode() != null) {
                 generateFlowUML(action.getNextNode(), plantUMLContent);
-            } else if (!action.isFinal() && !action.isFinal()) {
+            } else if (!action.isFinal() && !action.isFinalFlow()) {
                 plantUMLContent.append("kill\n");
             }
 
@@ -89,6 +89,15 @@ public class ActivityUMLWriter extends PlantUMLWriter {
     }
 
     private void writeDecision(StringBuilder plantUMLContent, SplitFlowNode decisionNode) {
+
+
+        if (decisionNode.getSwimlane() != null) {
+            if (activeSwimlane != decisionNode.getSwimlane())
+                plantUMLContent.append("|" + decisionNode.getSwimlane() + "|\n");
+            activeSwimlane = decisionNode.getSwimlane();
+        }
+
+
         plantUMLContent.append("if (" + decisionNode.getName() + ") then ");
 
         List<FlowNode> branches = decisionNode.getBranches();

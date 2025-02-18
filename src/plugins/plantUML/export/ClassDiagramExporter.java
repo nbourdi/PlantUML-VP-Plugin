@@ -40,7 +40,6 @@ public class ClassDiagramExporter extends DiagramExporter {
 	public void extract() {
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
 
-		ApplicationManager.instance().getViewManager().showMessage("== all emements sizwe: " + allElements.length);
 
 		List<IRelationship> deferredRelationships = new ArrayList<>();
 
@@ -183,9 +182,7 @@ public class ClassDiagramExporter extends DiagramExporter {
 				 toEndMultiplicity = toEnd.getMultiplicity().equals("Unspecified") ? "" : toEnd.getMultiplicity();
 			}
 			AssociationData associationData = new AssociationData(sourceName, targetName, relationship.getModelType(),
-					relationship.getName(), fromEndMultiplicity, toEndMultiplicity,
-					// fromEnd.getNavigable() == 0,
-					toEnd.getNavigable() == 0, fromEnd.getAggregationKind());
+					relationship.getName(), fromEndMultiplicity, toEndMultiplicity, fromEnd.getAggregationKind());
 			relationshipDatas.add(associationData);
 			return;
 		}

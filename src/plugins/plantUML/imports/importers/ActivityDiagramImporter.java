@@ -102,12 +102,13 @@ public class ActivityDiagramImporter extends DiagramImporter {
             return;
         }
         if (instruction instanceof InstructionWhile) {
-            System.out.println("WHILE PROCESSING0 : " );
+//            System.out.println("WHILE PROCESSING0 : " );
             nodeList.add(handleWhileLoop((InstructionWhile) instruction));
             return;
         }
 
         ApplicationManager.instance().getViewManager().showMessage("Error: unhandled type of activity instruction\n (supported complex types: if, fork, while");
+        throw new UnfitForImportException("Unsupported type of activity instruction\n (supported complex types: if, fork, while");
     }
 
     private WhileFlowNode handleWhileLoop(InstructionWhile instruction) {
@@ -134,7 +135,7 @@ public class ActivityDiagramImporter extends DiagramImporter {
             Display test = (Display) testDisplayField.get(instruction);
             Display backward = (Display) backwardField.get(instruction);
 
-            System.out.println("WHILE PROCESSING1 : " + yes.toString() + test.toString() + nextLinkDisplay.getDisplay().toString() + "asdf   " + backward.toString());
+//            System.out.println("WHILE PROCESSING1 : " + yes.toString() + test.toString() + nextLinkDisplay.getDisplay().toString() + "asdf   " + backward.toString());
 
 
 

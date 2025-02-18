@@ -51,6 +51,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 				ApplicationManager.instance().getViewManager().showMessage(
 						"Warning: diagram element " + modelElement.getName() + " is of unsupported type and will not be processed ..."
 				);
+				addWarning("Diagram element " + modelElement.getName() + " is of unsupported type and was not processed.");
 			}
 		}
 
@@ -94,7 +95,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			nodeData.getArtifacts().add(artifactData);
 	}
 
-	private void extractNode(INode nodeModel, PackageData packageData, ComponentData parentNodeData) { // TODO might treat it as componentdata? do they not hold the same models?
+	private void extractNode(INode nodeModel, PackageData packageData, ComponentData parentNodeData) {
 		boolean isInPackage = (nodeModel.getParent() instanceof IPackage);
 		boolean isResident = (nodeModel.getParent() instanceof IComponent) || (nodeModel.getParent() instanceof INode);
 
@@ -192,8 +193,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			}
 			AssociationData associationData = new AssociationData(sourceName, targetName, relationship.getModelType(),
 					relationship.getName(), fromEndMultiplicity, toEndMultiplicity,
-					// fromEnd.getNavigable() == 0,
-					toEnd.getNavigable() == 0, fromEnd.getAggregationKind());
+					fromEnd.getAggregationKind());
 			relationshipDatas.add(associationData);
 			return;
 		}
@@ -204,6 +204,8 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		if (sourceName == null || targetName == null) {
 			ApplicationManager.instance().getViewManager()
 			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			addWarning("One of a relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			return;
 		}
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),
 				relationship.getName());

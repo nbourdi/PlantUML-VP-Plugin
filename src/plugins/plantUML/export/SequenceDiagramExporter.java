@@ -156,6 +156,12 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		String sourceName = (source == null) ? "[" : source.getName();
 		String targetName = (target == null) ? "]" : target.getName();
 
+		if (sourceName.isEmpty() && source instanceof IInteractionLifeLine) {
+			sourceName = ((IInteractionLifeLine) source).getBaseClassifierAsModel().getName();
+		}
+		if (targetName.isEmpty() && target instanceof IInteractionLifeLine) {
+			targetName = ((IInteractionLifeLine) target).getBaseClassifierAsModel().getName();
+		}
 		MessageData messageData = new MessageData(sourceName, targetName, "Message", messageModel.getName());
 
 		if (messageModel.getType() == IMessage.TYPE_CREATE_MESSAGE) {
@@ -193,6 +199,7 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		IModelElement classifierModel = lifelifeModel.getBaseClassifierAsModel();
 		if (classifierModel != null) {
 			lifelineData.setClassifier(classifierModel.getName());
+			if (name.isEmpty()) lifelineData.setName(classifierModel.getName());
 		}
 
 

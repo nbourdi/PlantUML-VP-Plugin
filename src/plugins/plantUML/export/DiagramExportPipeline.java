@@ -31,10 +31,13 @@ public class DiagramExportPipeline {
 		String diagramTitle = diagram.getName();
 		File outputFile = createOutputFile(diagramTitle, "uml");
 
+		DiagramExporter exporter;
+
 		try {
 			switch (diagramType) {
 			case "ClassDiagram":
 				ClassDiagramExporter cde = new ClassDiagramExporter(diagram);
+				exporter = cde;
 				cde.extract();
 				ClassUMLWriter classWriter = new ClassUMLWriter(
 						cde.getExportedClasses(), 
@@ -54,6 +57,7 @@ public class DiagramExportPipeline {
 			case "ComponentDiagram":
 			case "DeploymentDiagram":
 				ComponentDeploymentDiagramExporter comde = new ComponentDeploymentDiagramExporter(diagram);
+				exporter = comde;
 				comde.extract();
 				ComponentDeploymentUMLWriter componentWriter = new ComponentDeploymentUMLWriter(
 						comde.getNotes(), 
@@ -72,6 +76,7 @@ public class DiagramExportPipeline {
 
 			case "InteractionDiagram":
 				SequenceDiagramExporter seqde = new SequenceDiagramExporter(diagram);
+				exporter = seqde;
 				seqde.extract();
 				SequenceUMLWriter sequenceWriter = new SequenceUMLWriter(
 						seqde.getNotes(),
@@ -92,6 +97,7 @@ public class DiagramExportPipeline {
 
 			case "UseCaseDiagram":
 				UseCaseDiagramExporter ucde = new UseCaseDiagramExporter(diagram);
+				exporter = ucde;
 				ucde.extract();
 				UseCaseWriter useCaseWriter = new UseCaseWriter(
 						ucde.getExportedUseCases(), 
@@ -102,13 +108,13 @@ public class DiagramExportPipeline {
 						);
 				useCaseWriter.writeToFile(outputFile);
 				if (ucde.getExportedSemantics() != null && !ucde.getExportedSemantics().isEmpty()) {
-
 					projectSemanticsDatas.addAll(ucde.getExportedSemantics());
 				}
 
 				break;
 			case "StateDiagram":
 				StateDiagramExporter stde = new StateDiagramExporter(diagram);
+				exporter = stde;
 				stde.extract();
 				StateUMLWriter stateUMLWriter = new StateUMLWriter(
 						stde.getNotes(),
@@ -127,6 +133,7 @@ public class DiagramExportPipeline {
 				break;
 			case "ActivityDiagram":
 				ActivityDiagramExporter acde = new ActivityDiagramExporter(diagram);
+				exporter = acde;
 				acde.extract();
 				ActivityUMLWriter activityUMLWriter =  new ActivityUMLWriter(
 						acde.getNotes(),
@@ -150,6 +157,9 @@ public class DiagramExportPipeline {
 					.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error: " + diagram.getName() + " is unfit for exporting\n" + e.getMessage());
 			throw e;
 		}
+
+		// all Warnings in popup
+		exporter.showPopupWarnings();
 	}
 
 	public List<SemanticsData> exportPartialSemantics(DiagramExporter diagramExporter) {

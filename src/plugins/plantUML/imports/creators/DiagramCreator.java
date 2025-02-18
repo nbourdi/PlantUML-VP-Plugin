@@ -32,6 +32,7 @@ public abstract class DiagramCreator {
 	protected Map<IModelElement, IDiagramElement> shapeMap = new HashMap<>(); // map of modelelements to their created shape UImodels
 	
 	protected IDiagramUIModel diagram;
+	protected List<String> warnings = new ArrayList<>();
 
 	public DiagramCreator(String diagramTitle) {
 		this.setDiagramTitle(diagramTitle);	
@@ -59,6 +60,8 @@ public abstract class DiagramCreator {
 			ApplicationManager.instance().getViewManager().
 				showMessage("Warning: the modelElement \""+ name + "\" of type " + type + " was renamed to " + conflictingElement.getName() +
 						" due to import of conflicting plantuml element.");
+			addWarning("\""+ name + "\" of type " + type + " renamed to " + conflictingElement.getName() +
+					" due to import of conflicting plantuml element.");
         }
 	}
 
@@ -107,6 +110,7 @@ public abstract class DiagramCreator {
 		if (fromModelElement == null || toModelElement == null) {
 			ApplicationManager.instance().getViewManager()
 					.showMessage("Warning: a relationship was skipped because one of its ends was not a previously imported model element.");
+			addWarning("A relationship was skipped because one of its ends was not a previously imported model element.");
 			return;
 		}
 
@@ -139,6 +143,7 @@ public abstract class DiagramCreator {
 			default:
 				ApplicationManager.instance().getViewManager()
 						.showMessage("Warning: unsupported type " + relationshipData.getType() + " of relationship was skipped.");
+				addWarning("Unsupported type " + relationshipData.getType() + " of relationship was skipped.");
 				return;
 		}
 
@@ -171,5 +176,20 @@ public abstract class DiagramCreator {
 		if (!"NULL".equals(associationData.getName())) {
 			association.setName(associationData.getName());
 		}
+	}
+
+	protected void addWarning(String warning) {
+		warnings.add(warning);
+	}
+
+	public void showPopupWarnings() {
+		if (warnings.isEmpty()) {
+			return;
+		}
+
+		String message = String.join("\n", warnings); // Join all warnings with new lines
+
+		ApplicationManager.instance().getViewManager()
+				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), message);
 	}
 }

@@ -1,42 +1,25 @@
 package plugins.plantUML.export;
 
-import java.util.Iterator;
-
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.model.IActor;
 import com.vp.plugin.model.IAssociation;
 import com.vp.plugin.model.IAssociationEnd;
-import com.vp.plugin.model.IAttribute;
-import com.vp.plugin.model.IClass;
 import com.vp.plugin.model.IModelElement;
-import com.vp.plugin.model.INARY;
 import com.vp.plugin.model.INOTE;
-import com.vp.plugin.model.IOperation;
 import com.vp.plugin.model.IPackage;
 import com.vp.plugin.model.IRelationship;
-import com.vp.plugin.model.IStereotype;
 import com.vp.plugin.model.ISystem;
 import com.vp.plugin.model.IUseCase;
 
-import javassist.expr.Instanceof;
-import plugins.plantUML.export.writers.UseCaseWriter;
 import plugins.plantUML.models.ActorData;
 import plugins.plantUML.models.AssociationData;
-import plugins.plantUML.models.AttributeData;
-import plugins.plantUML.models.ClassData;
-import plugins.plantUML.models.NaryData;
 import plugins.plantUML.models.NoteData;
-import plugins.plantUML.models.OperationData;
 import plugins.plantUML.models.PackageData;
 import plugins.plantUML.models.RelationshipData;
 import plugins.plantUML.models.UseCaseData;
-import plugins.plantUML.models.OperationData.Parameter;
 
-import com.vp.plugin.model.IParameter;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,7 +76,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 
 	private void extractUseCase(IUseCase modelElement, PackageData packageData) {
-    	boolean isInPackage = (modelElement.getParent() instanceof IPackage);
+    	boolean isInPackage = (modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem);
     	String name = modelElement.getName();
     	boolean isBusiness = modelElement.isBusinessModel();
 		UseCaseData useCaseData = new UseCaseData(name);
@@ -108,7 +91,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 
 	private void extractActor(IActor modelElement, PackageData packageData) {
-		boolean isInPackage = (modelElement.getParent() instanceof IPackage);
+		boolean isInPackage = (modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem);
         boolean isBusiness = modelElement.isBusinessModel();
     	String name = modelElement.getName();
     	ActorData actorData = new ActorData(name);
@@ -152,7 +135,6 @@ public class UseCaseDiagramExporter extends DiagramExporter {
                     relationship.getName(),
                     fromEndMultiplicity,
                     toEndMultiplicity,
-                    toEnd.getNavigable() == 0, 
                     fromEnd.getAggregationKind()
             );
 

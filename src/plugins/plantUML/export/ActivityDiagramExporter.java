@@ -7,10 +7,7 @@ import com.vp.plugin.model.*;
 import com.vp.plugin.model.factory.IModelElementFactory;
 import plugins.plantUML.models.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.vp.plugin.diagram.IShapeTypeConstants.*;
 
@@ -74,7 +71,6 @@ public class ActivityDiagramExporter extends DiagramExporter {
                 joinMap.put(currentElement, join);
                 IRelationship[] outgoingRelationships2 = currentElement.toFromRelationshipArray();
                 if (outgoingRelationships2.length > 0) {
-                    ApplicationManager.instance().getViewManager().showMessage("1 outgoing relation");
                     IModelElement targetElement = outgoingRelationships2[0].getTo();
 
                     FlowNode nextNode = traverseAndBuild(targetElement, visited);
@@ -99,7 +95,8 @@ public class ActivityDiagramExporter extends DiagramExporter {
                     }
                 }
                 return merge;
-
+            case SHAPE_TYPE_ACTIVITY_SWIMLANE2:
+                return null;
             default:
                 throw new UnfitForExportException("ERROR: can't export type " + currentElement.getModelType() + ", no PlantUML equivalent.");
         }
@@ -151,11 +148,23 @@ public class ActivityDiagramExporter extends DiagramExporter {
 
     private SplitFlowNode extractDecision(IModelElement decisionModel) {
         SplitFlowNode decisionNode = new SplitFlowNode(decisionModel.getName(), "decision");
+
+        IModelElement[] partition =
+                decisionModel.getReferencingModels(
+                        IModelElementFactory.MODEL_TYPE_ACTIVITY_PARTITION, // <------ owner’s modelType (Partition’s modelType)
+                        IActivityPartition.PROP_CONTAINED_ELEMENTS // <----- owner’s propertyName (Partition’s PROP_CONTAINED_ELEMENTS)
+                );
+
+        // could be in multiple due to other activity diagrams, but safe enough to assume it's just in this one, hence [0]
+        if (partition.length > 0) {
+            decisionNode.setSwimlane(partition[0].getName());
+        }
+
         IRelationship[] outgoingRelationships = decisionModel.toFromRelationshipArray();
         for (IRelationship relationship : outgoingRelationships) {
             IModelElement targetElement = relationship.getTo();
             FlowNode branch = traverseAndBuild(targetElement, visited);
-            branch.setPrevLabelBranch(relationship.getName());
+            Objects.requireNonNull(branch).setPrevLabelBranch(relationship.getName());
             decisionNode.addBranch(branch);
         }
         return decisionNode;
@@ -192,7 +201,6 @@ public class ActivityDiagramExporter extends DiagramExporter {
         return null;
     }
 
-// TODO delete
     private void logFlow(FlowNode node, String indent) {
         if (node == null) {
             return;

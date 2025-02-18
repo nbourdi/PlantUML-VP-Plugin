@@ -75,6 +75,7 @@ public class ActivityDiagramCreator extends DiagramCreator{
             }
             element.setName(((ActionData) flowNode).getName());
             shapeMap.put(element, shape);
+            shape.fitSize();
             createControlFlow(previousUpNode, element, ((ActionData) flowNode).getNextLabel());
             
             String swimlane = ((ActionData) flowNode).getSwimlane();
@@ -92,6 +93,8 @@ public class ActivityDiagramCreator extends DiagramCreator{
                 shapeMap.put(element, shape);
                 shape.resetCaption();
 
+                List<IModelElement> lastInBranch = new ArrayList<>();
+
                 createControlFlow(previousUpNode, element, "");
 
                 for (SplitBranch branch : ((SplitFlowNode) flowNode).getSplitBranches()) {
@@ -102,13 +105,33 @@ public class ActivityDiagramCreator extends DiagramCreator{
                     for (int i = 1; i < nodes.size(); i++) {
                         FlowNode node = nodes.get(i);
                         previous = createFlowNode(node, previous);
+
                     }
+                    lastInBranch.add(previous);
                 }
+
+
+                //here add ambi
+
+                IMergeNode mergeNode = IModelElementFactory.instance().createMergeNode();
+                IMergeNodeUIModel mergeShape = (IMergeNodeUIModel) diagramManager.createDiagramElement(activityDiagram, mergeNode);
+
+                shapeMap.put(mergeNode, mergeShape);
+
+                for (IModelElement lastInBranchItem : lastInBranch) {
+                    if (!(lastInBranchItem instanceof IActivityFinalNode || lastInBranchItem instanceof IFlowFinalNode))
+
+                      createControlFlow(lastInBranchItem, mergeNode, "");
+                }
+                return mergeNode;
+
+
             } else if (((SplitFlowNode) flowNode).getType() == "fork") {
                 element = IModelElementFactory.instance().createForkNode();
                 element.setName(((SplitFlowNode) flowNode).getName());
                 shape = (IForkNodeUIModel) diagramManager.createDiagramElement(activityDiagram, element);
                 shapeMap.put(element, shape);
+                shape.fitSize();
 
                 createControlFlow(previousUpNode, element, "");
 
@@ -133,15 +156,20 @@ public class ActivityDiagramCreator extends DiagramCreator{
                 if (((SplitFlowNode) flowNode).isMergeStyleJoin()) { // "end merge" type
                     joinElement = IModelElementFactory.instance().createMergeNode();
                     joinShape = (IMergeNodeUIModel) diagramManager.createDiagramElement(activityDiagram, joinElement);
+                    joinShape.fitSize();
                 }
                 else { // "end fork" type
                     joinElement = IModelElementFactory.instance().createJoinNode();
                     joinShape = (IJoinNodeUIModel) diagramManager.createDiagramElement(activityDiagram, joinElement);
+                    joinShape.fitSize();
                 }
                 shapeMap.put(joinElement, joinShape);
 
-                for (IModelElement lastInBranchItem : lastInBranch)
-                    createControlFlow(lastInBranchItem, joinElement, "" );
+                for (IModelElement lastInBranchItem : lastInBranch) {
+                    if (!(lastInBranchItem instanceof IActivityFinalNode || lastInBranchItem instanceof IFlowFinalNode))
+                        createControlFlow(lastInBranchItem, joinElement, "" );
+                }
+
                 return joinElement;
             }
         } else if (flowNode instanceof WhileFlowNode) {

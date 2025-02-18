@@ -145,7 +145,9 @@ public class StateDiagramImporter extends DiagramImporter {
                 noteDatas.add(extractNote(entity));
                 break;
             default:
-                ApplicationManager.instance().getViewManager().showMessage("NOT EXTRACTED LEAF TYPE : " + leafType);
+                ApplicationManager.instance().getViewManager().showMessage("Warning: A leaf was not imported due to unsupported LeafType: " + leafType);
+                addWarning("A leaf was not imported due to unsupported LeafType: " + leafType);
+
 
         }
 
