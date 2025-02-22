@@ -64,7 +64,7 @@ public class PlantUMLExportController implements VPActionController {
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
             JLabel folderLabel = new JLabel("Output Folder:");
-            outputFolderField = new JTextField("C:\\Users\\30695\\Documents"); //TODO: remove its debug
+            outputFolderField = new JTextField("C:\\Users\\30695\\Documents" ); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
             browseButton.addActionListener((ActionEvent e) -> {
@@ -90,36 +90,69 @@ public class PlantUMLExportController implements VPActionController {
 
             JPanel contentPanel = new JPanel();
             contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-            contentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+            contentPanel.setBorder(new EmptyBorder(15, 10, 10, 10));
             contentPanel.setBackground(Color.WHITE);
 
-            for (Map.Entry<String, List<IDiagramUIModel>> entry : groupedDiagrams.entrySet()) {
-                JLabel categoryLabel = new JLabel(entry.getKey());
-                categoryLabel.setOpaque(true);
-                categoryLabel.setBackground(Color.WHITE);
-                contentPanel.add(categoryLabel);
+            Map<JCheckBox, List<JCheckBox>> categoryCheckBoxMap = new HashMap<>(); // Store category-to-diagram checkboxes mapping
 
-                JPanel checkBoxPanel = new JPanel();
-                checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
+
+            for (Map.Entry<String, List<IDiagramUIModel>> entry : groupedDiagrams.entrySet()) {
+                JPanel categoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5)); // Less space
+                categoryPanel.setBackground(Color.WHITE);
+
+                JCheckBox categoryCheckBox = new JCheckBox(entry.getKey());
+                categoryCheckBox.setBackground(Color.WHITE);
+                categoryCheckBox.setFont(new Font(categoryCheckBox.getFont().getName(), Font.BOLD, 12));
+                categoryPanel.add(categoryCheckBox);
+
+                contentPanel.add(categoryPanel);
+
+                JPanel checkBoxPanel = new JPanel(new GridLayout(0, 1, 5, 5)); // Less indentation
                 checkBoxPanel.setBackground(Color.WHITE);
-                checkBoxPanel.setBorder(new EmptyBorder(5, 15, 15, 15));
+                checkBoxPanel.setBorder(new EmptyBorder(0, 25, 0, 0)); // Reduced left padding
+
+                List<JCheckBox> diagramCheckBoxes = new ArrayList<>();
 
                 for (IDiagramUIModel diagram : entry.getValue()) {
                     JCheckBox checkBox = new JCheckBox(diagram.getName());
                     checkBox.setActionCommand(diagram.getId());
                     checkBox.setBackground(Color.WHITE);
                     allCheckboxes.add(checkBox);
+                    diagramCheckBoxes.add(checkBox);
                     checkBoxPanel.add(checkBox);
+
+                    // Sync individual checkboxes with category
+                    checkBox.addActionListener(e -> {
+                        if (!checkBox.isSelected()) {
+                            categoryCheckBox.setSelected(false);
+                        } else if (diagramCheckBoxes.stream().allMatch(JCheckBox::isSelected)) {
+                            categoryCheckBox.setSelected(true);
+                        }
+                    });
                 }
 
                 contentPanel.add(checkBoxPanel);
+                contentPanel.add(Box.createVerticalStrut(3)); // Reduce vertical space
 
-                contentPanel.add(Box.createVerticalStrut(10));
+                categoryCheckBoxMap.put(categoryCheckBox, diagramCheckBoxes);
+
+                // Sync category checkbox with all diagrams
+                categoryCheckBox.addActionListener(e -> {
+                    boolean isSelected = categoryCheckBox.isSelected();
+                    for (JCheckBox checkBox : diagramCheckBoxes) {
+                        checkBox.setSelected(isSelected);
+                    }
+                });
             }
+
+
 
             JScrollPane scrollPane = new JScrollPane(contentPanel);
             scrollPane.setPreferredSize(new Dimension(700, 500));
             scrollPane.getViewport().setBackground(Color.WHITE);
+
+            scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
 
             mainPanel.add(scrollPane, BorderLayout.CENTER);
 

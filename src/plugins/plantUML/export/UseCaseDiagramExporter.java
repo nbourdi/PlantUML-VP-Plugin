@@ -22,6 +22,9 @@ import plugins.plantUML.models.UseCaseData;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import static com.vp.plugin.diagram.IShapeTypeConstants.*;
 
 
 public class UseCaseDiagramExporter extends DiagramExporter {
@@ -42,41 +45,68 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     public void extract() {
 
 
+        List<IRelationship> deferredRelationships = new ArrayList<>();
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
+
+
+        IDiagramElement[] packageDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_PACKAGE);
+        IDiagramElement[] systemDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_SYSTEM);
+
+        for (IDiagramElement packageElement : packageDiagramElems) {
+            String packageModelId = packageElement.getModelElement().getId();
+            packageModelIds.add(packageModelId);
+        }
+        for (IDiagramElement packageElement : systemDiagramElems) {
+            String packageModelId = packageElement.getModelElement().getId();
+            packageModelIds.add(packageModelId);
+        }
+
+
 
         for (IDiagramElement diagramElement : allElements) {
             IModelElement modelElement = diagramElement.getModelElement();
 
-            if (modelElement != null) {
-                if (modelElement instanceof IActor) {
-                    extractActor((IActor) modelElement, null);
-                } else if (modelElement instanceof IUseCase) {
-                    extractUseCase((IUseCase) modelElement, null);
-                } else if (modelElement instanceof IRelationship) {
-                    extractRelationship((IRelationship) modelElement);
-                } else if (modelElement instanceof IPackage || modelElement instanceof ISystem) {
-                    extractPackage(modelElement);
-                } else if (modelElement instanceof INOTE) {
-                	this.extractNote((INOTE) modelElement);
-                } else {
-                	ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element " + modelElement.getName() + 
-                			" is UNSUPPORTED and will not be processed ... .");
-                    addWarning("Diagram element " + modelElement.getName() +
-                            " is of unsupported type and was not processed");
-                }
-                
-            } else {
-                ApplicationManager.instance().getViewManager().showMessage("Warning: modelElement is null for a diagram element.");
+            if (modelElement == null) {
+                ApplicationManager.instance().getViewManager()
+                        .showMessage("Warning: modelElement is null for a diagram element.");
                 addWarning("ModelElement is null for a diagram element.");
+                continue;
             }
+
+            // Add to exported elements list
+            allExportedElements.add(modelElement);
+
+            if (modelElement instanceof IActor) {
+                extractActor((IActor) modelElement, null);
+            } else if (modelElement instanceof IUseCase) {
+                extractUseCase((IUseCase) modelElement, null);
+            } else if (modelElement instanceof IRelationship) {
+                deferredRelationships.add((IRelationship) modelElement);
+            } else if (modelElement instanceof IPackage || modelElement instanceof ISystem) {
+                extractPackage(modelElement);
+            } else if (modelElement instanceof INOTE) {
+                this.extractNote((INOTE) modelElement);
+            } else {
+                allExportedElements.remove(modelElement);
+                ApplicationManager.instance().getViewManager().showMessage("Warning: diagram element " + modelElement.getName() +
+                        " is UNSUPPORTED and will not be processed ... .");
+                addWarning("Diagram element " + modelElement.getName() +
+                        " is of unsupported type and was not processed");
+            }
+
         }
+
+        for (IRelationship relationship : deferredRelationships) {
+            extractRelationship(relationship);
+        }
+
         exportedNotes = getNotes();
 
     }
 
 
 	private void extractUseCase(IUseCase modelElement, PackageData packageData) {
-    	boolean isInPackage = (modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem);
+    	boolean isInPackage = !isRootLevelInDiagram(modelElement);
     	String name = modelElement.getName();
     	boolean isBusiness = modelElement.isBusinessModel();
 		UseCaseData useCaseData = new UseCaseData(name);
@@ -91,7 +121,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 
 	private void extractActor(IActor modelElement, PackageData packageData) {
-		boolean isInPackage = (modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem);
+		boolean isInPackage = !isRootLevelInDiagram(modelElement);
         boolean isBusiness = modelElement.isBusinessModel();
     	String name = modelElement.getName();
     	ActorData actorData = new ActorData(name);
@@ -108,9 +138,19 @@ public class UseCaseDiagramExporter extends DiagramExporter {
     private void extractRelationship(IRelationship relationship) {
         IModelElement source = relationship.getFrom();
         IModelElement target = relationship.getTo();
+
+        if (!allExportedElements.contains(source) || !allExportedElements.contains(target)) {
+            return;
+        }
         
         String sourceName = source.getName();
         String targetName = target.getName();
+
+        if (source.getName() == null || target.getName() == null) {
+            ApplicationManager.instance().getViewManager()
+                    .showMessage("Warning: One of the relationship's " +(relationship.getName())+ " elements were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+            addWarning("One of the relationship's elements " + (relationship.getName()) + " were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+        }
 
         if (source instanceof INOTE) {
             sourceName = getNoteAliasById(source.getId());
@@ -125,9 +165,12 @@ public class UseCaseDiagramExporter extends DiagramExporter {
         	IAssociationEnd fromEnd = (IAssociationEnd) association.getFromEnd();
             IAssociationEnd toEnd = (IAssociationEnd) association.getToEnd();
 
-            String fromEndMultiplicity = fromEnd.getMultiplicity().equals("Unspecified") ? "" : fromEnd.getMultiplicity();
-            String toEndMultiplicity = toEnd.getMultiplicity().equals("Unspecified") ? "" : toEnd.getMultiplicity();
-            
+
+
+            String fromEndMultiplicity = Objects.toString(fromEnd.getMultiplicity(), "").equals("Unspecified") ? "" : fromEnd.getMultiplicity();
+            String toEndMultiplicity = Objects.toString(toEnd.getMultiplicity(), "").equals("Unspecified") ? "" : toEnd.getMultiplicity();
+
+
             AssociationData associationData = new AssociationData(
             		sourceName,
                     targetName,
@@ -149,7 +192,7 @@ public class UseCaseDiagramExporter extends DiagramExporter {
 
 	private void extractPackage(IModelElement modelElement) {
         
-        if (!(modelElement.getParent() instanceof IPackage || modelElement.getParent() instanceof ISystem)) {
+        if (isRootLevelInDiagram(modelElement)) {
 	        PackageData packageData = new PackageData(modelElement.getName(), null, null, null, false, modelElement instanceof ISystem);
             packageData.setDescription(modelElement.getDescription());
             IModelElement[] childElements = modelElement.toChildArray();

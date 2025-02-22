@@ -83,6 +83,7 @@ public class StateDiagramExporter extends DiagramExporter {
                 deferredRelationships.add((IRelationship) modelElement); // Defer relationships
             } else {
                 allExportedElements.remove(modelElement);
+                if (modelElement instanceof IRegion) break;
                 ApplicationManager.instance().getViewManager()
                         .showMessage("Warning: diagram element " + modelElement.getName()
                                 + " is of unsupported type " + modelElement.getModelType() +" and will not be processed ... ");

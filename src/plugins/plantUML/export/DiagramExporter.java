@@ -13,7 +13,6 @@ import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.INOTE;
 import com.vp.plugin.model.IReference;
 import com.vp.plugin.model.IStereotype;
-import com.vp.vpuml.plugin.umlpluginmodel.ModelElement;
 
 import plugins.plantUML.models.BaseWithSemanticsData;
 import plugins.plantUML.models.NoteData;
@@ -176,16 +175,17 @@ public abstract class DiagramExporter {
 		warnings.add(warning);
 	}
 
-	protected void showPopupWarnings() {
+	protected void showPopupWarnings(String diagramTitle) {
 		if (warnings.isEmpty()) {
 			return;
 		}
 
-		String message = String.join("\n", warnings); // Join all warnings with new lines
+		String message = "Warnings on diagram: " + diagramTitle + "\n" + String.join("\n", warnings); // Add diagram title as first line
 
 		ApplicationManager.instance().getViewManager()
 				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), message);
 	}
+
 
 
 }

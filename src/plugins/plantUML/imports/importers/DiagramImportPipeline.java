@@ -206,7 +206,7 @@ public class DiagramImportPipeline {
 					}
 				}
 				// Handle auto-classification for components
-				if (umlDiagramType == UmlDiagramType.CLASS && source.contains("component")) {
+				if (umlDiagramType == UmlDiagramType.CLASS && (source.contains("component") || source.contains("node"))) {
 					umlDiagramType = UmlDiagramType.DESCRIPTION;
 				}
 

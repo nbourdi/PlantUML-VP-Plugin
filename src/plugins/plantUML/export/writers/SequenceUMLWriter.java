@@ -134,6 +134,8 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		StringBuilder lifelineString = new StringBuilder();
 		String name = lifelineData.getName();
 
+		String aliasDeclaration = formatAlias(lifelineData.getName()).equals(lifelineData.getName()) ? "" : (" as " + formatAlias(lifelineData.getName()));
+
 		String declaration = "participant";
 
 		if (lifelineData.getStereotypes().contains("control")) {
@@ -144,7 +146,7 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 			declaration = "boundary";
 		}
 
-		lifelineString.append(indent).append(declaration).append(" ").append(formatName(name));
+		lifelineString.append(indent).append(declaration).append(" ").append(formatName(name)).append(aliasDeclaration);
 
 		if (!lifelineData.getStereotypes().isEmpty()) {
 			String stereotypesString = lifelineData.getStereotypes().stream()
@@ -157,7 +159,7 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 		}
 		lifelineString.append("\n");
 		if (lifelineData.getClassifier() != null && !lifelineData.getClassifier().isEmpty()) {
-			lifelineString.append("note over ").append(formatName(name)).append(" : ").append("Classifier: ").append(lifelineData.getClassifier());
+			lifelineString.append("note over ").append(formatAlias(lifelineData.getName())).append(" : ").append("Classifier: ").append(lifelineData.getClassifier());
 			lifelineString.append("\n");
 		}
 		return lifelineString.toString();
@@ -166,7 +168,11 @@ public class SequenceUMLWriter extends PlantUMLWriter {
 	private String writeActor(ActorData actorData, String indent) {
 		StringBuilder actorString = new StringBuilder();
 		String name = actorData.getName();
-		actorString.append(indent).append("actor ").append(formatName(name));
+
+		String aliasDeclaration = formatAlias(actorData.getName()).equals(actorData.getName()) ? "" : (" as " + formatAlias(actorData.getName()));
+		actorString.append(indent).append("actor ").append(formatName(name)).append(aliasDeclaration);
+
+
 		if (!actorData.getStereotypes().isEmpty()) {
 			String stereotypesString = actorData.getStereotypes().stream().map(stereotype -> "<<" + stereotype + ">>")
 					.collect(Collectors.joining(", "));

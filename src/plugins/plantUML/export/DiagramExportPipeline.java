@@ -159,7 +159,7 @@ public class DiagramExportPipeline {
 		}
 
 		// all Warnings in popup
-		exporter.showPopupWarnings();
+		exporter.showPopupWarnings(diagramTitle);
 	}
 
 	public List<SemanticsData> exportPartialSemantics(DiagramExporter diagramExporter) {
@@ -173,7 +173,7 @@ public class DiagramExportPipeline {
 		StringBuilder fileName = new StringBuilder();
 		fileName.append(title.replaceAll("[^a-zA-Z0-9\u0370-\u03FF]", "_"));
 		if (contentType.equals("json")) fileName.append("_semantics");
-		fileName.append(".txt");
+		fileName.append(".puml");
 		File outputFile = new File(outputFolder, fileName.toString());
 		if (!outputFile.exists() && !outputFile.createNewFile()) {
 			throw new IOException("Failed to create file: " + outputFile.getAbsolutePath());
@@ -209,7 +209,6 @@ public class DiagramExportPipeline {
 			e.printStackTrace();
 			allSuccessful = false;
 		}
-
 
 		return allSuccessful;
 	}

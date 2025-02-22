@@ -30,7 +30,7 @@ public abstract class PlantUMLWriter {
     }
     
     protected String writeNote(NoteData noteData) {
-        String content = noteData.getContent();
+        String content = noteData.getContent().replaceAll("\n", "\\\\n");
         
         // Return an empty string if content is null or empty
         if (content == null || content.isEmpty()) {
@@ -44,17 +44,18 @@ public abstract class PlantUMLWriter {
         
         return noteString.toString();
     }
-    
+
     protected String formatName(String name) {
-		/*
-		 * Spaces and other non-letter characters are not 
-		 * supported as names for plantUML
-		 */
-	    if (!name.matches("[a-zA-Z0-9]+")) {
-	        return "\"" + name + "\"";
-	    }
-	    return name;
+        /*
+         * Only Greek, Latin letters, and digits are allowed
+         * as names for PlantUML.
+         */
+        if (!name.matches("[\\p{IsLatin}\\p{IsGreek}0-9]+")) { // Allows only Greek, Latin letters, and digits
+            return "\"" + name + "\"";
+        }
+        return name;
     }
+
 
     protected String formatAlias(String name) {
         return name.replaceAll("[^a-zA-Z0-9\u0370-\u03FF]", "_");

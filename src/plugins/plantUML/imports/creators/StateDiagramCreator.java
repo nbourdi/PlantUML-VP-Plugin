@@ -54,11 +54,11 @@ public class StateDiagramCreator extends DiagramCreator {
         IModelElement forkOrJoin;
         IShapeUIModel shape;
         if (forkJoin.isFork()) {
-            forkOrJoin = IModelElementFactory.instance().createForkNode();
-            shape = (IForkNodeUIModel) diagramManager.createDiagramElement(stateDiagram, forkOrJoin);
+            forkOrJoin = IModelElementFactory.instance().createFork();
+            shape = (IForkUIModel) diagramManager.createDiagramElement(stateDiagram, forkOrJoin);
         } else {
-            forkOrJoin = IModelElementFactory.instance().createJoinNode();
-            shape = (IJoinNodeUIModel) diagramManager.createDiagramElement(stateDiagram, forkOrJoin);
+            forkOrJoin = IModelElementFactory.instance().createJoin();
+            shape = (IJoinUIModel) diagramManager.createDiagramElement(stateDiagram, forkOrJoin);
         }
         elementMap.put(forkJoin.getUid(), forkOrJoin);
         shapeMap.put(forkOrJoin, shape);
@@ -81,8 +81,8 @@ public class StateDiagramCreator extends DiagramCreator {
 
     private void createState(StateData stateData) {
 
-        IModelElement stateModel = null;
-        IShapeUIModel stateShape = null;
+        IModelElement stateModel;
+        IShapeUIModel stateShape;
         if (stateData.isStart()) {
             stateModel = IModelElementFactory.instance().createInitialPseudoState();
             stateShape = (IInitialPseudoStateUIModel) diagramManager.createDiagramElement(stateDiagram, stateModel);

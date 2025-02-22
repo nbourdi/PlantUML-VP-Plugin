@@ -57,7 +57,7 @@ public class PlantUMLImportController implements VPActionController {
             fileChooser.setFileFilter(new FileFilter() {
                 @Override
                 public String getDescription() {
-                    return "*.txt, *.puml";
+                    return "*.txt, *.puml, *.plantuml";
                 }
 
                 @Override

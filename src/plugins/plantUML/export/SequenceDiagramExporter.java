@@ -69,12 +69,16 @@ public class SequenceDiagramExporter extends DiagramExporter {
 				iAnchors.add((IAnchor) modelElement); // Defer processing anchors
 			} else {
 				allExportedElements.remove(modelElement);
-				ApplicationManager.instance().getViewManager().showMessage(
-						"Warning: diagram element " + modelElement.getName()
-								+ " is of unsupported type and will not be processed ..."
-				);
-				addWarning("Diagram element " + modelElement.getName()
-						+ " is of unsupported type and will not be processed ...");
+
+				if (!(modelElement instanceof IActivation)) {
+					ApplicationManager.instance().getViewManager().showMessage(
+							"Warning: diagram element " + modelElement.getName()
+									+ " is of unsupported type and will not be processed ..."
+					);
+					addWarning("Diagram element " + modelElement.getName()
+							+ " is of unsupported type and will not be processed ...");
+				}
+
 			}
 		}
 
@@ -105,8 +109,8 @@ public class SequenceDiagramExporter extends DiagramExporter {
 		} 
 		if (sourceName == null || targetName == null) {
 			ApplicationManager.instance().getViewManager()
-			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
-			addWarning("One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			.showMessage("Warning: One of the Anchor's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+			addWarning("One of the Anchor's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
 			return;
 		}
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),

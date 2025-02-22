@@ -29,6 +29,17 @@
                 <actionController
                         class="plugins.plantUML.actions.PlantUMLExportController"/>
             </action>
+			<action
+					id="ExportActiveAction"
+					actionType="generalAction"
+					label="Active Diagram as PlantUML..."
+					tooltip="Active Diagram as PlantUML..."
+					style="normal"
+					icon="icons/puml-icon.png"
+					ribbonPath="Project/Export/XML">
+				<actionController
+						class="plugins.plantUML.actions.PlantUMLExportActiveController"/>
+			</action>
 		</actionSet>
 	</actionSets>
 </plugin>

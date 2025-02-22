@@ -68,9 +68,9 @@ public class ClassDiagramExporter extends DiagramExporter {
 			allExportedElements.add(modelElement);
 
 			if (modelElement instanceof IClass) {
-			if (isRootLevelInDiagram(modelElement)) {
-					extractClass((IClass) modelElement, null);
-			}
+				if (isRootLevelInDiagram(modelElement)) {
+						extractClass((IClass) modelElement, null);
+				}
 			} else if (modelElement instanceof IPackage) {
 				extractPackage((IPackage) modelElement);
 			} else if (modelElement instanceof INARY) {
@@ -165,8 +165,9 @@ public class ClassDiagramExporter extends DiagramExporter {
 		}
 		if (source.getName() == null || target.getName() == null) {
 			ApplicationManager.instance().getViewManager()
-					.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
-			addWarning("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
+					.showMessage("Warning: One of the relationship's " +(relationship.getName())+ " elements were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+			addWarning("One of the relationship's elements " + (relationship.getName()) + " were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+			return;
 		}
 
 		String sourceName = source.getName();
@@ -274,6 +275,14 @@ public class ClassDiagramExporter extends DiagramExporter {
 			AttributeData attr = new AttributeData(attribute.getVisibility(), attribute.getName(),
 					attribute.getTypeAsString(), attribute.getInitialValueAsString(), attribute.getScope());
 
+			classData.addAttribute(attr);
+		}
+
+		Iterator literalIter = classModel.enumerationLiteralIterator();
+		while (literalIter.hasNext()) {
+			ApplicationManager.instance().getViewManager().showMessage("literal being extracted.");
+			IEnumerationLiteral literal = (IEnumerationLiteral) literalIter.next();
+			AttributeData attr = new AttributeData("", literal.getName(), "", "", "instance");
 			classData.addAttribute(attr);
 		}
 	}

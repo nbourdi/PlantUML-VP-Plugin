@@ -1,9 +1,7 @@
 package plugins.plantUML.export;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 import com.vp.plugin.ApplicationManager;
@@ -13,6 +11,8 @@ import com.vp.plugin.model.*;
 
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
+
+import static com.vp.plugin.diagram.IShapeTypeConstants.*;
 
 public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	
@@ -26,6 +26,9 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	List<PackageData> exportedPackages = new ArrayList<PackageData>();
 	List<PortData> allExportedPorts = new ArrayList<>();
 
+	Set<String> compModelIds = new HashSet<String>();
+	Set<String> nodeModelIds = new HashSet<String>();
+
 	public ComponentDeploymentDiagramExporter(IDiagramUIModel diagram) throws IOException {
 		this.diagram = diagram;
 	}
@@ -33,6 +36,29 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	@Override
 	public void extract() {
 		IDiagramElement[] allElements = diagram.toDiagramElementArray();
+
+
+		IDiagramElement[] packageDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_PACKAGE);
+		IDiagramElement[] compDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_COMPONENT);
+		IDiagramElement[] nodeDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_NODE);
+
+
+
+		for (IDiagramElement packageElement : packageDiagramElems) {
+			String packageModelId = packageElement.getModelElement().getId();
+			packageModelIds.add(packageModelId);
+		}
+
+		for (IDiagramElement compElement : compDiagramElems) {
+			String compeModelId = compElement.getModelElement().getId();
+			compModelIds.add(compeModelId);
+		}
+
+		for (IDiagramElement nodeElement : nodeDiagramElems) {
+			String nodeModelId = nodeElement.getModelElement().getId();
+			nodeModelIds.add(nodeModelId);
+		}
+
 		List<IRelationship> deferredRelationships = new ArrayList<>();
 
 		for (IDiagramElement diagramElement : allElements) {
@@ -62,14 +88,17 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 	private boolean processSupportedElement(IModelElement element) {
 		if (element instanceof IComponent) {
-
-			if (isRootLevel(element)) extractComponent((IComponent) element, null, null);
+			if (isRootLevelInDiagram2(element))
+				extractComponent((IComponent) element, null, null);
 		} else if (element instanceof IClass) {
-			if (isRootLevel(element)) extractInterface((IClass) element, null);
+			if (isRootLevelInDiagram2(element))
+				extractInterface((IClass) element, null);
 		} else if (element instanceof INode) {
-			if (isRootLevel(element)) extractNode((INode) element, null, null);
+			if (isRootLevelInDiagram2(element))
+				extractNode((INode) element, null, null);
 		} else if (element instanceof IArtifact) {
-			if (isRootLevel(element)) extractArtifact((IArtifact) element, null, null);
+			if (isRootLevelInDiagram2(element))
+			    extractArtifact((IArtifact) element, null, null);
 		} else if (element instanceof IPackage) {
 			extractPackage((IPackage) element);
 		} else if (element instanceof INOTE) {
@@ -80,9 +109,17 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		return true;
 	}
 
+
+
+	private boolean isRootLevelInDiagram2(IModelElement modelElement) {
+		return isRootLevel(modelElement) || !packageModelIds.contains(modelElement.getParent().getId()) || !compModelIds.contains(modelElement.getParent().getId()) || !nodeModelIds.contains(modelElement.getParent().getId());
+	}
+
+
 	private void extractArtifact(IArtifact artifactModel, PackageData packageData, ComponentData nodeData) {
-		boolean isInPackage = (artifactModel.getParent() instanceof IPackage);
-		boolean isInNode = (artifactModel.getParent() instanceof INode);
+		boolean isInPackage = (artifactModel.getParent() instanceof IPackage && packageModelIds.contains(artifactModel.getParent().getId()));
+
+		boolean isInNode = (artifactModel.getParent() instanceof INode && nodeModelIds.contains(artifactModel.getParent().getId()));
 
 		ArtifactData artifactData = new ArtifactData(artifactModel.getName(), isInPackage, isInNode);
 		artifactData.setDescription(artifactModel.getDescription());
@@ -96,8 +133,10 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractNode(INode nodeModel, PackageData packageData, ComponentData parentNodeData) {
-		boolean isInPackage = (nodeModel.getParent() instanceof IPackage);
-		boolean isResident = (nodeModel.getParent() instanceof IComponent) || (nodeModel.getParent() instanceof INode);
+		boolean isInPackage = (nodeModel.getParent() instanceof IPackage && packageModelIds.contains(nodeModel.getParent().getId()));
+		boolean isResident = (nodeModel.getParent() instanceof IComponent && compModelIds.contains(nodeModel.getParent().getId()))
+
+				|| (nodeModel.getParent() instanceof INode && nodeModelIds.contains(nodeModel.getParent().getId()));
 
 		ComponentData nodeData = new ComponentData(nodeModel.getName(), isInPackage);
 		nodeData.setNodeComponent(true);
@@ -174,8 +213,22 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 		} else if (target instanceof INOTE) {
 			targetName = getNoteAliasById(target.getId());
 		}
+
+		if (sourceName == null || targetName == null) {
+			ApplicationManager.instance().getViewManager()
+					.showMessage("Warning: One of the relationship's " +(relationship.getName())+ " elements were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+			addWarning("One of the relationship's elements " + (relationship.getName()) + " were null possibly due to illegal relationship (e.g. Anchor between classes) or a hanging connector End");
+			return;
+		}
+
+
+		if (sourceName.isEmpty() && (source instanceof IClass)) {
+			sourceName = source.getId();
+		} if (targetName.isEmpty() && (target instanceof IClass)) {
+			targetName = target.getId();
+		}
 //		ApplicationManager.instance().getViewManager()
-//				.showMessage("Relationship from: " + sourceName + " to: " + targetName);
+//				.showMessage("Relationship from: " + sourceName + source.getModelType() + " to: " + targetName);
 //		ApplicationManager.instance().getViewManager().showMessage("Relationship type: " + relationship.getModelType());
 		if (relationship instanceof IAssociation) {
 			IAssociation association = (IAssociation) relationship;
@@ -197,16 +250,8 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 			relationshipDatas.add(associationData);
 			return;
 		}
-		
 
 
-
-		if (sourceName == null || targetName == null) {
-			ApplicationManager.instance().getViewManager()
-			.showMessage("Warning: One of the relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
-			addWarning("One of a relationship's elements were null possibly due to illegal relationship (e.g. an Anchor between classes)");
-			return;
-		}
 		RelationshipData relationshipData = new RelationshipData(sourceName, targetName, relationship.getModelType(),
 				relationship.getName());
 		relationshipDatas.add(relationshipData);
@@ -214,7 +259,7 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 
 	private void extractPackage(IPackage packageModel) {
 		
-		if (!(packageModel.getParent() instanceof IPackage)) {
+		if (isRootLevelInDiagram2(packageModel)) {
 			PackageData packageData = new PackageData(packageModel.getName(), false);
 			packageData.setDescription(packageModel.getDescription());
 			IModelElement[] childElements = packageModel.toChildArray();
@@ -259,11 +304,12 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractInterface(IClass interfaceModel, PackageData packageData) {
-		boolean isInPackage = (interfaceModel.getParent() instanceof IPackage);
+		boolean isInPackage = (interfaceModel.getParent() instanceof IPackage && packageModelIds.contains(interfaceModel.getParent().getId()));
 		
 		ClassData interfaceData = new ClassData(interfaceModel.getName(), isInPackage);
 		interfaceData.setDescription(interfaceModel.getDescription());
 		interfaceData.setStereotypes(extractStereotypes(interfaceModel));
+		interfaceData.setUid(interfaceModel.getId());
 
 		List<AttributeData> attributes = extractAttributes(interfaceModel::attributeIterator);
 		List<OperationData> operations = extractOperations(interfaceModel::operationIterator);
@@ -278,8 +324,10 @@ public class ComponentDeploymentDiagramExporter extends DiagramExporter {
 	}
 
 	private void extractComponent(IComponent componentModel, PackageData packageData, ComponentData parentComponentData) {
-		boolean isInPackage = (componentModel.getParent() instanceof IPackage);
-		boolean isResident = (componentModel.getParent() instanceof IComponent) || (componentModel.getParent() instanceof INode) ;
+		boolean isInPackage = (componentModel.getParent() instanceof IPackage) && packageModelIds.contains(componentModel.getParent().getId());
+		boolean isResident = (componentModel.getParent() instanceof IComponent && compModelIds.contains(componentModel.getParent().getId()))
+
+				|| (componentModel.getParent() instanceof INode && nodeModelIds.contains(componentModel.getParent().getId()));
 		
 		ComponentData componentData = new ComponentData(componentModel.getName(), isInPackage);
 		componentData.setDescription(componentModel.getDescription());

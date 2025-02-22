@@ -31,7 +31,7 @@ public class ActivityUMLWriter extends PlantUMLWriter {
 
         generateFlowUML(rootFlowNode, plantUMLContent);
 
-        plantUMLContent.append("@enduml\n");
+        plantUMLContent.append("@enduml");
 
         try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
             writer.write(plantUMLContent.toString());
@@ -97,25 +97,43 @@ public class ActivityUMLWriter extends PlantUMLWriter {
             activeSwimlane = decisionNode.getSwimlane();
         }
 
-
-        plantUMLContent.append("if (" + decisionNode.getName() + ") then ");
-
         List<FlowNode> branches = decisionNode.getBranches();
         String branchLabel = branches.get(0).getPrevLabelBranch();
-        if (branchLabel != null && !branchLabel.isEmpty())
+        boolean isSwitch = false;
+
+        if (branches.size() > 2) {
+            plantUMLContent.append("switch (" + decisionNode.getName() + ") \n");
+            plantUMLContent.append("case ");
+
+            if (branchLabel != null && !branchLabel.isEmpty()) {
+                plantUMLContent.append("(" + branchLabel + ")");
+            } else plantUMLContent.append("()");
+
+            isSwitch = true;
+        } else
+            plantUMLContent.append("if (" + decisionNode.getName() + ") then ");
+
+
+
+
+        if (branchLabel != null && !branchLabel.isEmpty() && !isSwitch)
             plantUMLContent.append("(" + branchLabel + ")");
         plantUMLContent.append("\n");
         for (int i = 0; i < branches.size(); i++) {
             generateFlowUML(branches.get(i), plantUMLContent);
             if (i < branches.size() - 1) {
                 String branchLabel2 = branches.get(i+1).getPrevLabelBranch();
-                plantUMLContent.append("else ");
-                if (branchLabel2 != null && !branchLabel2.isEmpty())
+                plantUMLContent.append( isSwitch? "case " : "else ");
+                if (branchLabel2 != null && !branchLabel2.isEmpty() && !isSwitch)
                      plantUMLContent.append("("+ branches.get(i+1).getPrevLabelBranch() + ")");
+                else if (isSwitch) {
+                    plantUMLContent.append("()");
+                }
                 plantUMLContent.append("\n");
             }
         }
-        plantUMLContent.append("endif\n");
+        if (isSwitch) plantUMLContent.append("endswitch\n");
+        else plantUMLContent.append("endif\n");
 
         if (!joinStack.isEmpty()) {
             JoinFlowNode join = joinStack.pop();

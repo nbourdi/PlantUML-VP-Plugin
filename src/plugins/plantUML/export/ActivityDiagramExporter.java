@@ -95,7 +95,7 @@ public class ActivityDiagramExporter extends DiagramExporter {
                 }
                 return merge;
             case SHAPE_TYPE_ACTIVITY_SWIMLANE2:
-                return null;
+                throw new UnfitForExportException("ERROR: Transition to Swimlane?");
             default:
                 throw new UnfitForExportException("ERROR: can't export type " + currentElement.getModelType() + ", no PlantUML equivalent.");
         }
@@ -186,13 +186,17 @@ public class ActivityDiagramExporter extends DiagramExporter {
         IDiagramElement[] initialNodeDiagramElements = diagram.toDiagramElementArray(SHAPE_TYPE_INITIAL_NODE);
         for (IDiagramElement initialNodeDiagramElement : initialNodeDiagramElements) {
             IModelElement initialNodeModelElement = initialNodeDiagramElement.getModelElement();
-            if (isRootLevel(initialNodeModelElement)) {
+            //if (isRootLevel(initialNodeModelElement)) {
                 return initialNodeModelElement;
-            }
+            // }
         }
         IDiagramElement[] allElements = diagram.toDiagramElementArray();
         for (IDiagramElement diagramElement : allElements) {
+            if (diagramElement.getShapeType() != SHAPE_TYPE_ACTIVITY_ACTION ||
+                    diagramElement.getShapeType() != SHAPE_TYPE_FORK_NODE  ||
+                    diagramElement.getShapeType() != SHAPE_TYPE_INITIAL_NODE) continue;
             IModelElement modelElement = diagramElement.getModelElement();
+            if (modelElement == null) continue;
             if (modelElement.toRelationshipCount() == 0) {
                 return modelElement;
             }

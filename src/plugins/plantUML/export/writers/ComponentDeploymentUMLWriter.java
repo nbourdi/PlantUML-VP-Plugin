@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.vp.plugin.ApplicationManager;
 import plugins.plantUML.models.*;
 import plugins.plantUML.models.ComponentData.PortData;
 
@@ -19,6 +20,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private List<PackageData> packages;
 	private List<RelationshipData> relationships;
 	private List<ArtifactData> artifacts;
+	private int unnamedCounter = 0;
 
 	public ComponentDeploymentUMLWriter(List<NoteData> notes, List<ComponentData> components, List<ClassData> interfaces, List<ArtifactData> artifacts, List<PackageData> packages, List<RelationshipData> relationships) {
 		super(notes);
@@ -37,7 +39,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 		plantUMLContent.append("allowmixing\n");
 
 		for (ComponentData componentData : components) {
-			if(!componentData.isInPackage() && !componentData.isResident())  
+			if(!componentData.isInPackage() && !componentData.isResident())
 				plantUMLContent.append(writeComponent(componentData, ""));
 		}
 
@@ -109,8 +111,17 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 	private String writeInterface(ClassData interfaceData, String indent) {
 		StringBuilder interfaceString = new StringBuilder();
 		String name = formatName(interfaceData.getName());
+		String warningComment = "";
+
 		String aliasDeclaration = formatAlias(interfaceData.getName()).equals(interfaceData.getName()) ? "" : (" as " + formatAlias(interfaceData.getName()));
 
+		if (interfaceData.getName().isEmpty()) {
+			warningComment = " ' You might need to name this interface \n";
+			name = " \" \" ";
+
+			aliasDeclaration = " as " + formatAlias(interfaceData.getUid());
+		}
+		interfaceString.append(warningComment);
 		interfaceString.append(indent);
 		boolean hasAttrAndOps = (!interfaceData.getAttributes().isEmpty() || !interfaceData.getOperations().isEmpty());
 		List<String> filteredStereotypes;
@@ -123,6 +134,7 @@ public class ComponentDeploymentUMLWriter extends PlantUMLWriter {
 					.filter(stereotype -> !"interface".equalsIgnoreCase(stereotype)) // Skip "interface"
 					.collect(Collectors.toList());
 		}
+
 
 		interfaceString.append(name).append(aliasDeclaration);
 

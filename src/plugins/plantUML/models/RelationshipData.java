@@ -46,15 +46,15 @@ public class RelationshipData {
 			break;
 		case "Abstraction":
 			symbol = "..>";
-			label = "<<abstraction>> \n ";
+			label = "<<abstraction>>  ";
 			break;
 			case "Permission":
 				symbol = "..>";
-				label = "<<permit>> \n ";
+				label = "<<permit>>  ";
 				break;
 		case "Usage":
 			symbol = "..>";
-			label = "<<use>> \n ";
+			label = "<<use>>  ";
 			break;
 		case "Dependency":
 			symbol = "..>";
@@ -64,11 +64,11 @@ public class RelationshipData {
 			break;
 		case "Extend":
 			symbol = "<..";
-			label = "<<Extend>> \n ";
+			label = "<<Extend>>  ";
 			break;
 		case "Include":
 			symbol = "..>";
-			label = "<<Include>> \n ";
+			label = "<<Include>>  ";
 			break;
 		case "Containment":
 			symbol = "+--";
