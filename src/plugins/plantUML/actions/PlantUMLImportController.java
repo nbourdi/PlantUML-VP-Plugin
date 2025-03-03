@@ -3,8 +3,11 @@ package plugins.plantUML.actions;
 import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
 
-import javax.swing.JFileChooser;
+import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 
 import com.vp.plugin.ApplicationManager;
@@ -12,8 +15,7 @@ import com.vp.plugin.ViewManager;
 import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
 
-import net.sourceforge.plantuml.syntax.SyntaxResult;
-import plugins.plantUML.parser.PlantUMLParser;
+import plugins.plantUML.imports.importers.DiagramImportPipeline;
 
 public class PlantUMLImportController implements VPActionController {
 
@@ -21,51 +23,85 @@ public class PlantUMLImportController implements VPActionController {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
         Component parentFrame = viewManager.getRootFrame();
 
-        JFileChooser fileChooser = viewManager.createJFileChooser();
-        fileChooser.setFileFilter(new FileFilter() {
-            public String getDescription() {
-                return "*.txt, *.puml";
-            }
+        JRadioButton singleDiagramButton = new JRadioButton("Import Single Diagram (without semantics)");
+        JRadioButton multipleDiagramsButton = new JRadioButton("Import Multiple Diagrams from Folder (with or without semantics)");
 
-            public boolean accept(File file) {
-                return file.isDirectory() || 
-                       file.getName().toLowerCase().endsWith(".txt") || 
-                       file.getName().toLowerCase().endsWith(".puml");
-            }
-        });
+        ButtonGroup group = new ButtonGroup();
+        group.add(singleDiagramButton);
+        group.add(multipleDiagramsButton);
 
-        int userSelection = fileChooser.showOpenDialog(parentFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            PlantUMLParser parser = new PlantUMLParser(file);
+        singleDiagramButton.setSelected(true);
 
-            try {
-                // Parse the file
-                SyntaxResult result = parser.parse();
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
+        panel.add(singleDiagramButton);
+        panel.add(Box.createVerticalStrut(5)); 
+        panel.add(multipleDiagramsButton);
 
-                if (result.isError()) {
-                    // If there are syntax errors, display them
-                    StringBuilder errorMessage = new StringBuilder("Syntax errors detected:\n");
-                    for (String error : result.getErrors()) {
-                        errorMessage.append(" - ").append(error).append("\n");
-                    }
-                    viewManager.showMessageDialog(parentFrame, errorMessage.toString());
-                } else {
-                    // If parsing is successful
-                    viewManager.showMessageDialog(parentFrame, 
-                        "Syntax is valid.\nDiagram Type: " + result.getUmlDiagramType() +
-                        "\nDescription: " + result.getDescription());
+        int choice = JOptionPane.showConfirmDialog(
+            parentFrame,
+            panel,
+            "Select Import Option",
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (choice != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        if (singleDiagramButton.isSelected()) {
+            // Handle single diagram import
+            JFileChooser fileChooser = viewManager.createJFileChooser();
+            fileChooser.setFileFilter(new FileFilter() {
+                @Override
+                public String getDescription() {
+                    return "*.txt, *.puml, *.plantuml";
                 }
-            } catch (IOException e) {
-                // Handle file reading exceptions
-                viewManager.showMessageDialog(parentFrame, 
-                    "Error reading file: " + e.getMessage());
+
+                @Override
+                public boolean accept(File file) {
+                    return file.isDirectory() || 
+                           file.getName().toLowerCase().endsWith(".txt") || 
+                           file.getName().toLowerCase().endsWith(".puml") ||
+                            file.getName().toLowerCase().endsWith(".plantuml");
+                }
+            });
+
+            int userSelection = fileChooser.showOpenDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                DiagramImportPipeline pipeline = new DiagramImportPipeline();
+                pipeline.importFromSource(file);
+            }
+        } else if (multipleDiagramsButton.isSelected()) {
+            // Handle multiple diagrams import
+            JFileChooser folderChooser = viewManager.createJFileChooser();
+            folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+            int userSelection = folderChooser.showOpenDialog(parentFrame);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File folder = folderChooser.getSelectedFile();
+                File[] files = folder.listFiles((dir, name) -> 
+                    name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".puml") || name.toLowerCase().endsWith(".plantuml")
+                );
+
+                if (files != null && files.length > 0) {
+                    DiagramImportPipeline pipeline = new DiagramImportPipeline(); // No single file required for batch import
+                    pipeline.importMultipleFiles(Arrays.asList(files));
+                } else {
+                    JOptionPane.showMessageDialog(
+                        parentFrame,
+                        "No valid diagram files found in the selected folder.",
+                        "Warning",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                }
             }
         }
     }
 
     public void update(VPAction action) {
-        // No additional logic needed for updating the action
     }
 }
-

@@ -12,6 +12,7 @@ import com.vp.plugin.view.IDialogHandler;
 import plugins.plantUML.export.ClassDiagramExporter;
 import plugins.plantUML.export.DiagramExportPipeline;
 import plugins.plantUML.export.UseCaseDiagramExporter;
+import plugins.plantUML.models.SemanticsData;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,10 +20,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class PlantUMLExportController implements VPActionController {
 
@@ -30,7 +29,6 @@ public class PlantUMLExportController implements VPActionController {
     public void performAction(VPAction action) {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
 
-        // Show the custom dialog using the ViewManager
         viewManager.showDialog(new ExportDialogHandler());
     }
 
@@ -54,12 +52,10 @@ public class PlantUMLExportController implements VPActionController {
             mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
             allCheckboxes = new ArrayList<>();
 
-            // Create the top panel for description and output folder chooser
             JPanel topPanel = new JPanel();
             topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
             topPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-            // Add a description label
             JLabel descriptionLabel = new JLabel("Please select the diagrams to export and choose an output folder:");
             topPanel.add(descriptionLabel);
             topPanel.add(Box.createVerticalStrut(10)); // Add spacing
@@ -68,7 +64,7 @@ public class PlantUMLExportController implements VPActionController {
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
             JLabel folderLabel = new JLabel("Output Folder:");
-            outputFolderField = new JTextField();
+            outputFolderField = new JTextField(""); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
             browseButton.addActionListener((ActionEvent e) -> {
@@ -88,50 +84,80 @@ public class PlantUMLExportController implements VPActionController {
 
             topPanel.add(folderChooserPanel);
 
-            // Add the top panel to the main panel
             mainPanel.add(topPanel, BorderLayout.NORTH);
 
-            // Group diagrams by type
             Map<String, List<IDiagramUIModel>> groupedDiagrams = groupDiagramsByType();
 
-            // Create the content panel for grouped diagrams
-         // Create the content panel for grouped diagrams
             JPanel contentPanel = new JPanel();
             contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-            contentPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-            contentPanel.setBackground(Color.WHITE); // Ensure the background is white
+            contentPanel.setBorder(new EmptyBorder(15, 10, 10, 10));
+            contentPanel.setBackground(Color.WHITE);
+
+            Map<JCheckBox, List<JCheckBox>> categoryCheckBoxMap = new HashMap<>(); // Store category-to-diagram checkboxes mapping
+
 
             for (Map.Entry<String, List<IDiagramUIModel>> entry : groupedDiagrams.entrySet()) {
-                // Add a category label
-                JLabel categoryLabel = new JLabel(entry.getKey());
-                // categoryLabel.setFont(new Font(Font.BOLD));
-                categoryLabel.setOpaque(true); // Set opaque to respect background
-                categoryLabel.setBackground(Color.WHITE); // Ensure the label background is also white
-                contentPanel.add(categoryLabel);
+                JPanel categoryPanel = new JPanel(new BorderLayout());
 
-                // Add checkboxes for diagrams in this category
-                JPanel checkBoxPanel = new JPanel();
-                checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.Y_AXIS));
-                checkBoxPanel.setBackground(Color.WHITE); // Ensure the panel is white
-                checkBoxPanel.setBorder(new EmptyBorder(5, 15, 15, 15)); // Add padding
+                categoryPanel.setBackground(Color.WHITE);
+
+                JCheckBox categoryCheckBox = new JCheckBox(entry.getKey());
+                categoryCheckBox.setBackground(Color.WHITE);
+//                categoryCheckBox.setFont(new Font(categoryCheckBox.getFont().getName(), Font.BOLD, 12));
+                categoryCheckBox.setFont(categoryCheckBox.getFont().deriveFont(Font.BOLD));
+                categoryPanel.add(categoryCheckBox);
+
+                contentPanel.add(categoryPanel);
+                categoryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, categoryPanel.getPreferredSize().height));
+
+
+                JPanel checkBoxPanel = new JPanel(new GridLayout(0, 1, 0, 0)); // Less indentation
+                checkBoxPanel.setBackground(Color.WHITE);
+                checkBoxPanel.setBorder(new EmptyBorder(0, 25, 0, 0)); // Reduced left padding
+
+                List<JCheckBox> diagramCheckBoxes = new ArrayList<>();
 
                 for (IDiagramUIModel diagram : entry.getValue()) {
                     JCheckBox checkBox = new JCheckBox(diagram.getName());
                     checkBox.setActionCommand(diagram.getId());
-                    checkBox.setBackground(Color.WHITE); // Ensure checkboxes have a white background
+                    checkBox.setBackground(Color.WHITE);
                     allCheckboxes.add(checkBox);
+                    diagramCheckBoxes.add(checkBox);
                     checkBoxPanel.add(checkBox);
+
+                    // Sync individual checkboxes with category
+                    checkBox.addActionListener(e -> {
+                        if (!checkBox.isSelected()) {
+                            categoryCheckBox.setSelected(false);
+                        } else if (diagramCheckBoxes.stream().allMatch(JCheckBox::isSelected)) {
+                            categoryCheckBox.setSelected(true);
+                        }
+                    });
                 }
 
                 contentPanel.add(checkBoxPanel);
+//                contentPanel.add(Box.createVerticalStrut(3)); // Reduce vertical space
 
-                // Add a white border between categories (no visible grey area)
-                contentPanel.add(Box.createVerticalStrut(10)); // Acts as a spacer
+                categoryCheckBoxMap.put(categoryCheckBox, diagramCheckBoxes);
+
+                // Sync category checkbox with all diagrams
+                categoryCheckBox.addActionListener(e -> {
+                    boolean isSelected = categoryCheckBox.isSelected();
+                    for (JCheckBox checkBox : diagramCheckBoxes) {
+                        checkBox.setSelected(isSelected);
+                    }
+                });
             }
 
+
+
             JScrollPane scrollPane = new JScrollPane(contentPanel);
-            scrollPane.setPreferredSize(new Dimension(400, 300));
-            scrollPane.getViewport().setBackground(Color.WHITE); // Ensure the scroll pane viewport is white
+          //  scrollPane.setPreferredSize(new Dimension(700, 500));
+            scrollPane.getViewport().setBackground(Color.WHITE);
+
+          //  scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+         //   scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
 
             mainPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -143,20 +169,18 @@ public class PlantUMLExportController implements VPActionController {
         	this.dialog = dialog;
             dialog.setTitle("Select Diagrams to Export");
             dialog.setModal(true);
-            dialog.setSize(500, 400);
+            dialog.setSize(600, 600);
         }
 
         @Override
         public void shown() {
-            // Add buttons at the bottom-right corner
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0)); // Add spacing from the top
+            buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
             JButton exportButton = new JButton("Export");
             JButton closeButton = new JButton("Close");
 
             exportButton.addActionListener((ActionEvent e) -> {
-                // Collect selected diagrams
                 List<IDiagramUIModel> selectedDiagrams = new ArrayList<>();
                 for (JCheckBox checkBox : allCheckboxes) {
                     if (checkBox.isSelected()) {
@@ -172,7 +196,6 @@ public class PlantUMLExportController implements VPActionController {
                     }
                 }
 
-                // Perform the extraction logic for each selected diagram
                 File outputFolder = new File(outputFolderField.getText());
                 if (!outputFolder.exists() || !outputFolder.isDirectory()) {
                     ApplicationManager.instance().getViewManager()
@@ -182,39 +205,26 @@ public class PlantUMLExportController implements VPActionController {
 
                 DiagramExportPipeline pipeline = new DiagramExportPipeline(outputFolder);
 
-                for (IDiagramUIModel activeDiagram : selectedDiagrams) {
-                    try {
-                        pipeline.export(activeDiagram);
-                    } catch (IOException ex) {
-                        ApplicationManager.instance().getViewManager()
-                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error processing diagram: " + activeDiagram.getName() + "\n" + ex.getMessage());
-                    } catch (UnsupportedOperationException ex) {
-                        ApplicationManager.instance().getViewManager()
-                        .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), ex.getMessage());
-                    }
+                if (pipeline.exportDiagramList(selectedDiagrams)) {
+                    ApplicationManager.instance().getViewManager()
+                            .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
                 }
-
-                // Notify the user that the export is complete
-                ApplicationManager.instance().getViewManager()
-                    .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete.");
                 dialog.close();
             });
 
             closeButton.addActionListener((ActionEvent e) -> {
-                // Close the dialog
                 dialog.close();
             });
 
             buttonPanel.add(exportButton);
             buttonPanel.add(closeButton);
 
-            mainPanel.add(buttonPanel, BorderLayout.SOUTH); // Add button panel at the bottom
+            mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         }
 
 
         @Override
         public boolean canClosed() {
-            // Allow the dialog to close
             return true;
         }
 
@@ -222,12 +232,26 @@ public class PlantUMLExportController implements VPActionController {
             ProjectManager projectManager = ApplicationManager.instance().getProjectManager();
             IDiagramUIModel[] allDiagrams = projectManager.getProject().toDiagramArray();
 
+            // Use HashSet for Java 8 compatibility
+            Set<String> allowedTypes = new HashSet<>(Arrays.asList(
+                    "ClassDiagram", "ComponentDiagram", "DeploymentDiagram",
+                    "InteractionDiagram", "ActivityDiagram", "UseCaseDiagram", "StateDiagram"
+            ));
+
             Map<String, List<IDiagramUIModel>> grouped = new TreeMap<>();
+
             for (IDiagramUIModel diagram : allDiagrams) {
                 String type = diagram.getType(); // Get the diagram type
-                grouped.computeIfAbsent(type, k -> new ArrayList<>()).add(diagram);
+
+                if (allowedTypes.contains(type)) { // Filter only allowed types
+                    String formattedType;
+                    if (type == "InteractionDiagram") formattedType = "Sequence Diagram";
+                    else formattedType = type.replaceAll("([a-z])([A-Z])", "$1 $2"); // Add spaces between words
+                    grouped.computeIfAbsent(formattedType, k -> new ArrayList<>()).add(diagram);
+                }
             }
             return grouped;
         }
+
     }
 }
