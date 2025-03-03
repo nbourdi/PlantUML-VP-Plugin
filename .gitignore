@@ -4,3 +4,4 @@ plugins.plantUML.eml
 plugins.plantUML.iml
 .classpath
 .project
+classes
