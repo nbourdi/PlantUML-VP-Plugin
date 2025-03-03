@@ -64,7 +64,7 @@ public class PlantUMLExportController implements VPActionController {
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
             JLabel folderLabel = new JLabel("Output Folder:");
-            outputFolderField = new JTextField("C:\\Users\\30695\\Documents" ); //TODO: remove its debug
+            outputFolderField = new JTextField(""); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
             browseButton.addActionListener((ActionEvent e) -> {
@@ -97,17 +97,21 @@ public class PlantUMLExportController implements VPActionController {
 
 
             for (Map.Entry<String, List<IDiagramUIModel>> entry : groupedDiagrams.entrySet()) {
-                JPanel categoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5)); // Less space
+                JPanel categoryPanel = new JPanel(new BorderLayout());
+
                 categoryPanel.setBackground(Color.WHITE);
 
                 JCheckBox categoryCheckBox = new JCheckBox(entry.getKey());
                 categoryCheckBox.setBackground(Color.WHITE);
-                categoryCheckBox.setFont(new Font(categoryCheckBox.getFont().getName(), Font.BOLD, 12));
+//                categoryCheckBox.setFont(new Font(categoryCheckBox.getFont().getName(), Font.BOLD, 12));
+                categoryCheckBox.setFont(categoryCheckBox.getFont().deriveFont(Font.BOLD));
                 categoryPanel.add(categoryCheckBox);
 
                 contentPanel.add(categoryPanel);
+                categoryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, categoryPanel.getPreferredSize().height));
 
-                JPanel checkBoxPanel = new JPanel(new GridLayout(0, 1, 5, 5)); // Less indentation
+
+                JPanel checkBoxPanel = new JPanel(new GridLayout(0, 1, 0, 0)); // Less indentation
                 checkBoxPanel.setBackground(Color.WHITE);
                 checkBoxPanel.setBorder(new EmptyBorder(0, 25, 0, 0)); // Reduced left padding
 
@@ -132,7 +136,7 @@ public class PlantUMLExportController implements VPActionController {
                 }
 
                 contentPanel.add(checkBoxPanel);
-                contentPanel.add(Box.createVerticalStrut(3)); // Reduce vertical space
+//                contentPanel.add(Box.createVerticalStrut(3)); // Reduce vertical space
 
                 categoryCheckBoxMap.put(categoryCheckBox, diagramCheckBoxes);
 
@@ -148,10 +152,11 @@ public class PlantUMLExportController implements VPActionController {
 
 
             JScrollPane scrollPane = new JScrollPane(contentPanel);
-            scrollPane.setPreferredSize(new Dimension(700, 500));
+          //  scrollPane.setPreferredSize(new Dimension(700, 500));
             scrollPane.getViewport().setBackground(Color.WHITE);
 
-            scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+          //  scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+         //   scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
 
             mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -214,7 +219,7 @@ public class PlantUMLExportController implements VPActionController {
             buttonPanel.add(exportButton);
             buttonPanel.add(closeButton);
 
-            mainPanel.add(buttonPanel, BorderLayout.SOUTH); 
+            mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         }
 
 

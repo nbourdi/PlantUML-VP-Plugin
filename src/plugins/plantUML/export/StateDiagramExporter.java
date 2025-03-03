@@ -11,6 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import static com.vp.plugin.diagram.IShapeTypeConstants.*;
+
 public class StateDiagramExporter extends DiagramExporter {
 
     private final IDiagramUIModel diagram;
@@ -42,6 +44,15 @@ public class StateDiagramExporter extends DiagramExporter {
 
         List<IRelationship> deferredRelationships = new ArrayList<>();
 
+        IDiagramElement[] stateDiagramElems = diagram.toDiagramElementArray(SHAPE_TYPE_REGION);
+
+        for (IDiagramElement stateElement : stateDiagramElems) {
+            String packageModelId = stateElement.getModelElement().getId();
+            packageModelIds.add(packageModelId);
+        }
+
+
+
         for (IDiagramElement diagramElement : allElements) {
             IModelElement modelElement = diagramElement.getModelElement();
 
@@ -56,39 +67,42 @@ public class StateDiagramExporter extends DiagramExporter {
             allExportedElements.add(modelElement);
 
             if (modelElement instanceof IState2) {
-               // if (isRootLevel(modelElement)) {
+               if (isRootLevelInDiagram(modelElement)) {
                    extractState((IState2) modelElement, null);
-               // }
+               }
             } else if (modelElement instanceof IInitialPseudoState) {
-                //if (isRootLevel(modelElement)) {
+                if (isRootLevelInDiagram(modelElement)) {
                     extractInitFin(modelElement, null, true);
-                //}
+                }
             } else if (modelElement instanceof IFinalState2) {
-                //if (isRootLevel(modelElement)) {
+                if (isRootLevelInDiagram(modelElement)) {
                     extractInitFin(modelElement, null, false);
-                //}
+                }
             } else if (modelElement instanceof IChoice) {
-                //if (isRootLevel(modelElement)) {
+                if (isRootLevelInDiagram(modelElement)) {
                     extractChoice((IChoice) modelElement, null);
-                //}
+                }
             } else if (modelElement instanceof IShallowHistory || modelElement instanceof IDeepHistory) {
-                //if (isRootLevel(modelElement)) {
+                if (isRootLevelInDiagram(modelElement)) {
                     extractHistory(modelElement, null);
-                //}
+                }
             } else if (modelElement instanceof  IFork || modelElement instanceof IJoin) {
-                extractForkJoin(modelElement);
+                if (isRootLevelInDiagram(modelElement)) {
+                    extractForkJoin(modelElement, null);
+                }
             } else if (modelElement instanceof INOTE) {
                 extractNote((INOTE) modelElement);
             } else if (modelElement instanceof IRelationship) {
                 deferredRelationships.add((IRelationship) modelElement); // Defer relationships
             } else {
                 allExportedElements.remove(modelElement);
-                if (modelElement instanceof IRegion) break;
-                ApplicationManager.instance().getViewManager()
-                        .showMessage("Warning: diagram element " + modelElement.getName()
-                                + " is of unsupported type " + modelElement.getModelType() +" and will not be processed ... ");
-                addWarning("Diagram element " + modelElement.getName()
-                        + " is of unsupported type " + modelElement.getModelType() +" and was not processed. ");
+                if (!(modelElement instanceof IRegion)) {
+                    ApplicationManager.instance().getViewManager()
+                            .showMessage("Warning: diagram element " + modelElement.getName()
+                                    + " is of unsupported type " + modelElement.getModelType() + " and will not be processed ... ");
+                    addWarning("Diagram element " + modelElement.getName()
+                            + " is of unsupported type " + modelElement.getModelType() + " and was not processed. ");
+                }
             }
         }
 
@@ -115,14 +129,17 @@ public class StateDiagramExporter extends DiagramExporter {
         histories.add(history);
     }
 
-    private void extractForkJoin(IModelElement modelElement) {
-//        ApplicationManager.instance().getViewManager().showMessage("extracting forkjoin ===");
+    private void extractForkJoin(IModelElement modelElement, StateData.StateRegion regionData) {
         String id = modelElement.getId();
 
         ForkJoin forkJoin = new ForkJoin(modelElement.getName());
-        forkJoin.setFork(modelElement instanceof IForkNode);
-
+        forkJoin.setFork(modelElement instanceof IFork);
+        forkJoin.setInState(modelElement.getParent() instanceof IRegion || regionData != null);
         forkJoin.setId(id);
+
+        if (regionData != null) {
+            regionData.getSubStates().add(forkJoin);
+        }
         forkJoins.add(forkJoin);
     }
 
@@ -306,6 +323,19 @@ public class StateDiagramExporter extends DiagramExporter {
                 IDeepHistory hist = (IDeepHistory) histIter2.next();
                 extractHistory(hist, regionData);
             }
+
+            Iterator forkIter = regionModel.forkIterator();
+            while (forkIter.hasNext()) {
+                IFork fork = (IFork) forkIter.next();
+                extractForkJoin(fork, regionData);
+            }
+
+            Iterator joinIter = regionModel.joinIterator();
+            while (joinIter.hasNext()) {
+                IJoin join = (IJoin) joinIter.next();
+                extractForkJoin(join, regionData);
+            }
+
         }
 
         if (parentRegion != null) {

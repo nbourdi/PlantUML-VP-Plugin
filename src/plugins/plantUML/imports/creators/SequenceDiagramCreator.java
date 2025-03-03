@@ -150,10 +150,15 @@ public class SequenceDiagramCreator extends  DiagramCreator {
         }
 
         for (IOperation operation : operations) {
-            if (operation.getName().equals(operationName)) {
+            if (operation.getName().equals(operationName) ||
+                    (operationName.startsWith(operation.getName()) &&
+                            operationName.endsWith("()") &&
+                            operationName.substring(0, operationName.length() - 2).equals(operation.getName()))) {
+
+
                 IActionTypeCall callAction = IModelElementFactory.instance().createActionTypeCall();
-                callAction.setOperation(operation);
-                return callAction;
+                    callAction.setOperation(operation);
+                    return callAction;
             }
         }
         return null; // No matching operation found

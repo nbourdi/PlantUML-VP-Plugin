@@ -55,7 +55,7 @@ public class PlantUMLExportActiveController implements VPActionController {
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
             JLabel folderLabel = new JLabel("Output Folder:");
-            outputFolderField = new JTextField("C:\\Users\\30695\\Documents" ); //TODO: remove its debug
+            outputFolderField = new JTextField("" ); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
             browseButton.addActionListener((ActionEvent e) -> {

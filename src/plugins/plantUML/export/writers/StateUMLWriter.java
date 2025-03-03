@@ -1,5 +1,6 @@
 package plugins.plantUML.export.writers;
 
+import com.vp.plugin.ApplicationManager;
 import plugins.plantUML.models.*;
 
 import java.io.File;
@@ -50,7 +51,9 @@ public class StateUMLWriter extends PlantUMLWriter {
         }
 
         for (ForkJoin forkJoin : forkJoins) {
-            plantUMLContent.append(writeState(forkJoin, ""));
+            if (!forkJoin.isInState()) {
+                plantUMLContent.append(writeState(forkJoin, ""));
+            }
         }
 
         plantUMLContent.append(writeNotes());

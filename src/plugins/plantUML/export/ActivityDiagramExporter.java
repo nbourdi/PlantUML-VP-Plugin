@@ -16,6 +16,7 @@ public class ActivityDiagramExporter extends DiagramExporter {
     private FlowNode rootNode;
     private List<IModelElement> visited = new ArrayList<>();
     private Map<IModelElement, FlowNode> joinMap = new HashMap<>();
+    private Map<IModelElement, FlowNode> endMap = new HashMap<>();
     List<NoteData> exportedNotes = new ArrayList<>();
 
     public ActivityDiagramExporter(IDiagramUIModel diagram) {
@@ -43,16 +44,25 @@ public class ActivityDiagramExporter extends DiagramExporter {
         if (visited.contains(currentElement)) {
             if (currentElement.getModelType() == SHAPE_TYPE_JOIN_NODE || currentElement.getModelType() == SHAPE_TYPE_MERGE_NODE) {
                 return joinMap.get(currentElement);
+            } else if (currentElement.getModelType() == SHAPE_TYPE_ACTIVITY_FINAL_NODE || currentElement.getModelType() == SHAPE_TYPE_FLOW_FINAL_NODE) {
+                // end types. multiple can end here
+                return endMap.get(currentElement);
+
             }
             throw new UnfitForExportException("Looping or repeated flows detected during export.");
         }
         visited.add(currentElement);
 
         switch (currentElement.getModelType()) {
-            case SHAPE_TYPE_ACTIVITY_ACTION:
-            case SHAPE_TYPE_INITIAL_NODE:
+
             case SHAPE_TYPE_ACTIVITY_FINAL_NODE:
             case SHAPE_TYPE_FLOW_FINAL_NODE:
+                ActionData end = getActionData(currentElement, visited);
+                endMap.put(currentElement, end);
+                return end;
+
+            case SHAPE_TYPE_ACTIVITY_ACTION:
+            case SHAPE_TYPE_INITIAL_NODE:
                 ActionData action = getActionData(currentElement, visited);
                 return action;
 

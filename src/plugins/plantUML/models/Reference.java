@@ -63,7 +63,7 @@ public class Reference {
 	}
 	
 	public void setModelType(String modelType) {
-		if("model_element".equals(this.modelType)) {
+		if("model_element".equals(this.type)) {
 			this.modelType = modelType;
 		} else {
 			this.modelType = null;

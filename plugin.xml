@@ -2,8 +2,9 @@
 	id="plugins.plantUML"
 	name="PlantUML Support"
 	description="Import from / Export to PlantUML"
-	provider="Natalia Bourdi"
-	class="plugins.plantUML.PlantUML">
+	provider="NataliaSoftlabNtua"
+	class="plugins.plantUML.PlantUML"
+	version="1.0.0">
         
 	<actionSets>
 		<actionSet id="plugins.plantUML.actionset">
