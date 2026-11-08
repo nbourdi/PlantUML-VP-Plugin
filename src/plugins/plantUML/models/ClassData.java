@@ -3,7 +3,6 @@ package plugins.plantUML.models;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.stringtemplate.v4.compiler.STParser.namedArg_return;
 
 public class ClassData extends BaseWithSemanticsData {
     private boolean isAbstract;

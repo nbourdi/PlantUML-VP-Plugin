@@ -8,7 +8,6 @@ import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.connector.IContainmentUIModel;
 import com.vp.plugin.model.*;
 
-import org.antlr.v4.codegen.model.ModelElement;
 import plugins.plantUML.models.AssociationData;
 import plugins.plantUML.models.AttributeData;
 import plugins.plantUML.models.ClassData;
