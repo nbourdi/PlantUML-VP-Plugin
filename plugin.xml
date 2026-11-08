@@ -15,6 +15,7 @@
 				tooltip="PlantUML..."
 				style="normal"
 				icon="icons/puml-icon.png"
+				menuPath="Project/Import/XML"
 				ribbonPath="Project/Import/XML">
 				<actionController 
 					class="plugins.plantUML.actions.PlantUMLImportController"/>
@@ -26,6 +27,7 @@
 					tooltip="PlantUML..."
 					style="normal"
 					icon="icons/puml-icon.png"
+					menuPath="Project/Export/XML"
                     ribbonPath="Project/Export/XML">
                 <actionController
                         class="plugins.plantUML.actions.PlantUMLExportController"/>
@@ -37,9 +39,22 @@
 					tooltip="Active Diagram as PlantUML..."
 					style="normal"
 					icon="icons/puml-icon.png"
+					menuPath="Project/Export/XML"
 					ribbonPath="Project/Export/XML">
 				<actionController
 						class="plugins.plantUML.actions.PlantUMLExportActiveController"/>
+			</action>
+			<action
+					id="CopyActiveAction"
+					actionType="generalAction"
+					label="Copy Active Diagram as PlantUML"
+					tooltip="Copy Active Diagram as PlantUML"
+					style="normal"
+					icon="icons/puml-icon.png"
+					menuPath="Project/Export/XML"
+					ribbonPath="Project/Export/XML">
+				<actionController
+						class="plugins.plantUML.actions.PlantUMLCopyActiveController"/>
 			</action>
 		</actionSet>
 	</actionSets>

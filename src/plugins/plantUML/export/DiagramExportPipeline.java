@@ -8,6 +8,10 @@ import plugins.plantUML.models.SemanticsData;
 
 import java.io.File;
 import java.io.IOException;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,9 +19,15 @@ import java.util.List;
 public class DiagramExportPipeline {
 
 	private final File outputFolder;
-
+	public DiagramExportPipeline(){
+		this.outputFolder = null;
+	}
 	public DiagramExportPipeline(File outputFolder) {
 		this.outputFolder = outputFolder;
+	}
+
+	public boolean isClipboardMode() {
+		return outputFolder == null;
 	}
 
 	/**
@@ -147,6 +157,10 @@ public class DiagramExportPipeline {
 			default:
 				throw new UnfitForExportException("Error: " + diagramType + " not supported for export yet.");
 			}
+
+			if (isClipboardMode()) {
+				copyToClipboard(outputFile);
+			}
 		} catch (IOException ex) {
 			ApplicationManager.instance().getViewManager()
 			.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error processing diagram: " + diagram.getName() + "\n" + ex.getMessage());
@@ -156,6 +170,10 @@ public class DiagramExportPipeline {
 			ApplicationManager.instance().getViewManager()
 					.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Error: " + diagram.getName() + " is unfit for exporting\n" + e.getMessage());
 			throw e;
+		} finally {
+			if (isClipboardMode() && outputFile.exists() && !outputFile.delete()) {
+				outputFile.deleteOnExit();
+			}
 		}
 
 		// all Warnings in popup
@@ -174,11 +192,24 @@ public class DiagramExportPipeline {
 		fileName.append(title.replaceAll("[^a-zA-Z0-9\u0370-\u03FF]", "_"));
 		if (contentType.equals("json")) fileName.append("_semantics");
 		fileName.append(".puml");
+		if (isClipboardMode()) {
+			return File.createTempFile("plantuml-export-", ".puml");
+		}
 		File outputFile = new File(outputFolder, fileName.toString());
 		if (!outputFile.exists() && !outputFile.createNewFile()) {
 			throw new IOException("Failed to create file: " + outputFile.getAbsolutePath());
 		}
 		return outputFile;
+	}
+
+	private void copyToClipboard(File outputFile) throws IOException {
+		String content = new String(
+				Files.readAllBytes(outputFile.toPath()),
+				StandardCharsets.UTF_8
+		);
+		Toolkit.getDefaultToolkit()
+				.getSystemClipboard()
+				.setContents(new StringSelection(content), null);
 	}
 
 	public boolean exportDiagramList(List<IDiagramUIModel> selectedDiagrams) {
@@ -199,15 +230,17 @@ public class DiagramExportPipeline {
 			}
 		}
 
-		File jsonFile;
-		try {
-			jsonFile = createOutputFile("project_semantics", "json");
-			PlantJSONWriter.writeToFile(jsonFile, projectSemanticsDatas);
-		} catch (IOException e) {
-			ApplicationManager.instance().getViewManager()
-			.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error writing to json semantics file");
-			e.printStackTrace();
-			allSuccessful = false;
+		if (!isClipboardMode()) {
+			File jsonFile;
+			try {
+				jsonFile = createOutputFile("project_semantics", "json");
+				PlantJSONWriter.writeToFile(jsonFile, projectSemanticsDatas);
+			} catch (IOException e) {
+				ApplicationManager.instance().getViewManager()
+				.showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Error writing to json semantics file");
+				e.printStackTrace();
+				allSuccessful = false;
+			}
 		}
 
 		return allSuccessful;

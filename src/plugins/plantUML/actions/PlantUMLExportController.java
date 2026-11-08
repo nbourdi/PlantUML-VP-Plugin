@@ -56,14 +56,15 @@ public class PlantUMLExportController implements VPActionController {
             topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
             topPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-            JLabel descriptionLabel = new JLabel("Please select the diagrams to export and choose an output folder:");
+            JLabel descriptionLabel = new JLabel("Select diagrams. Leave Output Folder blank to copy PlantUML to the clipboard.");
+            descriptionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             topPanel.add(descriptionLabel);
             topPanel.add(Box.createVerticalStrut(10)); // Add spacing
 
             // Add output folder chooser line
             JPanel folderChooserPanel = new JPanel(new BorderLayout());
             folderChooserPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
-            JLabel folderLabel = new JLabel("Output Folder:");
+            JLabel folderLabel = new JLabel("Output Folder (optional):");
             outputFolderField = new JTextField(""); //TODO: remove its debug
             JButton browseButton = new JButton("Browse");
 
@@ -196,18 +197,25 @@ public class PlantUMLExportController implements VPActionController {
                     }
                 }
 
-                File outputFolder = new File(outputFolderField.getText());
-                if (!outputFolder.exists() || !outputFolder.isDirectory()) {
-                    ApplicationManager.instance().getViewManager()
-                    .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),  "Please select a valid output folder.");
-                    return;
+                String outputPath = outputFolderField.getText().trim();
+                DiagramExportPipeline pipeline;
+                if (outputPath.isEmpty()) {
+                    pipeline = new DiagramExportPipeline();
+                } else {
+                    File outputFolder = new File(outputPath);
+                    if (!outputFolder.exists() || !outputFolder.isDirectory()) {
+                        ApplicationManager.instance().getViewManager()
+                                .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),
+                                        "Please select a valid output folder.");
+                        return;
+                    }
+                    pipeline = new DiagramExportPipeline(outputFolder);
                 }
-
-                DiagramExportPipeline pipeline = new DiagramExportPipeline(outputFolder);
 
                 if (pipeline.exportDiagramList(selectedDiagrams)) {
                     ApplicationManager.instance().getViewManager()
-                            .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(), "Export complete."); // TODO this is shown even when error
+                            .showMessageDialog(ApplicationManager.instance().getViewManager().getRootFrame(),
+                                    pipeline.isClipboardMode() ? "PlantUML copied to clipboard." : "Export complete.");
                 }
                 dialog.close();
             });
