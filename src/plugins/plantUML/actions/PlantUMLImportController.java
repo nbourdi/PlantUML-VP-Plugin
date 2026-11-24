@@ -23,12 +23,14 @@ public class PlantUMLImportController implements VPActionController {
         ViewManager viewManager = ApplicationManager.instance().getViewManager();
         Component parentFrame = viewManager.getRootFrame();
 
-        JRadioButton singleDiagramButton = new JRadioButton("Import Single Diagram (without semantics)");
+        JRadioButton singleDiagramButton = new JRadioButton("Import Single Diagram from File (without semantics)");
         JRadioButton multipleDiagramsButton = new JRadioButton("Import Multiple Diagrams from Folder (with or without semantics)");
+        JRadioButton textAreaButton = new JRadioButton("Import from Text (paste PlantUML code)");
 
         ButtonGroup group = new ButtonGroup();
         group.add(singleDiagramButton);
         group.add(multipleDiagramsButton);
+        group.add(textAreaButton);
 
         singleDiagramButton.setSelected(true);
 
@@ -38,6 +40,8 @@ public class PlantUMLImportController implements VPActionController {
         panel.add(singleDiagramButton);
         panel.add(Box.createVerticalStrut(5)); 
         panel.add(multipleDiagramsButton);
+        panel.add(Box.createVerticalStrut(5)); 
+        panel.add(textAreaButton);
 
         int choice = JOptionPane.showConfirmDialog(
             parentFrame,
@@ -98,6 +102,37 @@ public class PlantUMLImportController implements VPActionController {
                         JOptionPane.WARNING_MESSAGE
                     );
                 }
+            }
+        } else if (textAreaButton.isSelected()) {
+            // Handle import from pasted PlantUML text
+            JTextArea textArea = new JTextArea(20, 60);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new java.awt.Dimension(600, 400));
+
+            int textChoice = JOptionPane.showConfirmDialog(
+                parentFrame,
+                scrollPane,
+                "Paste PlantUML code",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (textChoice == JOptionPane.OK_OPTION) {
+                String source = textArea.getText();
+                if (source == null || source.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                        parentFrame,
+                        "No PlantUML code provided.",
+                        "Warning",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+                DiagramImportPipeline pipeline = new DiagramImportPipeline();
+                pipeline.importFromText(source);
             }
         }
     }
