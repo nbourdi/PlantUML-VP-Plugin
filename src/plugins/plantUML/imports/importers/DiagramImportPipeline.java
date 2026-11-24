@@ -166,10 +166,29 @@ public class DiagramImportPipeline {
 		return null;
 	}
 
+	public void importFromText(String source) {
+		importFromSource(source, "PastedDiagram");
+	}
+
 	public void importFromSource(File sourceFile) {
 		try {
-			List<String> lines = Files.readAllLines(sourceFile.toPath());
 			String source = new String(Files.readAllBytes(sourceFile.toPath()), StandardCharsets.UTF_8);
+			String diagramTitle = sourceFile.getName();
+			if (diagramTitle.contains(".")) {
+				diagramTitle = diagramTitle.substring(0, diagramTitle.lastIndexOf('.'));
+			}
+			importFromSource(source, diagramTitle);
+		} catch (IOException e) {
+			ApplicationManager.instance().getViewManager().showMessageDialog(
+					ApplicationManager.instance().getViewManager().getRootFrame(),
+					"Error reading source: " + e.getMessage()
+			);
+		}
+	}
+
+	public void importFromSource(String source, String diagramTitle) {
+		try {
+			List<String> lines = java.util.Arrays.asList(source.split("\\r?\\n", -1));
 
 			// Check for syntax errors
 			SyntaxResult result = SyntaxChecker.checkSyntax(lines);
@@ -218,9 +237,8 @@ public class DiagramImportPipeline {
 				return;
 			}
 
-			String diagramTitle = sourceFile.getName();
-			if (diagramTitle.contains(".")) {
-				diagramTitle = diagramTitle.substring(0, diagramTitle.lastIndexOf('.'));
+			if (diagramTitle == null || diagramTitle.trim().isEmpty()) {
+				diagramTitle = "PastedDiagram";
 			}
 
 			// Handle UML diagram based on type
@@ -251,10 +269,10 @@ public class DiagramImportPipeline {
 					);
 			}
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			ApplicationManager.instance().getViewManager().showMessageDialog(
 					ApplicationManager.instance().getViewManager().getRootFrame(),
-					"Error reading source: " + e.getMessage()
+					"Error processing source: " + e.getMessage()
 			);
 		}
 	}
